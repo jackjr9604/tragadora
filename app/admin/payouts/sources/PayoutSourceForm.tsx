@@ -104,26 +104,89 @@ export default function PayoutSourceForm({
       return {}
     }
 
-    return {
-      chain: form.chain.trim(),
-      chain_id: Number(form.chainId),
-      settlement_address:
-        form.settlementAddress.trim(),
-      token_address: form.tokenAddress.trim(),
-      token_symbol: form.tokenSymbol.trim(),
-      decimals: Number(form.decimals),
-      verification: form.verification.trim(),
+    const config: Record<
+      string,
+      string | number | boolean
+    > = {
       history_page: Number(form.historyPage || 1),
       history_complete: form.historyComplete,
     }
+
+    if (form.chain.trim()) {
+      config.chain = form.chain.trim()
+    }
+
+    if (form.chainId.trim()) {
+      config.chain_id = Number(form.chainId)
+    }
+
+    if (form.settlementAddress.trim()) {
+      config.settlement_address =
+        form.settlementAddress.trim()
+    }
+
+    if (form.tokenAddress.trim()) {
+      config.token_address = form.tokenAddress.trim()
+    }
+
+    if (form.tokenSymbol.trim()) {
+      config.token_symbol = form.tokenSymbol.trim()
+    }
+
+    if (form.decimals.trim()) {
+      config.decimals = Number(form.decimals)
+    }
+
+    if (form.verification.trim()) {
+      config.verification = form.verification.trim()
+    }
+
+    return config
   }
 
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>
   ) {
     event.preventDefault()
-    setSaving(true)
     setError('')
+
+    if (form.sourceType === 'blockchain' && form.status) {
+      if (!form.settlementAddress.trim()) {
+        setError(
+          'Debes configurar la Settlement Address antes de activar esta fuente.'
+        )
+        return
+      }
+
+      if (!form.tokenAddress.trim()) {
+        setError(
+          'Debes configurar la Token Address antes de activar esta fuente.'
+        )
+        return
+      }
+
+      if (!form.chain.trim()) {
+        setError(
+          'Debes configurar la Chain antes de activar esta fuente.'
+        )
+        return
+      }
+
+      const chainId = Number(form.chainId)
+
+      if (
+        !form.chainId.trim() ||
+        !Number.isFinite(chainId) ||
+        chainId <= 0
+      ) {
+        setError(
+          'Debes configurar un Chain ID válido antes de activar esta fuente.'
+        )
+        return
+      }
+    }
+
+    setSaving(true)
 
     const payload = {
       platform_id: form.platformId,
@@ -332,14 +395,14 @@ export default function PayoutSourceForm({
               label="Chain"
               value={form.chain}
               onChange={(value) => updateField('chain', value)}
-              required
+              required={form.status}
             />
             <TextField
               label="Chain ID"
               type="number"
               value={form.chainId}
               onChange={(value) => updateField('chainId', value)}
-              required
+              required={form.status}
             />
             <TextField
               label="Token symbol"
@@ -347,14 +410,12 @@ export default function PayoutSourceForm({
               onChange={(value) =>
                 updateField('tokenSymbol', value)
               }
-              required
             />
             <TextField
               label="Decimals"
               type="number"
               value={form.decimals}
               onChange={(value) => updateField('decimals', value)}
-              required
             />
           </div>
 
@@ -364,7 +425,7 @@ export default function PayoutSourceForm({
             onChange={(value) =>
               updateField('tokenAddress', value)
             }
-            required
+            required={form.status}
           />
           <TextField
             label="Settlement address"
@@ -372,7 +433,7 @@ export default function PayoutSourceForm({
             onChange={(value) =>
               updateField('settlementAddress', value)
             }
-            required
+            required={form.status}
           />
 
           <div className="grid gap-5 sm:grid-cols-2">
@@ -382,7 +443,6 @@ export default function PayoutSourceForm({
               onChange={(value) =>
                 updateField('verification', value)
               }
-              required
             />
             <TextField
               label="History page"

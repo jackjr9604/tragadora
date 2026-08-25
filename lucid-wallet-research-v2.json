@@ -1,0 +1,3805 @@
+{
+  "success": true,
+  "researchOnly": true,
+  "target": "Lucid Trading",
+  "date": "2026-08-22",
+  "network": "Arbitrum",
+  "chainId": 42161,
+  "token": {
+    "symbol": "RiseUSD",
+    "address": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+    "decimals": 6
+  },
+  "referenceGroups": {
+    "A": [
+      2000,
+      2000,
+      2000,
+      2000,
+      3000,
+      3000
+    ],
+    "B": [
+      951,
+      2007,
+      2000,
+      1179,
+      2062,
+      10304
+    ]
+  },
+  "searchWindow": {
+    "from": "2026-08-21T00:00:00Z",
+    "toExclusive": "2026-08-24T00:00:00Z",
+    "fromBlock": 496679279,
+    "toBlock": 497711826
+  },
+  "scan": {
+    "strategy": "ERC-20 Transfer event logs",
+    "logsRead": 26455,
+    "pagesRead": 34,
+    "chunksRead": 12,
+    "configuredChunks": 12,
+    "maxPagesPerChunk": 10,
+    "maxPages": 120,
+    "truncatedChunks": [],
+    "truncated": false,
+    "apiCalls": 36
+  },
+  "matchingTransfers": 147,
+  "candidates": [
+    {
+      "address": "0x0000000000000000000000000000000000000000",
+      "matches": 16,
+      "amounts": [
+        3000,
+        2000,
+        3000,
+        3000,
+        2000,
+        2000,
+        2000,
+        2000,
+        3000,
+        2000,
+        2000,
+        3000,
+        3000,
+        2000,
+        2000,
+        2000
+      ],
+      "hashes": [
+        "0x689c9adc81660c26f8183fb64262e30565216a15fd49719e7a7c69373a10143e",
+        "0x3334d079e377b56abe7d21c957ad9d88f632f80dd7f4913d7662f9e5efd3cff0",
+        "0x38b8dc45ac41ba048f5260acdc7e428c266c1336a70886ee890db732a0a427cf",
+        "0x1637f23f82665dbe61175222cde720ac900593bb656f2cb4b0c5dabc5975470e",
+        "0x1a85f5c312bcb2b2f0dd0776c6308f254c6003f42a6681a2e8dc482970f3f124",
+        "0xd8a069130f4448e91a0131fe0f0a4df3928a1ae7e0efe67cd8945e9eec65407e",
+        "0x854e353567cf0a444c245d1db23200513eac980c17af55a08bdd2fb91a872605",
+        "0x797c89aca415da5302d13f3954c2f9510ed6bf0be6633cec6d80d36452f3c6a8",
+        "0x7bd7d1fc026a180d5d1c5d3c54238147562e3d3f5d2a58bd73d028479402304e",
+        "0xba28f4b063271400628182c17f941fb7d47806d23cac10ae7528e9d518402668",
+        "0x58491539443f2ed66752c03bdd43c15b202bebd3ec4ace22e3c4df462eba9616",
+        "0x1f56bd409db1675273ad072b50754b38f421588d25cadb9a9823b21b3b0c1ff2"
+      ],
+      "firstMatch": "2026-08-21T08:15:48Z",
+      "lastMatch": "2026-08-22T02:50:07Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 0,
+        "mints": 16
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x689c9adc81660c26f8183fb64262e30565216a15fd49719e7a7c69373a10143e",
+          "blockNumber": 496798122,
+          "timestamp": "2026-08-21T08:15:48Z",
+          "from": "0x0000000000000000000000000000000000000000",
+          "to": "0x967e62e7ca920d32cc752ae098fc98aac94a8c9a",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "mint",
+          "logIndex": 13
+        },
+        {
+          "transactionHash": "0x3334d079e377b56abe7d21c957ad9d88f632f80dd7f4913d7662f9e5efd3cff0",
+          "blockNumber": 496814813,
+          "timestamp": "2026-08-21T09:25:06Z",
+          "from": "0x0000000000000000000000000000000000000000",
+          "to": "0x4aa5d695873b2de6ab0fcefb40d6c6c9f3d181e3",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "mint",
+          "logIndex": 19
+        },
+        {
+          "transactionHash": "0x3334d079e377b56abe7d21c957ad9d88f632f80dd7f4913d7662f9e5efd3cff0",
+          "blockNumber": 496814813,
+          "timestamp": "2026-08-21T09:25:06Z",
+          "from": "0x0000000000000000000000000000000000000000",
+          "to": "0xb37ed0a452ffc4ffb8feb3d23740239147855a40",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "mint",
+          "logIndex": 23
+        },
+        {
+          "transactionHash": "0x38b8dc45ac41ba048f5260acdc7e428c266c1336a70886ee890db732a0a427cf",
+          "blockNumber": 496835248,
+          "timestamp": "2026-08-21T10:50:10Z",
+          "from": "0x0000000000000000000000000000000000000000",
+          "to": "0xe980ac6352a8826c1f11b95a08df7f0e468cdce0",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "mint",
+          "logIndex": 19
+        },
+        {
+          "transactionHash": "0x1637f23f82665dbe61175222cde720ac900593bb656f2cb4b0c5dabc5975470e",
+          "blockNumber": 496836442,
+          "timestamp": "2026-08-21T10:55:08Z",
+          "from": "0x0000000000000000000000000000000000000000",
+          "to": "0xbd5f2f7201b9181f4c766240aa875a23a7849803",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "mint",
+          "logIndex": 20
+        },
+        {
+          "transactionHash": "0x1a85f5c312bcb2b2f0dd0776c6308f254c6003f42a6681a2e8dc482970f3f124",
+          "blockNumber": 496841251,
+          "timestamp": "2026-08-21T11:15:11Z",
+          "from": "0x0000000000000000000000000000000000000000",
+          "to": "0x32d8925f74fcd5fb355c69bc834a5f0145605211",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "mint",
+          "logIndex": 5
+        },
+        {
+          "transactionHash": "0x1a85f5c312bcb2b2f0dd0776c6308f254c6003f42a6681a2e8dc482970f3f124",
+          "blockNumber": 496841251,
+          "timestamp": "2026-08-21T11:15:11Z",
+          "from": "0x0000000000000000000000000000000000000000",
+          "to": "0x32d8925f74fcd5fb355c69bc834a5f0145605211",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "mint",
+          "logIndex": 6
+        },
+        {
+          "transactionHash": "0x1a85f5c312bcb2b2f0dd0776c6308f254c6003f42a6681a2e8dc482970f3f124",
+          "blockNumber": 496841251,
+          "timestamp": "2026-08-21T11:15:11Z",
+          "from": "0x0000000000000000000000000000000000000000",
+          "to": "0x32d8925f74fcd5fb355c69bc834a5f0145605211",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "mint",
+          "logIndex": 7
+        },
+        {
+          "transactionHash": "0xd8a069130f4448e91a0131fe0f0a4df3928a1ae7e0efe67cd8945e9eec65407e",
+          "blockNumber": 496860440,
+          "timestamp": "2026-08-21T12:35:05Z",
+          "from": "0x0000000000000000000000000000000000000000",
+          "to": "0x1ec7555d7e870fc16ca48e13c67e163ae08aabb5",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "mint",
+          "logIndex": 14
+        },
+        {
+          "transactionHash": "0x854e353567cf0a444c245d1db23200513eac980c17af55a08bdd2fb91a872605",
+          "blockNumber": 496905009,
+          "timestamp": "2026-08-21T15:40:13Z",
+          "from": "0x0000000000000000000000000000000000000000",
+          "to": "0x71b7d18cc1d48e2a89dad47e2d4b35a5daae2a5b",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "mint",
+          "logIndex": 20
+        },
+        {
+          "transactionHash": "0x797c89aca415da5302d13f3954c2f9510ed6bf0be6633cec6d80d36452f3c6a8",
+          "blockNumber": 496914626,
+          "timestamp": "2026-08-21T16:20:18Z",
+          "from": "0x0000000000000000000000000000000000000000",
+          "to": "0xf6da296545587ecc30fcf1b08f7a112db3b107f0",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "mint",
+          "logIndex": 11
+        },
+        {
+          "transactionHash": "0x7bd7d1fc026a180d5d1c5d3c54238147562e3d3f5d2a58bd73d028479402304e",
+          "blockNumber": 496936161,
+          "timestamp": "2026-08-21T17:50:03Z",
+          "from": "0x0000000000000000000000000000000000000000",
+          "to": "0x455a55a9b1dba878e07a8c1fe6a19dbda77d3fb8",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "mint",
+          "logIndex": 46
+        },
+        {
+          "transactionHash": "0xba28f4b063271400628182c17f941fb7d47806d23cac10ae7528e9d518402668",
+          "blockNumber": 496952830,
+          "timestamp": "2026-08-21T18:59:30Z",
+          "from": "0x0000000000000000000000000000000000000000",
+          "to": "0xbe1146e0f8bcb41eaff872d53f79da6907a86fed",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "mint",
+          "logIndex": null
+        },
+        {
+          "transactionHash": "0x58491539443f2ed66752c03bdd43c15b202bebd3ec4ace22e3c4df462eba9616",
+          "blockNumber": 496991320,
+          "timestamp": "2026-08-21T21:40:08Z",
+          "from": "0x0000000000000000000000000000000000000000",
+          "to": "0x3fe566a1c71125dee59c6bc62ef34a84a7bdac31",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "mint",
+          "logIndex": 7
+        },
+        {
+          "transactionHash": "0x1f56bd409db1675273ad072b50754b38f421588d25cadb9a9823b21b3b0c1ff2",
+          "blockNumber": 497065665,
+          "timestamp": "2026-08-22T02:50:07Z",
+          "from": "0x0000000000000000000000000000000000000000",
+          "to": "0x26538e4c4add4446c5e01d7ce40c0fc76fc123c6",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "mint",
+          "logIndex": 37
+        },
+        {
+          "transactionHash": "0x1f56bd409db1675273ad072b50754b38f421588d25cadb9a9823b21b3b0c1ff2",
+          "blockNumber": 497065665,
+          "timestamp": "2026-08-22T02:50:07Z",
+          "from": "0x0000000000000000000000000000000000000000",
+          "to": "0x26538e4c4add4446c5e01d7ce40c0fc76fc123c6",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "mint",
+          "logIndex": 38
+        }
+      ]
+    },
+    {
+      "address": "0x7868b4073a06731f408c2b416a28aee6032677e9",
+      "matches": 15,
+      "amounts": [
+        3000,
+        2000,
+        2000,
+        2000,
+        2000,
+        2000,
+        2000,
+        2000,
+        2000,
+        2000,
+        2000,
+        2000,
+        2000,
+        2000,
+        2000
+      ],
+      "hashes": [
+        "0xf862ab3ddafc9468b44e3c26de52c61d192cde3229f71056e3e0659269c14fc2",
+        "0xff385d32567734262fc39c1449dbd8468ec28234eeaa12d7d692f7962d71205e",
+        "0xf5f9cd459e9aba6bdff0554f6497c111e8d4e7f9cfb8326eb658849e052b8984",
+        "0x55c121d3838d2f7f8d5f177e78624a6f2ffc0c1fd15c7bbac8804ed3e41f8bef",
+        "0x77acbccb3690d405d7a58bf29e247945b448cce673904fdcbbb9ba5e98fa78ed",
+        "0x4b5cf4e2ed990ae6ca73c04d4b94d5443a6d43f4ed432de550fd823d15ea256c",
+        "0x68e6bc3b8aa7e4b705076162f429616d38737ba29fee796dbe0df458d80a2c8c",
+        "0x81187c7a3243c10fcf813fe42e8afa2a728d73a3404e876aca61e85d3338099c",
+        "0x841930dd4fbfd3270ac7991527b6ce88163b2a13f0409932a71fd95bc472796e",
+        "0x40708758e2d80d5b17f4ea24840f35b93c39dafec88d6e5e46c712754309fb0c",
+        "0x52971b2a520d586ebabbb593f59b0f3c0b37f9b26d31e1522468315bb00f06b9",
+        "0x9ce23dc4ed8880193095bceaa218b947f4986b2d4b6fdcbe4784154db3fd77e7",
+        "0x897d27c5b43c8a6e0446f621dde28338b3cb03250c0342f9cb0be51c8ee481f5",
+        "0x8f3268867b618444e7d59bc9760d8228d2d836251a02ee6210bd76b49c2c33ac",
+        "0x75e0bac7573c16d70ae38861803db56cac4218e91438eb0494ba9df54f343125"
+      ],
+      "firstMatch": "2026-08-21T02:22:51Z",
+      "lastMatch": "2026-08-23T20:59:55Z",
+      "movementTypes": {
+        "burns": 15,
+        "transfers": 0,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0xf862ab3ddafc9468b44e3c26de52c61d192cde3229f71056e3e0659269c14fc2",
+          "blockNumber": 496713574,
+          "timestamp": "2026-08-21T02:22:51Z",
+          "from": "0x7868b4073a06731f408c2b416a28aee6032677e9",
+          "to": "0x0000000000000000000000000000000000000000",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "burn",
+          "logIndex": 19
+        },
+        {
+          "transactionHash": "0xff385d32567734262fc39c1449dbd8468ec28234eeaa12d7d692f7962d71205e",
+          "blockNumber": 496750092,
+          "timestamp": "2026-08-21T04:55:44Z",
+          "from": "0x7868b4073a06731f408c2b416a28aee6032677e9",
+          "to": "0x0000000000000000000000000000000000000000",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "burn",
+          "logIndex": 2
+        },
+        {
+          "transactionHash": "0xf5f9cd459e9aba6bdff0554f6497c111e8d4e7f9cfb8326eb658849e052b8984",
+          "blockNumber": 496879751,
+          "timestamp": "2026-08-21T13:55:17Z",
+          "from": "0x7868b4073a06731f408c2b416a28aee6032677e9",
+          "to": "0x0000000000000000000000000000000000000000",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "burn",
+          "logIndex": 11
+        },
+        {
+          "transactionHash": "0x55c121d3838d2f7f8d5f177e78624a6f2ffc0c1fd15c7bbac8804ed3e41f8bef",
+          "blockNumber": 496885792,
+          "timestamp": "2026-08-21T14:20:14Z",
+          "from": "0x7868b4073a06731f408c2b416a28aee6032677e9",
+          "to": "0x0000000000000000000000000000000000000000",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "burn",
+          "logIndex": 5
+        },
+        {
+          "transactionHash": "0x77acbccb3690d405d7a58bf29e247945b448cce673904fdcbbb9ba5e98fa78ed",
+          "blockNumber": 496901147,
+          "timestamp": "2026-08-21T15:24:09Z",
+          "from": "0x7868b4073a06731f408c2b416a28aee6032677e9",
+          "to": "0x0000000000000000000000000000000000000000",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "burn",
+          "logIndex": 2
+        },
+        {
+          "transactionHash": "0x4b5cf4e2ed990ae6ca73c04d4b94d5443a6d43f4ed432de550fd823d15ea256c",
+          "blockNumber": 496905164,
+          "timestamp": "2026-08-21T15:40:52Z",
+          "from": "0x7868b4073a06731f408c2b416a28aee6032677e9",
+          "to": "0x0000000000000000000000000000000000000000",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "burn",
+          "logIndex": 2
+        },
+        {
+          "transactionHash": "0x68e6bc3b8aa7e4b705076162f429616d38737ba29fee796dbe0df458d80a2c8c",
+          "blockNumber": 496914247,
+          "timestamp": "2026-08-21T16:18:43Z",
+          "from": "0x7868b4073a06731f408c2b416a28aee6032677e9",
+          "to": "0x0000000000000000000000000000000000000000",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "burn",
+          "logIndex": 13
+        },
+        {
+          "transactionHash": "0x81187c7a3243c10fcf813fe42e8afa2a728d73a3404e876aca61e85d3338099c",
+          "blockNumber": 496941635,
+          "timestamp": "2026-08-21T18:12:49Z",
+          "from": "0x7868b4073a06731f408c2b416a28aee6032677e9",
+          "to": "0x0000000000000000000000000000000000000000",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "burn",
+          "logIndex": 2
+        },
+        {
+          "transactionHash": "0x841930dd4fbfd3270ac7991527b6ce88163b2a13f0409932a71fd95bc472796e",
+          "blockNumber": 497076222,
+          "timestamp": "2026-08-22T03:34:06Z",
+          "from": "0x7868b4073a06731f408c2b416a28aee6032677e9",
+          "to": "0x0000000000000000000000000000000000000000",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "burn",
+          "logIndex": 27
+        },
+        {
+          "transactionHash": "0x40708758e2d80d5b17f4ea24840f35b93c39dafec88d6e5e46c712754309fb0c",
+          "blockNumber": 497231755,
+          "timestamp": "2026-08-22T14:23:24Z",
+          "from": "0x7868b4073a06731f408c2b416a28aee6032677e9",
+          "to": "0x0000000000000000000000000000000000000000",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "burn",
+          "logIndex": 3
+        },
+        {
+          "transactionHash": "0x52971b2a520d586ebabbb593f59b0f3c0b37f9b26d31e1522468315bb00f06b9",
+          "blockNumber": 497271549,
+          "timestamp": "2026-08-22T17:09:47Z",
+          "from": "0x7868b4073a06731f408c2b416a28aee6032677e9",
+          "to": "0x0000000000000000000000000000000000000000",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "burn",
+          "logIndex": 2
+        },
+        {
+          "transactionHash": "0x9ce23dc4ed8880193095bceaa218b947f4986b2d4b6fdcbe4784154db3fd77e7",
+          "blockNumber": 497352437,
+          "timestamp": "2026-08-22T22:49:52Z",
+          "from": "0x7868b4073a06731f408c2b416a28aee6032677e9",
+          "to": "0x0000000000000000000000000000000000000000",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "burn",
+          "logIndex": 45
+        },
+        {
+          "transactionHash": "0x897d27c5b43c8a6e0446f621dde28338b3cb03250c0342f9cb0be51c8ee481f5",
+          "blockNumber": 497367349,
+          "timestamp": "2026-08-22T23:52:54Z",
+          "from": "0x7868b4073a06731f408c2b416a28aee6032677e9",
+          "to": "0x0000000000000000000000000000000000000000",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "burn",
+          "logIndex": 4
+        },
+        {
+          "transactionHash": "0x8f3268867b618444e7d59bc9760d8228d2d836251a02ee6210bd76b49c2c33ac",
+          "blockNumber": 497575880,
+          "timestamp": "2026-08-23T14:29:55Z",
+          "from": "0x7868b4073a06731f408c2b416a28aee6032677e9",
+          "to": "0x0000000000000000000000000000000000000000",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "burn",
+          "logIndex": 8
+        },
+        {
+          "transactionHash": "0x75e0bac7573c16d70ae38861803db56cac4218e91438eb0494ba9df54f343125",
+          "blockNumber": 497668908,
+          "timestamp": "2026-08-23T20:59:55Z",
+          "from": "0x7868b4073a06731f408c2b416a28aee6032677e9",
+          "to": "0x0000000000000000000000000000000000000000",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "burn",
+          "logIndex": 2
+        }
+      ]
+    },
+    {
+      "address": "0x6d8c04be55fb0f752c30e922aa90a497df73b04a",
+      "matches": 7,
+      "amounts": [
+        2000,
+        3000,
+        3000,
+        2000,
+        2000,
+        3000,
+        2000
+      ],
+      "hashes": [
+        "0x93d64df2dfc2ae07446d1738940dd18ede1217fa7d92502300101356f2ac24fd",
+        "0x700361e4e1d30fecb1f87796a61b2d51589da25b68e1a750fc0526e3c0e48b6d",
+        "0x314b2f3d94894f5c3393b888f32d4ffa537c0c98ec83eec9b61eb9a78eebd7ba",
+        "0x7eeac78068d55d3e19123effa9aa7e9d49d8c8cde29e2aa66f82046f5aa13b4b",
+        "0x28f0cdd41c8b0112ed1ce2f0c6044b5318e5b9ae019ea2412c3ac1e776e01375",
+        "0xa8fddeea4a5e055f5fe8472ad09bfee7ad664cff86beb69d3ba81cb3aa78b0ca",
+        "0xe0f804136ecdc9d23c964f1366a49a315e06c0f54b98f16efe2cdf4ea2448c41"
+      ],
+      "firstMatch": "2026-08-21T09:25:39Z",
+      "lastMatch": "2026-08-21T21:40:35Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 7,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x93d64df2dfc2ae07446d1738940dd18ede1217fa7d92502300101356f2ac24fd",
+          "blockNumber": 496814947,
+          "timestamp": "2026-08-21T09:25:39Z",
+          "from": "0x6d8c04be55fb0f752c30e922aa90a497df73b04a",
+          "to": "0x82feb4475516133f7ee64251f15e25e01a489966",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 21
+        },
+        {
+          "transactionHash": "0x700361e4e1d30fecb1f87796a61b2d51589da25b68e1a750fc0526e3c0e48b6d",
+          "blockNumber": 496835394,
+          "timestamp": "2026-08-21T10:50:46Z",
+          "from": "0x6d8c04be55fb0f752c30e922aa90a497df73b04a",
+          "to": "0xa116aa5ed54b7127f663a0199f1e0333f9da74cb",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 1
+        },
+        {
+          "transactionHash": "0x314b2f3d94894f5c3393b888f32d4ffa537c0c98ec83eec9b61eb9a78eebd7ba",
+          "blockNumber": 496860571,
+          "timestamp": "2026-08-21T12:35:37Z",
+          "from": "0x6d8c04be55fb0f752c30e922aa90a497df73b04a",
+          "to": "0x4ef97a4bbb0dba0a5aeb005f199e207241e2bda6",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 31
+        },
+        {
+          "transactionHash": "0x7eeac78068d55d3e19123effa9aa7e9d49d8c8cde29e2aa66f82046f5aa13b4b",
+          "blockNumber": 496905139,
+          "timestamp": "2026-08-21T15:40:46Z",
+          "from": "0x6d8c04be55fb0f752c30e922aa90a497df73b04a",
+          "to": "0x85b4414d8a45b34fa98cc8145c6403e9f24fa750",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 5
+        },
+        {
+          "transactionHash": "0x28f0cdd41c8b0112ed1ce2f0c6044b5318e5b9ae019ea2412c3ac1e776e01375",
+          "blockNumber": 496914818,
+          "timestamp": "2026-08-21T16:21:06Z",
+          "from": "0x6d8c04be55fb0f752c30e922aa90a497df73b04a",
+          "to": "0x9033941271b4883565ecc3af4ee0319ce1b8d9a0",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 10
+        },
+        {
+          "transactionHash": "0xa8fddeea4a5e055f5fe8472ad09bfee7ad664cff86beb69d3ba81cb3aa78b0ca",
+          "blockNumber": 496936285,
+          "timestamp": "2026-08-21T17:50:34Z",
+          "from": "0x6d8c04be55fb0f752c30e922aa90a497df73b04a",
+          "to": "0x1ae3e1ba75d33d5b5d8c8d57c748d287d7a51c5a",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 9
+        },
+        {
+          "transactionHash": "0xe0f804136ecdc9d23c964f1366a49a315e06c0f54b98f16efe2cdf4ea2448c41",
+          "blockNumber": 496991427,
+          "timestamp": "2026-08-21T21:40:35Z",
+          "from": "0x6d8c04be55fb0f752c30e922aa90a497df73b04a",
+          "to": "0x37e93e99dbd77a0fba7e066fb9894097a4341278",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 43
+        }
+      ]
+    },
+    {
+      "address": "0x7f452224633654653f37e5e5ce2f0f01d3623c91",
+      "matches": 4,
+      "amounts": [
+        2000,
+        2000,
+        2000,
+        2000
+      ],
+      "hashes": [
+        "0x998e69697b1075fe11d86ddf0f96638663d6e56a70a36160b250da12cb25c6ee",
+        "0xd28f121d275bfb932b415d1b9978e6e1c6a8f16d2f46af94d1931f338693a984",
+        "0xe71b41a4715de7f67cf13a2de4aa9e65be3040064fe3bd13a063f0745df4425a",
+        "0xde0ed82995cee3f359a5fe647f75fcfdb3309b4404d5601b234c1bc01aed12b8"
+      ],
+      "firstMatch": "2026-08-21T10:55:01Z",
+      "lastMatch": "2026-08-21T11:12:03Z",
+      "movementTypes": {
+        "burns": 4,
+        "transfers": 0,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x998e69697b1075fe11d86ddf0f96638663d6e56a70a36160b250da12cb25c6ee",
+          "blockNumber": 496836415,
+          "timestamp": "2026-08-21T10:55:01Z",
+          "from": "0x7f452224633654653f37e5e5ce2f0f01d3623c91",
+          "to": "0x0000000000000000000000000000000000000000",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "burn",
+          "logIndex": 11
+        },
+        {
+          "transactionHash": "0xd28f121d275bfb932b415d1b9978e6e1c6a8f16d2f46af94d1931f338693a984",
+          "blockNumber": 496840472,
+          "timestamp": "2026-08-21T11:11:56Z",
+          "from": "0x7f452224633654653f37e5e5ce2f0f01d3623c91",
+          "to": "0x0000000000000000000000000000000000000000",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "burn",
+          "logIndex": 2
+        },
+        {
+          "transactionHash": "0xe71b41a4715de7f67cf13a2de4aa9e65be3040064fe3bd13a063f0745df4425a",
+          "blockNumber": 496840487,
+          "timestamp": "2026-08-21T11:12:00Z",
+          "from": "0x7f452224633654653f37e5e5ce2f0f01d3623c91",
+          "to": "0x0000000000000000000000000000000000000000",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "burn",
+          "logIndex": 1
+        },
+        {
+          "transactionHash": "0xde0ed82995cee3f359a5fe647f75fcfdb3309b4404d5601b234c1bc01aed12b8",
+          "blockNumber": 496840502,
+          "timestamp": "2026-08-21T11:12:03Z",
+          "from": "0x7f452224633654653f37e5e5ce2f0f01d3623c91",
+          "to": "0x0000000000000000000000000000000000000000",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "burn",
+          "logIndex": null
+        }
+      ]
+    },
+    {
+      "address": "0x7c85c32982e704d63b0ff39828104244c4b88549",
+      "matches": 2,
+      "amounts": [
+        2000,
+        3000
+      ],
+      "hashes": [
+        "0x88d8d795d615aa6d4c429bb43bbadbef36e414c1b5f1cac1ba3bafae32ead0de"
+      ],
+      "firstMatch": "2026-08-21T09:24:54Z",
+      "lastMatch": "2026-08-21T09:24:54Z",
+      "movementTypes": {
+        "burns": 2,
+        "transfers": 0,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x88d8d795d615aa6d4c429bb43bbadbef36e414c1b5f1cac1ba3bafae32ead0de",
+          "blockNumber": 496814765,
+          "timestamp": "2026-08-21T09:24:54Z",
+          "from": "0x7c85c32982e704d63b0ff39828104244c4b88549",
+          "to": "0x0000000000000000000000000000000000000000",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "burn",
+          "logIndex": null
+        },
+        {
+          "transactionHash": "0x88d8d795d615aa6d4c429bb43bbadbef36e414c1b5f1cac1ba3bafae32ead0de",
+          "blockNumber": 496814765,
+          "timestamp": "2026-08-21T09:24:54Z",
+          "from": "0x7c85c32982e704d63b0ff39828104244c4b88549",
+          "to": "0x0000000000000000000000000000000000000000",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "burn",
+          "logIndex": 8
+        }
+      ]
+    },
+    {
+      "address": "0x328db6099416fd8010caa4b09d0283004c874653",
+      "matches": 2,
+      "amounts": [
+        3000,
+        2000
+      ],
+      "hashes": [
+        "0x82af6bec21d806038aa4baaffa23328763e377a5984e37a0135ae6d8cf96f2e7",
+        "0xfa77e3b493c8eb94343f9dd834074abad9509c94e1a0b771a92ea89113625816"
+      ],
+      "firstMatch": "2026-08-21T09:25:39Z",
+      "lastMatch": "2026-08-21T12:00:57Z",
+      "movementTypes": {
+        "burns": 2,
+        "transfers": 0,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x82af6bec21d806038aa4baaffa23328763e377a5984e37a0135ae6d8cf96f2e7",
+          "blockNumber": 496814947,
+          "timestamp": "2026-08-21T09:25:39Z",
+          "from": "0x328db6099416fd8010caa4b09d0283004c874653",
+          "to": "0x0000000000000000000000000000000000000000",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "burn",
+          "logIndex": 7
+        },
+        {
+          "transactionHash": "0xfa77e3b493c8eb94343f9dd834074abad9509c94e1a0b771a92ea89113625816",
+          "blockNumber": 496852249,
+          "timestamp": "2026-08-21T12:00:57Z",
+          "from": "0x328db6099416fd8010caa4b09d0283004c874653",
+          "to": "0x0000000000000000000000000000000000000000",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "burn",
+          "logIndex": 17
+        }
+      ]
+    },
+    {
+      "address": "0xd437f5eaf9c42431adefa777a3a0a8771b334930",
+      "matches": 2,
+      "amounts": [
+        2000,
+        2000
+      ],
+      "hashes": [
+        "0xbcb6739b583f39ac845029bd733640a5a835c89036a9d1419d83e8b005d2b319",
+        "0x267514f225c63ad253341db97231f08fe220a0a22d8ef2c1c77ca0bd2f81755e"
+      ],
+      "firstMatch": "2026-08-21T13:24:02Z",
+      "lastMatch": "2026-08-21T13:27:24Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 2,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0xbcb6739b583f39ac845029bd733640a5a835c89036a9d1419d83e8b005d2b319",
+          "blockNumber": 496872194,
+          "timestamp": "2026-08-21T13:24:02Z",
+          "from": "0xd437f5eaf9c42431adefa777a3a0a8771b334930",
+          "to": "0x50c66d637885b4d1f8f99bdbdf1601680e594e21",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": null
+        },
+        {
+          "transactionHash": "0x267514f225c63ad253341db97231f08fe220a0a22d8ef2c1c77ca0bd2f81755e",
+          "blockNumber": 496873001,
+          "timestamp": "2026-08-21T13:27:24Z",
+          "from": "0xd437f5eaf9c42431adefa777a3a0a8771b334930",
+          "to": "0x50c66d637885b4d1f8f99bdbdf1601680e594e21",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 3
+        }
+      ]
+    },
+    {
+      "address": "0x50c66d637885b4d1f8f99bdbdf1601680e594e21",
+      "matches": 2,
+      "amounts": [
+        2000,
+        2000
+      ],
+      "hashes": [
+        "0xbcb6739b583f39ac845029bd733640a5a835c89036a9d1419d83e8b005d2b319",
+        "0x267514f225c63ad253341db97231f08fe220a0a22d8ef2c1c77ca0bd2f81755e"
+      ],
+      "firstMatch": "2026-08-21T13:24:02Z",
+      "lastMatch": "2026-08-21T13:27:24Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 2,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0xbcb6739b583f39ac845029bd733640a5a835c89036a9d1419d83e8b005d2b319",
+          "blockNumber": 496872194,
+          "timestamp": "2026-08-21T13:24:02Z",
+          "from": "0x50c66d637885b4d1f8f99bdbdf1601680e594e21",
+          "to": "0xd20efbe22d4442a81aeb79b72a8b28f8ea9e34c2",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 1
+        },
+        {
+          "transactionHash": "0x267514f225c63ad253341db97231f08fe220a0a22d8ef2c1c77ca0bd2f81755e",
+          "blockNumber": 496873001,
+          "timestamp": "2026-08-21T13:27:24Z",
+          "from": "0x50c66d637885b4d1f8f99bdbdf1601680e594e21",
+          "to": "0xd20efbe22d4442a81aeb79b72a8b28f8ea9e34c2",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 4
+        }
+      ]
+    },
+    {
+      "address": "0xdd520abda72e2209d6084990a50a59d5d0e2c907",
+      "matches": 2,
+      "amounts": [
+        2000,
+        2000
+      ],
+      "hashes": [
+        "0x3c15fc8260935645f6c50696d2f135d41789c9e8671cc0b9173dd180f25f39c6",
+        "0xda453194f7c59d55c00cebba41e8607b58ed21dbe3b9a223b00e1ecc183748fa"
+      ],
+      "firstMatch": "2026-08-21T14:38:41Z",
+      "lastMatch": "2026-08-21T14:39:16Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 2,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x3c15fc8260935645f6c50696d2f135d41789c9e8671cc0b9173dd180f25f39c6",
+          "blockNumber": 496890228,
+          "timestamp": "2026-08-21T14:38:41Z",
+          "from": "0xdd520abda72e2209d6084990a50a59d5d0e2c907",
+          "to": "0x1b34bb2e4c87a5f0c5f8a4ae10c5ebadf12c936f",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 8
+        },
+        {
+          "transactionHash": "0xda453194f7c59d55c00cebba41e8607b58ed21dbe3b9a223b00e1ecc183748fa",
+          "blockNumber": 496890368,
+          "timestamp": "2026-08-21T14:39:16Z",
+          "from": "0xdd520abda72e2209d6084990a50a59d5d0e2c907",
+          "to": "0xa46949cd2da7e71eb4561cb54d7f88ec0a5ff2ac",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 3
+        }
+      ]
+    },
+    {
+      "address": "0x11879c38d7889f98d07957a46ad4f2e398835915",
+      "matches": 2,
+      "amounts": [
+        2000,
+        2000
+      ],
+      "hashes": [
+        "0xbbfaad7f4b4faa109185013117c6ff10b144492e09f03121eae07c26e8fa820e",
+        "0x94b17ee2f70e68871052d882c2b8eca5ba8a18c33f0f1d7400968c8378080a7d"
+      ],
+      "firstMatch": "2026-08-21T15:37:17Z",
+      "lastMatch": "2026-08-21T16:20:04Z",
+      "movementTypes": {
+        "burns": 2,
+        "transfers": 0,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0xbbfaad7f4b4faa109185013117c6ff10b144492e09f03121eae07c26e8fa820e",
+          "blockNumber": 496904304,
+          "timestamp": "2026-08-21T15:37:17Z",
+          "from": "0x11879c38d7889f98d07957a46ad4f2e398835915",
+          "to": "0x0000000000000000000000000000000000000000",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "burn",
+          "logIndex": 4
+        },
+        {
+          "transactionHash": "0x94b17ee2f70e68871052d882c2b8eca5ba8a18c33f0f1d7400968c8378080a7d",
+          "blockNumber": 496914573,
+          "timestamp": "2026-08-21T16:20:04Z",
+          "from": "0x11879c38d7889f98d07957a46ad4f2e398835915",
+          "to": "0x0000000000000000000000000000000000000000",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "burn",
+          "logIndex": 37
+        }
+      ]
+    },
+    {
+      "address": "0x271b08792118aacb2ab38447b458b5bd1f743435",
+      "matches": 2,
+      "amounts": [
+        2000,
+        2000
+      ],
+      "hashes": [
+        "0x81187c7a3243c10fcf813fe42e8afa2a728d73a3404e876aca61e85d3338099c",
+        "0x9ce23dc4ed8880193095bceaa218b947f4986b2d4b6fdcbe4784154db3fd77e7"
+      ],
+      "firstMatch": "2026-08-21T18:12:49Z",
+      "lastMatch": "2026-08-22T22:49:52Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 2,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x81187c7a3243c10fcf813fe42e8afa2a728d73a3404e876aca61e85d3338099c",
+          "blockNumber": 496941635,
+          "timestamp": "2026-08-21T18:12:49Z",
+          "from": "0x271b08792118aacb2ab38447b458b5bd1f743435",
+          "to": "0x641a92bf22167858a67d8a8be7dcdb3f3dfca8b7",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": null
+        },
+        {
+          "transactionHash": "0x9ce23dc4ed8880193095bceaa218b947f4986b2d4b6fdcbe4784154db3fd77e7",
+          "blockNumber": 497352437,
+          "timestamp": "2026-08-22T22:49:52Z",
+          "from": "0x271b08792118aacb2ab38447b458b5bd1f743435",
+          "to": "0x79f45eda7c59f3eb2a8c824014b9732516074c3c",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 43
+        }
+      ]
+    },
+    {
+      "address": "0x49697fd82eef1d038f4d24bf78a558567a5c68e3",
+      "matches": 2,
+      "amounts": [
+        2000,
+        3000
+      ],
+      "hashes": [
+        "0x04bde87d5cfd7988c49b1ba019539166794716e56a236de6aa0181a40ff33b32",
+        "0x15e367f7b402e4d75083840a36c81bfe885fb6656fcaceca5720369abd3a0605"
+      ],
+      "firstMatch": "2026-08-21T22:29:35Z",
+      "lastMatch": "2026-08-22T12:21:57Z",
+      "movementTypes": {
+        "burns": 2,
+        "transfers": 0,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x04bde87d5cfd7988c49b1ba019539166794716e56a236de6aa0181a40ff33b32",
+          "blockNumber": 497003214,
+          "timestamp": "2026-08-21T22:29:35Z",
+          "from": "0x49697fd82eef1d038f4d24bf78a558567a5c68e3",
+          "to": "0x0000000000000000000000000000000000000000",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "burn",
+          "logIndex": 8
+        },
+        {
+          "transactionHash": "0x15e367f7b402e4d75083840a36c81bfe885fb6656fcaceca5720369abd3a0605",
+          "blockNumber": 497202679,
+          "timestamp": "2026-08-22T12:21:57Z",
+          "from": "0x49697fd82eef1d038f4d24bf78a558567a5c68e3",
+          "to": "0x0000000000000000000000000000000000000000",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "burn",
+          "logIndex": 2
+        }
+      ]
+    },
+    {
+      "address": "0x6f7a634a9d5f47a9da491a095f1c8375dc9495c1",
+      "matches": 2,
+      "amounts": [
+        2000,
+        2000
+      ],
+      "hashes": [
+        "0x01d46830308bb883776c70cb0cfedc0fc68679b39a7261bd40a0553701e331f7"
+      ],
+      "firstMatch": "2026-08-22T02:47:32Z",
+      "lastMatch": "2026-08-22T02:47:32Z",
+      "movementTypes": {
+        "burns": 2,
+        "transfers": 0,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x01d46830308bb883776c70cb0cfedc0fc68679b39a7261bd40a0553701e331f7",
+          "blockNumber": 497065046,
+          "timestamp": "2026-08-22T02:47:32Z",
+          "from": "0x6f7a634a9d5f47a9da491a095f1c8375dc9495c1",
+          "to": "0x0000000000000000000000000000000000000000",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "burn",
+          "logIndex": 34
+        },
+        {
+          "transactionHash": "0x01d46830308bb883776c70cb0cfedc0fc68679b39a7261bd40a0553701e331f7",
+          "blockNumber": 497065046,
+          "timestamp": "2026-08-22T02:47:32Z",
+          "from": "0x6f7a634a9d5f47a9da491a095f1c8375dc9495c1",
+          "to": "0x0000000000000000000000000000000000000000",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "burn",
+          "logIndex": 36
+        }
+      ]
+    },
+    {
+      "address": "0xa692aa90442e4fbe7f594e2a9f1248f4c81c70ed",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x335fa98bbaa42e0613c99e54a4ef3deca2ad9460b206677c3ab08a1a169ea255"
+      ],
+      "firstMatch": "2026-08-21T01:59:04Z",
+      "lastMatch": "2026-08-21T01:59:04Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x335fa98bbaa42e0613c99e54a4ef3deca2ad9460b206677c3ab08a1a169ea255",
+          "blockNumber": 496707855,
+          "timestamp": "2026-08-21T01:59:04Z",
+          "from": "0xa692aa90442e4fbe7f594e2a9f1248f4c81c70ed",
+          "to": "0xbf17e18e66bdb9ef17cc0769db7245e5855e90d0",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 60
+        }
+      ]
+    },
+    {
+      "address": "0xbf17e18e66bdb9ef17cc0769db7245e5855e90d0",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x335fa98bbaa42e0613c99e54a4ef3deca2ad9460b206677c3ab08a1a169ea255"
+      ],
+      "firstMatch": "2026-08-21T01:59:04Z",
+      "lastMatch": "2026-08-21T01:59:04Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x335fa98bbaa42e0613c99e54a4ef3deca2ad9460b206677c3ab08a1a169ea255",
+          "blockNumber": 496707855,
+          "timestamp": "2026-08-21T01:59:04Z",
+          "from": "0xbf17e18e66bdb9ef17cc0769db7245e5855e90d0",
+          "to": "0x563f385213142987266f07ced835e96ddd1e1ad0",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 61
+        }
+      ]
+    },
+    {
+      "address": "0xa74b6b1619522a8097e5c134c92afcc7701c7065",
+      "matches": 1,
+      "amounts": [
+        3000
+      ],
+      "hashes": [
+        "0xf862ab3ddafc9468b44e3c26de52c61d192cde3229f71056e3e0659269c14fc2"
+      ],
+      "firstMatch": "2026-08-21T02:22:51Z",
+      "lastMatch": "2026-08-21T02:22:51Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0xf862ab3ddafc9468b44e3c26de52c61d192cde3229f71056e3e0659269c14fc2",
+          "blockNumber": 496713574,
+          "timestamp": "2026-08-21T02:22:51Z",
+          "from": "0xa74b6b1619522a8097e5c134c92afcc7701c7065",
+          "to": "0xcae3cdd8139e922e484ff9b2fcf6494818d980f5",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 17
+        }
+      ]
+    },
+    {
+      "address": "0xcae3cdd8139e922e484ff9b2fcf6494818d980f5",
+      "matches": 1,
+      "amounts": [
+        3000
+      ],
+      "hashes": [
+        "0xf862ab3ddafc9468b44e3c26de52c61d192cde3229f71056e3e0659269c14fc2"
+      ],
+      "firstMatch": "2026-08-21T02:22:51Z",
+      "lastMatch": "2026-08-21T02:22:51Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0xf862ab3ddafc9468b44e3c26de52c61d192cde3229f71056e3e0659269c14fc2",
+          "blockNumber": 496713574,
+          "timestamp": "2026-08-21T02:22:51Z",
+          "from": "0xcae3cdd8139e922e484ff9b2fcf6494818d980f5",
+          "to": "0x7868b4073a06731f408c2b416a28aee6032677e9",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 18
+        }
+      ]
+    },
+    {
+      "address": "0x5adb628f51d66d66b73ccf16a0e72cfddb05faa3",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0xff385d32567734262fc39c1449dbd8468ec28234eeaa12d7d692f7962d71205e"
+      ],
+      "firstMatch": "2026-08-21T04:55:44Z",
+      "lastMatch": "2026-08-21T04:55:44Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0xff385d32567734262fc39c1449dbd8468ec28234eeaa12d7d692f7962d71205e",
+          "blockNumber": 496750092,
+          "timestamp": "2026-08-21T04:55:44Z",
+          "from": "0x5adb628f51d66d66b73ccf16a0e72cfddb05faa3",
+          "to": "0x4ec7fc17c33d906e6c6b90236ccfd127b4c4ac50",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": null
+        }
+      ]
+    },
+    {
+      "address": "0x4ec7fc17c33d906e6c6b90236ccfd127b4c4ac50",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0xff385d32567734262fc39c1449dbd8468ec28234eeaa12d7d692f7962d71205e"
+      ],
+      "firstMatch": "2026-08-21T04:55:44Z",
+      "lastMatch": "2026-08-21T04:55:44Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0xff385d32567734262fc39c1449dbd8468ec28234eeaa12d7d692f7962d71205e",
+          "blockNumber": 496750092,
+          "timestamp": "2026-08-21T04:55:44Z",
+          "from": "0x4ec7fc17c33d906e6c6b90236ccfd127b4c4ac50",
+          "to": "0x7868b4073a06731f408c2b416a28aee6032677e9",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 1
+        }
+      ]
+    },
+    {
+      "address": "0x5a66921ce6fcaaf2fad1ed981e828555fe52a189",
+      "matches": 1,
+      "amounts": [
+        3000
+      ],
+      "hashes": [
+        "0x2980b41fff50f626a315b9acd7ba77c4fd99c3fe4730e7a6ed1cf3a45541dd1e"
+      ],
+      "firstMatch": "2026-08-21T08:55:09Z",
+      "lastMatch": "2026-08-21T08:55:09Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x2980b41fff50f626a315b9acd7ba77c4fd99c3fe4730e7a6ed1cf3a45541dd1e",
+          "blockNumber": 496807596,
+          "timestamp": "2026-08-21T08:55:09Z",
+          "from": "0x5a66921ce6fcaaf2fad1ed981e828555fe52a189",
+          "to": "0xefa45caaaca803b47d776561274ef4b2369e0d8f",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 31
+        }
+      ]
+    },
+    {
+      "address": "0xefa45caaaca803b47d776561274ef4b2369e0d8f",
+      "matches": 1,
+      "amounts": [
+        3000
+      ],
+      "hashes": [
+        "0x2980b41fff50f626a315b9acd7ba77c4fd99c3fe4730e7a6ed1cf3a45541dd1e"
+      ],
+      "firstMatch": "2026-08-21T08:55:09Z",
+      "lastMatch": "2026-08-21T08:55:09Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x2980b41fff50f626a315b9acd7ba77c4fd99c3fe4730e7a6ed1cf3a45541dd1e",
+          "blockNumber": 496807596,
+          "timestamp": "2026-08-21T08:55:09Z",
+          "from": "0xefa45caaaca803b47d776561274ef4b2369e0d8f",
+          "to": "0xd7b44cb976fae38b6660db84de184cb1370d19d7",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 32
+        }
+      ]
+    },
+    {
+      "address": "0xd20efbe22d4442a81aeb79b72a8b28f8ea9e34c2",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x8c1832b81ad73d6ea03cc059899e92b1a00710f613a3742d82e655e6bf5586e6"
+      ],
+      "firstMatch": "2026-08-21T09:10:55Z",
+      "lastMatch": "2026-08-21T09:10:55Z",
+      "movementTypes": {
+        "burns": 1,
+        "transfers": 0,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x8c1832b81ad73d6ea03cc059899e92b1a00710f613a3742d82e655e6bf5586e6",
+          "blockNumber": 496811389,
+          "timestamp": "2026-08-21T09:10:55Z",
+          "from": "0xd20efbe22d4442a81aeb79b72a8b28f8ea9e34c2",
+          "to": "0x0000000000000000000000000000000000000000",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "burn",
+          "logIndex": 2
+        }
+      ]
+    },
+    {
+      "address": "0xb37ed0a452ffc4ffb8feb3d23740239147855a40",
+      "matches": 1,
+      "amounts": [
+        3000
+      ],
+      "hashes": [
+        "0x82af6bec21d806038aa4baaffa23328763e377a5984e37a0135ae6d8cf96f2e7"
+      ],
+      "firstMatch": "2026-08-21T09:25:39Z",
+      "lastMatch": "2026-08-21T09:25:39Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x82af6bec21d806038aa4baaffa23328763e377a5984e37a0135ae6d8cf96f2e7",
+          "blockNumber": 496814947,
+          "timestamp": "2026-08-21T09:25:39Z",
+          "from": "0xb37ed0a452ffc4ffb8feb3d23740239147855a40",
+          "to": "0x328db6099416fd8010caa4b09d0283004c874653",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 6
+        }
+      ]
+    },
+    {
+      "address": "0x4aa5d695873b2de6ab0fcefb40d6c6c9f3d181e3",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x93d64df2dfc2ae07446d1738940dd18ede1217fa7d92502300101356f2ac24fd"
+      ],
+      "firstMatch": "2026-08-21T09:25:39Z",
+      "lastMatch": "2026-08-21T09:25:39Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x93d64df2dfc2ae07446d1738940dd18ede1217fa7d92502300101356f2ac24fd",
+          "blockNumber": 496814947,
+          "timestamp": "2026-08-21T09:25:39Z",
+          "from": "0x4aa5d695873b2de6ab0fcefb40d6c6c9f3d181e3",
+          "to": "0x6d8c04be55fb0f752c30e922aa90a497df73b04a",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 20
+        }
+      ]
+    },
+    {
+      "address": "0x19ff00e5e52b2e576874d010801246cb686d48b6",
+      "matches": 1,
+      "amounts": [
+        3000
+      ],
+      "hashes": [
+        "0x48a8ee314abcbf0ad884af95e4d7084be0f7fd27e6147829e447520ce6197282"
+      ],
+      "firstMatch": "2026-08-21T10:23:41Z",
+      "lastMatch": "2026-08-21T10:23:41Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x48a8ee314abcbf0ad884af95e4d7084be0f7fd27e6147829e447520ce6197282",
+          "blockNumber": 496828890,
+          "timestamp": "2026-08-21T10:23:41Z",
+          "from": "0x19ff00e5e52b2e576874d010801246cb686d48b6",
+          "to": "0x3e0fb6c00797d8f23dc98c88d6742468d9d79129",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 9
+        }
+      ]
+    },
+    {
+      "address": "0x3e0fb6c00797d8f23dc98c88d6742468d9d79129",
+      "matches": 1,
+      "amounts": [
+        3000
+      ],
+      "hashes": [
+        "0x48a8ee314abcbf0ad884af95e4d7084be0f7fd27e6147829e447520ce6197282"
+      ],
+      "firstMatch": "2026-08-21T10:23:41Z",
+      "lastMatch": "2026-08-21T10:23:41Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x48a8ee314abcbf0ad884af95e4d7084be0f7fd27e6147829e447520ce6197282",
+          "blockNumber": 496828890,
+          "timestamp": "2026-08-21T10:23:41Z",
+          "from": "0x3e0fb6c00797d8f23dc98c88d6742468d9d79129",
+          "to": "0x563f385213142987266f07ced835e96ddd1e1ad0",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 10
+        }
+      ]
+    },
+    {
+      "address": "0x886e9fdb36c444b72a5eb973853e46866a01f896",
+      "matches": 1,
+      "amounts": [
+        3000
+      ],
+      "hashes": [
+        "0x773d7b1d08a2e3e99e9823f416dc835461add2bc87de561b9c99f29f73f03680"
+      ],
+      "firstMatch": "2026-08-21T10:49:14Z",
+      "lastMatch": "2026-08-21T10:49:14Z",
+      "movementTypes": {
+        "burns": 1,
+        "transfers": 0,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x773d7b1d08a2e3e99e9823f416dc835461add2bc87de561b9c99f29f73f03680",
+          "blockNumber": 496835023,
+          "timestamp": "2026-08-21T10:49:14Z",
+          "from": "0x886e9fdb36c444b72a5eb973853e46866a01f896",
+          "to": "0x0000000000000000000000000000000000000000",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "burn",
+          "logIndex": 3
+        }
+      ]
+    },
+    {
+      "address": "0xe980ac6352a8826c1f11b95a08df7f0e468cdce0",
+      "matches": 1,
+      "amounts": [
+        3000
+      ],
+      "hashes": [
+        "0x700361e4e1d30fecb1f87796a61b2d51589da25b68e1a750fc0526e3c0e48b6d"
+      ],
+      "firstMatch": "2026-08-21T10:50:46Z",
+      "lastMatch": "2026-08-21T10:50:46Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x700361e4e1d30fecb1f87796a61b2d51589da25b68e1a750fc0526e3c0e48b6d",
+          "blockNumber": 496835394,
+          "timestamp": "2026-08-21T10:50:46Z",
+          "from": "0xe980ac6352a8826c1f11b95a08df7f0e468cdce0",
+          "to": "0x6d8c04be55fb0f752c30e922aa90a497df73b04a",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": null
+        }
+      ]
+    },
+    {
+      "address": "0x82feb4475516133f7ee64251f15e25e01a489966",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0xfa77e3b493c8eb94343f9dd834074abad9509c94e1a0b771a92ea89113625816"
+      ],
+      "firstMatch": "2026-08-21T12:00:57Z",
+      "lastMatch": "2026-08-21T12:00:57Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0xfa77e3b493c8eb94343f9dd834074abad9509c94e1a0b771a92ea89113625816",
+          "blockNumber": 496852249,
+          "timestamp": "2026-08-21T12:00:57Z",
+          "from": "0x82feb4475516133f7ee64251f15e25e01a489966",
+          "to": "0x653b0ebc3af91456eb4bd082570368d6d81b7e34",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 15
+        }
+      ]
+    },
+    {
+      "address": "0x653b0ebc3af91456eb4bd082570368d6d81b7e34",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0xfa77e3b493c8eb94343f9dd834074abad9509c94e1a0b771a92ea89113625816"
+      ],
+      "firstMatch": "2026-08-21T12:00:57Z",
+      "lastMatch": "2026-08-21T12:00:57Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0xfa77e3b493c8eb94343f9dd834074abad9509c94e1a0b771a92ea89113625816",
+          "blockNumber": 496852249,
+          "timestamp": "2026-08-21T12:00:57Z",
+          "from": "0x653b0ebc3af91456eb4bd082570368d6d81b7e34",
+          "to": "0x328db6099416fd8010caa4b09d0283004c874653",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 16
+        }
+      ]
+    },
+    {
+      "address": "0x652e6cd9b9362a81d0fd59f5056a9c0844502519",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x2927e691fc31c4b4c440108f03df583b5042153a2b3f5e6305e82c1d4fa9a171"
+      ],
+      "firstMatch": "2026-08-21T12:02:40Z",
+      "lastMatch": "2026-08-21T12:02:40Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x2927e691fc31c4b4c440108f03df583b5042153a2b3f5e6305e82c1d4fa9a171",
+          "blockNumber": 496852662,
+          "timestamp": "2026-08-21T12:02:40Z",
+          "from": "0x652e6cd9b9362a81d0fd59f5056a9c0844502519",
+          "to": "0xfcf29299508be4b3b96b68fd033137adcc8ac0ad",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": null
+        }
+      ]
+    },
+    {
+      "address": "0xfcf29299508be4b3b96b68fd033137adcc8ac0ad",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x2927e691fc31c4b4c440108f03df583b5042153a2b3f5e6305e82c1d4fa9a171"
+      ],
+      "firstMatch": "2026-08-21T12:02:40Z",
+      "lastMatch": "2026-08-21T12:02:40Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x2927e691fc31c4b4c440108f03df583b5042153a2b3f5e6305e82c1d4fa9a171",
+          "blockNumber": 496852662,
+          "timestamp": "2026-08-21T12:02:40Z",
+          "from": "0xfcf29299508be4b3b96b68fd033137adcc8ac0ad",
+          "to": "0x563f385213142987266f07ced835e96ddd1e1ad0",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 1
+        }
+      ]
+    },
+    {
+      "address": "0xd615b4fa6c05295f95f191c0da83aa296c98ff1a",
+      "matches": 1,
+      "amounts": [
+        3000
+      ],
+      "hashes": [
+        "0xa229e37b1d192d781446d262eeddacaafd62160ac3e937c5c9eea1ac8770e9f6"
+      ],
+      "firstMatch": "2026-08-21T12:34:48Z",
+      "lastMatch": "2026-08-21T12:34:48Z",
+      "movementTypes": {
+        "burns": 1,
+        "transfers": 0,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0xa229e37b1d192d781446d262eeddacaafd62160ac3e937c5c9eea1ac8770e9f6",
+          "blockNumber": 496860372,
+          "timestamp": "2026-08-21T12:34:48Z",
+          "from": "0xd615b4fa6c05295f95f191c0da83aa296c98ff1a",
+          "to": "0x0000000000000000000000000000000000000000",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "burn",
+          "logIndex": 21
+        }
+      ]
+    },
+    {
+      "address": "0x1ec7555d7e870fc16ca48e13c67e163ae08aabb5",
+      "matches": 1,
+      "amounts": [
+        3000
+      ],
+      "hashes": [
+        "0x314b2f3d94894f5c3393b888f32d4ffa537c0c98ec83eec9b61eb9a78eebd7ba"
+      ],
+      "firstMatch": "2026-08-21T12:35:37Z",
+      "lastMatch": "2026-08-21T12:35:37Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x314b2f3d94894f5c3393b888f32d4ffa537c0c98ec83eec9b61eb9a78eebd7ba",
+          "blockNumber": 496860571,
+          "timestamp": "2026-08-21T12:35:37Z",
+          "from": "0x1ec7555d7e870fc16ca48e13c67e163ae08aabb5",
+          "to": "0x6d8c04be55fb0f752c30e922aa90a497df73b04a",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 30
+        }
+      ]
+    },
+    {
+      "address": "0x4ef97a4bbb0dba0a5aeb005f199e207241e2bda6",
+      "matches": 1,
+      "amounts": [
+        3000
+      ],
+      "hashes": [
+        "0x1f8f78dbce9d2dabcca122f758e2bbde8904aa8f3343fec56abfb8d95014e67b"
+      ],
+      "firstMatch": "2026-08-21T12:37:51Z",
+      "lastMatch": "2026-08-21T12:37:51Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x1f8f78dbce9d2dabcca122f758e2bbde8904aa8f3343fec56abfb8d95014e67b",
+          "blockNumber": 496861102,
+          "timestamp": "2026-08-21T12:37:51Z",
+          "from": "0x4ef97a4bbb0dba0a5aeb005f199e207241e2bda6",
+          "to": "0xe708d789e62374af950b05afb3c491973a11556a",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 7
+        }
+      ]
+    },
+    {
+      "address": "0xe708d789e62374af950b05afb3c491973a11556a",
+      "matches": 1,
+      "amounts": [
+        3000
+      ],
+      "hashes": [
+        "0x1f8f78dbce9d2dabcca122f758e2bbde8904aa8f3343fec56abfb8d95014e67b"
+      ],
+      "firstMatch": "2026-08-21T12:37:51Z",
+      "lastMatch": "2026-08-21T12:37:51Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x1f8f78dbce9d2dabcca122f758e2bbde8904aa8f3343fec56abfb8d95014e67b",
+          "blockNumber": 496861102,
+          "timestamp": "2026-08-21T12:37:51Z",
+          "from": "0xe708d789e62374af950b05afb3c491973a11556a",
+          "to": "0x49697fd82eef1d038f4d24bf78a558567a5c68e3",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 8
+        }
+      ]
+    },
+    {
+      "address": "0x00afa8acbb73c3bae72edfee4f1201ce6baf265e",
+      "matches": 1,
+      "amounts": [
+        3000
+      ],
+      "hashes": [
+        "0x24ba11121eb143695d217a43d6f361d7c251870913230dd0220bc7a6a381c81e"
+      ],
+      "firstMatch": "2026-08-21T13:28:55Z",
+      "lastMatch": "2026-08-21T13:28:55Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x24ba11121eb143695d217a43d6f361d7c251870913230dd0220bc7a6a381c81e",
+          "blockNumber": 496873363,
+          "timestamp": "2026-08-21T13:28:55Z",
+          "from": "0x00afa8acbb73c3bae72edfee4f1201ce6baf265e",
+          "to": "0x8ae4215b9439b24a4197d268fe3ca1ca81f96d1b",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 7
+        }
+      ]
+    },
+    {
+      "address": "0x8ae4215b9439b24a4197d268fe3ca1ca81f96d1b",
+      "matches": 1,
+      "amounts": [
+        3000
+      ],
+      "hashes": [
+        "0x24ba11121eb143695d217a43d6f361d7c251870913230dd0220bc7a6a381c81e"
+      ],
+      "firstMatch": "2026-08-21T13:28:55Z",
+      "lastMatch": "2026-08-21T13:28:55Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x24ba11121eb143695d217a43d6f361d7c251870913230dd0220bc7a6a381c81e",
+          "blockNumber": 496873363,
+          "timestamp": "2026-08-21T13:28:55Z",
+          "from": "0x8ae4215b9439b24a4197d268fe3ca1ca81f96d1b",
+          "to": "0x49697fd82eef1d038f4d24bf78a558567a5c68e3",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 8
+        }
+      ]
+    },
+    {
+      "address": "0x123f39307509244c18fa5f727989b3bb2218e3ef",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0xf5f9cd459e9aba6bdff0554f6497c111e8d4e7f9cfb8326eb658849e052b8984"
+      ],
+      "firstMatch": "2026-08-21T13:55:17Z",
+      "lastMatch": "2026-08-21T13:55:17Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0xf5f9cd459e9aba6bdff0554f6497c111e8d4e7f9cfb8326eb658849e052b8984",
+          "blockNumber": 496879751,
+          "timestamp": "2026-08-21T13:55:17Z",
+          "from": "0x123f39307509244c18fa5f727989b3bb2218e3ef",
+          "to": "0x8cb488d94ea73d4cdbfc1d4a06b4b5ee480901d5",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 9
+        }
+      ]
+    },
+    {
+      "address": "0x8cb488d94ea73d4cdbfc1d4a06b4b5ee480901d5",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0xf5f9cd459e9aba6bdff0554f6497c111e8d4e7f9cfb8326eb658849e052b8984"
+      ],
+      "firstMatch": "2026-08-21T13:55:17Z",
+      "lastMatch": "2026-08-21T13:55:17Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0xf5f9cd459e9aba6bdff0554f6497c111e8d4e7f9cfb8326eb658849e052b8984",
+          "blockNumber": 496879751,
+          "timestamp": "2026-08-21T13:55:17Z",
+          "from": "0x8cb488d94ea73d4cdbfc1d4a06b4b5ee480901d5",
+          "to": "0x7868b4073a06731f408c2b416a28aee6032677e9",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 10
+        }
+      ]
+    },
+    {
+      "address": "0xf3c880f32a9338a5c43e7b4afb1ab19ca154b56d",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x55c121d3838d2f7f8d5f177e78624a6f2ffc0c1fd15c7bbac8804ed3e41f8bef"
+      ],
+      "firstMatch": "2026-08-21T14:20:14Z",
+      "lastMatch": "2026-08-21T14:20:14Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x55c121d3838d2f7f8d5f177e78624a6f2ffc0c1fd15c7bbac8804ed3e41f8bef",
+          "blockNumber": 496885792,
+          "timestamp": "2026-08-21T14:20:14Z",
+          "from": "0xf3c880f32a9338a5c43e7b4afb1ab19ca154b56d",
+          "to": "0x5f11540d1aad639e5d0ed7fe7bad60c922c70553",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 3
+        }
+      ]
+    },
+    {
+      "address": "0x5f11540d1aad639e5d0ed7fe7bad60c922c70553",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x55c121d3838d2f7f8d5f177e78624a6f2ffc0c1fd15c7bbac8804ed3e41f8bef"
+      ],
+      "firstMatch": "2026-08-21T14:20:14Z",
+      "lastMatch": "2026-08-21T14:20:14Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x55c121d3838d2f7f8d5f177e78624a6f2ffc0c1fd15c7bbac8804ed3e41f8bef",
+          "blockNumber": 496885792,
+          "timestamp": "2026-08-21T14:20:14Z",
+          "from": "0x5f11540d1aad639e5d0ed7fe7bad60c922c70553",
+          "to": "0x7868b4073a06731f408c2b416a28aee6032677e9",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 4
+        }
+      ]
+    },
+    {
+      "address": "0xa256ff518341013b4adc4db887f3f8f2ce4369a6",
+      "matches": 1,
+      "amounts": [
+        3000
+      ],
+      "hashes": [
+        "0x0e0bb496e8c2eca7170695f92b841ff97105c1ccd3949a21dac8bd26208cb218"
+      ],
+      "firstMatch": "2026-08-21T14:23:08Z",
+      "lastMatch": "2026-08-21T14:23:08Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x0e0bb496e8c2eca7170695f92b841ff97105c1ccd3949a21dac8bd26208cb218",
+          "blockNumber": 496886491,
+          "timestamp": "2026-08-21T14:23:08Z",
+          "from": "0xa256ff518341013b4adc4db887f3f8f2ce4369a6",
+          "to": "0x397b5e458fddb9bdc7ed336d57aee51a3bd27981",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": null
+        }
+      ]
+    },
+    {
+      "address": "0x397b5e458fddb9bdc7ed336d57aee51a3bd27981",
+      "matches": 1,
+      "amounts": [
+        3000
+      ],
+      "hashes": [
+        "0x0e0bb496e8c2eca7170695f92b841ff97105c1ccd3949a21dac8bd26208cb218"
+      ],
+      "firstMatch": "2026-08-21T14:23:08Z",
+      "lastMatch": "2026-08-21T14:23:08Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x0e0bb496e8c2eca7170695f92b841ff97105c1ccd3949a21dac8bd26208cb218",
+          "blockNumber": 496886491,
+          "timestamp": "2026-08-21T14:23:08Z",
+          "from": "0x397b5e458fddb9bdc7ed336d57aee51a3bd27981",
+          "to": "0xd20efbe22d4442a81aeb79b72a8b28f8ea9e34c2",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 1
+        }
+      ]
+    },
+    {
+      "address": "0x1b34bb2e4c87a5f0c5f8a4ae10c5ebadf12c936f",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x3c15fc8260935645f6c50696d2f135d41789c9e8671cc0b9173dd180f25f39c6"
+      ],
+      "firstMatch": "2026-08-21T14:38:41Z",
+      "lastMatch": "2026-08-21T14:38:41Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x3c15fc8260935645f6c50696d2f135d41789c9e8671cc0b9173dd180f25f39c6",
+          "blockNumber": 496890228,
+          "timestamp": "2026-08-21T14:38:41Z",
+          "from": "0x1b34bb2e4c87a5f0c5f8a4ae10c5ebadf12c936f",
+          "to": "0x563f385213142987266f07ced835e96ddd1e1ad0",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 9
+        }
+      ]
+    },
+    {
+      "address": "0xa46949cd2da7e71eb4561cb54d7f88ec0a5ff2ac",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0xda453194f7c59d55c00cebba41e8607b58ed21dbe3b9a223b00e1ecc183748fa"
+      ],
+      "firstMatch": "2026-08-21T14:39:16Z",
+      "lastMatch": "2026-08-21T14:39:16Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0xda453194f7c59d55c00cebba41e8607b58ed21dbe3b9a223b00e1ecc183748fa",
+          "blockNumber": 496890368,
+          "timestamp": "2026-08-21T14:39:16Z",
+          "from": "0xa46949cd2da7e71eb4561cb54d7f88ec0a5ff2ac",
+          "to": "0x563f385213142987266f07ced835e96ddd1e1ad0",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 4
+        }
+      ]
+    },
+    {
+      "address": "0x0a7e2ef7462a9d688e0a8977670a810860caa62c",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x77acbccb3690d405d7a58bf29e247945b448cce673904fdcbbb9ba5e98fa78ed"
+      ],
+      "firstMatch": "2026-08-21T15:24:09Z",
+      "lastMatch": "2026-08-21T15:24:09Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x77acbccb3690d405d7a58bf29e247945b448cce673904fdcbbb9ba5e98fa78ed",
+          "blockNumber": 496901147,
+          "timestamp": "2026-08-21T15:24:09Z",
+          "from": "0x0a7e2ef7462a9d688e0a8977670a810860caa62c",
+          "to": "0x043e9c9229137a548a738f8a17ec3cdd8a22639c",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": null
+        }
+      ]
+    },
+    {
+      "address": "0x043e9c9229137a548a738f8a17ec3cdd8a22639c",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x77acbccb3690d405d7a58bf29e247945b448cce673904fdcbbb9ba5e98fa78ed"
+      ],
+      "firstMatch": "2026-08-21T15:24:09Z",
+      "lastMatch": "2026-08-21T15:24:09Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x77acbccb3690d405d7a58bf29e247945b448cce673904fdcbbb9ba5e98fa78ed",
+          "blockNumber": 496901147,
+          "timestamp": "2026-08-21T15:24:09Z",
+          "from": "0x043e9c9229137a548a738f8a17ec3cdd8a22639c",
+          "to": "0x7868b4073a06731f408c2b416a28aee6032677e9",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 1
+        }
+      ]
+    },
+    {
+      "address": "0x71b7d18cc1d48e2a89dad47e2d4b35a5daae2a5b",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x7eeac78068d55d3e19123effa9aa7e9d49d8c8cde29e2aa66f82046f5aa13b4b"
+      ],
+      "firstMatch": "2026-08-21T15:40:46Z",
+      "lastMatch": "2026-08-21T15:40:46Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x7eeac78068d55d3e19123effa9aa7e9d49d8c8cde29e2aa66f82046f5aa13b4b",
+          "blockNumber": 496905139,
+          "timestamp": "2026-08-21T15:40:46Z",
+          "from": "0x71b7d18cc1d48e2a89dad47e2d4b35a5daae2a5b",
+          "to": "0x6d8c04be55fb0f752c30e922aa90a497df73b04a",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 4
+        }
+      ]
+    },
+    {
+      "address": "0xc1c605880cac4ffe1534837b6972dfcf6182bcb7",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x4b5cf4e2ed990ae6ca73c04d4b94d5443a6d43f4ed432de550fd823d15ea256c"
+      ],
+      "firstMatch": "2026-08-21T15:40:52Z",
+      "lastMatch": "2026-08-21T15:40:52Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x4b5cf4e2ed990ae6ca73c04d4b94d5443a6d43f4ed432de550fd823d15ea256c",
+          "blockNumber": 496905164,
+          "timestamp": "2026-08-21T15:40:52Z",
+          "from": "0xc1c605880cac4ffe1534837b6972dfcf6182bcb7",
+          "to": "0x4707216d0b51b3e3363f8f301377feddf6187e0b",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": null
+        }
+      ]
+    },
+    {
+      "address": "0x4707216d0b51b3e3363f8f301377feddf6187e0b",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x4b5cf4e2ed990ae6ca73c04d4b94d5443a6d43f4ed432de550fd823d15ea256c"
+      ],
+      "firstMatch": "2026-08-21T15:40:52Z",
+      "lastMatch": "2026-08-21T15:40:52Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x4b5cf4e2ed990ae6ca73c04d4b94d5443a6d43f4ed432de550fd823d15ea256c",
+          "blockNumber": 496905164,
+          "timestamp": "2026-08-21T15:40:52Z",
+          "from": "0x4707216d0b51b3e3363f8f301377feddf6187e0b",
+          "to": "0x7868b4073a06731f408c2b416a28aee6032677e9",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 1
+        }
+      ]
+    },
+    {
+      "address": "0x85b4414d8a45b34fa98cc8145c6403e9f24fa750",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x68e6bc3b8aa7e4b705076162f429616d38737ba29fee796dbe0df458d80a2c8c"
+      ],
+      "firstMatch": "2026-08-21T16:18:43Z",
+      "lastMatch": "2026-08-21T16:18:43Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x68e6bc3b8aa7e4b705076162f429616d38737ba29fee796dbe0df458d80a2c8c",
+          "blockNumber": 496914247,
+          "timestamp": "2026-08-21T16:18:43Z",
+          "from": "0x85b4414d8a45b34fa98cc8145c6403e9f24fa750",
+          "to": "0xc67a123b4bf95d8fc660684b77b605f3a2d69b4d",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 11
+        }
+      ]
+    },
+    {
+      "address": "0xc67a123b4bf95d8fc660684b77b605f3a2d69b4d",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x68e6bc3b8aa7e4b705076162f429616d38737ba29fee796dbe0df458d80a2c8c"
+      ],
+      "firstMatch": "2026-08-21T16:18:43Z",
+      "lastMatch": "2026-08-21T16:18:43Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x68e6bc3b8aa7e4b705076162f429616d38737ba29fee796dbe0df458d80a2c8c",
+          "blockNumber": 496914247,
+          "timestamp": "2026-08-21T16:18:43Z",
+          "from": "0xc67a123b4bf95d8fc660684b77b605f3a2d69b4d",
+          "to": "0x7868b4073a06731f408c2b416a28aee6032677e9",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 12
+        }
+      ]
+    },
+    {
+      "address": "0xf6da296545587ecc30fcf1b08f7a112db3b107f0",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x28f0cdd41c8b0112ed1ce2f0c6044b5318e5b9ae019ea2412c3ac1e776e01375"
+      ],
+      "firstMatch": "2026-08-21T16:21:06Z",
+      "lastMatch": "2026-08-21T16:21:06Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x28f0cdd41c8b0112ed1ce2f0c6044b5318e5b9ae019ea2412c3ac1e776e01375",
+          "blockNumber": 496914818,
+          "timestamp": "2026-08-21T16:21:06Z",
+          "from": "0xf6da296545587ecc30fcf1b08f7a112db3b107f0",
+          "to": "0x6d8c04be55fb0f752c30e922aa90a497df73b04a",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 9
+        }
+      ]
+    },
+    {
+      "address": "0x9033941271b4883565ecc3af4ee0319ce1b8d9a0",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0xffcc5c89e19497c1b8fe011dc5ab828e709bf23a3082e71267895d59632f5774"
+      ],
+      "firstMatch": "2026-08-21T16:24:05Z",
+      "lastMatch": "2026-08-21T16:24:05Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0xffcc5c89e19497c1b8fe011dc5ab828e709bf23a3082e71267895d59632f5774",
+          "blockNumber": 496915538,
+          "timestamp": "2026-08-21T16:24:05Z",
+          "from": "0x9033941271b4883565ecc3af4ee0319ce1b8d9a0",
+          "to": "0x83c03380c4063f9a068cc423828e499db3e0ba84",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 8
+        }
+      ]
+    },
+    {
+      "address": "0x83c03380c4063f9a068cc423828e499db3e0ba84",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0xffcc5c89e19497c1b8fe011dc5ab828e709bf23a3082e71267895d59632f5774"
+      ],
+      "firstMatch": "2026-08-21T16:24:05Z",
+      "lastMatch": "2026-08-21T16:24:05Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0xffcc5c89e19497c1b8fe011dc5ab828e709bf23a3082e71267895d59632f5774",
+          "blockNumber": 496915538,
+          "timestamp": "2026-08-21T16:24:05Z",
+          "from": "0x83c03380c4063f9a068cc423828e499db3e0ba84",
+          "to": "0xd20efbe22d4442a81aeb79b72a8b28f8ea9e34c2",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 9
+        }
+      ]
+    },
+    {
+      "address": "0x5263e592c5024af5e155f27dbceb8c7ed2f2540b",
+      "matches": 1,
+      "amounts": [
+        3000
+      ],
+      "hashes": [
+        "0x4ff3743562cda4040408b22f0fd5dc9315dd25e39399cfff84310cb036d684aa"
+      ],
+      "firstMatch": "2026-08-21T17:47:26Z",
+      "lastMatch": "2026-08-21T17:47:26Z",
+      "movementTypes": {
+        "burns": 1,
+        "transfers": 0,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x4ff3743562cda4040408b22f0fd5dc9315dd25e39399cfff84310cb036d684aa",
+          "blockNumber": 496935535,
+          "timestamp": "2026-08-21T17:47:26Z",
+          "from": "0x5263e592c5024af5e155f27dbceb8c7ed2f2540b",
+          "to": "0x0000000000000000000000000000000000000000",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "burn",
+          "logIndex": 12
+        }
+      ]
+    },
+    {
+      "address": "0x455a55a9b1dba878e07a8c1fe6a19dbda77d3fb8",
+      "matches": 1,
+      "amounts": [
+        3000
+      ],
+      "hashes": [
+        "0xa8fddeea4a5e055f5fe8472ad09bfee7ad664cff86beb69d3ba81cb3aa78b0ca"
+      ],
+      "firstMatch": "2026-08-21T17:50:34Z",
+      "lastMatch": "2026-08-21T17:50:34Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0xa8fddeea4a5e055f5fe8472ad09bfee7ad664cff86beb69d3ba81cb3aa78b0ca",
+          "blockNumber": 496936285,
+          "timestamp": "2026-08-21T17:50:34Z",
+          "from": "0x455a55a9b1dba878e07a8c1fe6a19dbda77d3fb8",
+          "to": "0x6d8c04be55fb0f752c30e922aa90a497df73b04a",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 8
+        }
+      ]
+    },
+    {
+      "address": "0x641a92bf22167858a67d8a8be7dcdb3f3dfca8b7",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x81187c7a3243c10fcf813fe42e8afa2a728d73a3404e876aca61e85d3338099c"
+      ],
+      "firstMatch": "2026-08-21T18:12:49Z",
+      "lastMatch": "2026-08-21T18:12:49Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x81187c7a3243c10fcf813fe42e8afa2a728d73a3404e876aca61e85d3338099c",
+          "blockNumber": 496941635,
+          "timestamp": "2026-08-21T18:12:49Z",
+          "from": "0x641a92bf22167858a67d8a8be7dcdb3f3dfca8b7",
+          "to": "0x7868b4073a06731f408c2b416a28aee6032677e9",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 1
+        }
+      ]
+    },
+    {
+      "address": "0xaf95fe3552d61d1c6c274f1ed3bbe56538feab94",
+      "matches": 1,
+      "amounts": [
+        3000
+      ],
+      "hashes": [
+        "0x3f051fff2a7a75a581fc5d91639443e03b3d19e62c77dd976f412fe6dc883252"
+      ],
+      "firstMatch": "2026-08-21T18:19:28Z",
+      "lastMatch": "2026-08-21T18:19:28Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x3f051fff2a7a75a581fc5d91639443e03b3d19e62c77dd976f412fe6dc883252",
+          "blockNumber": 496943228,
+          "timestamp": "2026-08-21T18:19:28Z",
+          "from": "0xaf95fe3552d61d1c6c274f1ed3bbe56538feab94",
+          "to": "0x672ae1c09b71b9586b1b09ac7a6bc617e64dbc06",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 13
+        }
+      ]
+    },
+    {
+      "address": "0x672ae1c09b71b9586b1b09ac7a6bc617e64dbc06",
+      "matches": 1,
+      "amounts": [
+        3000
+      ],
+      "hashes": [
+        "0x3f051fff2a7a75a581fc5d91639443e03b3d19e62c77dd976f412fe6dc883252"
+      ],
+      "firstMatch": "2026-08-21T18:19:28Z",
+      "lastMatch": "2026-08-21T18:19:28Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x3f051fff2a7a75a581fc5d91639443e03b3d19e62c77dd976f412fe6dc883252",
+          "blockNumber": 496943228,
+          "timestamp": "2026-08-21T18:19:28Z",
+          "from": "0x672ae1c09b71b9586b1b09ac7a6bc617e64dbc06",
+          "to": "0xd7b44cb976fae38b6660db84de184cb1370d19d7",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 14
+        }
+      ]
+    },
+    {
+      "address": "0xbe1146e0f8bcb41eaff872d53f79da6907a86fed",
+      "matches": 1,
+      "amounts": [
+        3000
+      ],
+      "hashes": [
+        "0x0e5b19f65067614432c6909f811b75993adc99a03146ddb9f084610cb25657ae"
+      ],
+      "firstMatch": "2026-08-21T18:59:55Z",
+      "lastMatch": "2026-08-21T18:59:55Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x0e5b19f65067614432c6909f811b75993adc99a03146ddb9f084610cb25657ae",
+          "blockNumber": 496952928,
+          "timestamp": "2026-08-21T18:59:55Z",
+          "from": "0xbe1146e0f8bcb41eaff872d53f79da6907a86fed",
+          "to": "0x9db602e19fe92e6841fd2adf0ba46da0e437abd2",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": null
+        }
+      ]
+    },
+    {
+      "address": "0x37469d4e0c76b07cf5de5dc4f2c3c1d01c3bd4f8",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x7ce98793742ca19712dd2df7e63059c0afad5e86a5b6c195f5bd4440a8ae876e"
+      ],
+      "firstMatch": "2026-08-21T21:37:45Z",
+      "lastMatch": "2026-08-21T21:37:45Z",
+      "movementTypes": {
+        "burns": 1,
+        "transfers": 0,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x7ce98793742ca19712dd2df7e63059c0afad5e86a5b6c195f5bd4440a8ae876e",
+          "blockNumber": 496990746,
+          "timestamp": "2026-08-21T21:37:45Z",
+          "from": "0x37469d4e0c76b07cf5de5dc4f2c3c1d01c3bd4f8",
+          "to": "0x0000000000000000000000000000000000000000",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "burn",
+          "logIndex": null
+        }
+      ]
+    },
+    {
+      "address": "0x3fe566a1c71125dee59c6bc62ef34a84a7bdac31",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0xe0f804136ecdc9d23c964f1366a49a315e06c0f54b98f16efe2cdf4ea2448c41"
+      ],
+      "firstMatch": "2026-08-21T21:40:35Z",
+      "lastMatch": "2026-08-21T21:40:35Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0xe0f804136ecdc9d23c964f1366a49a315e06c0f54b98f16efe2cdf4ea2448c41",
+          "blockNumber": 496991427,
+          "timestamp": "2026-08-21T21:40:35Z",
+          "from": "0x3fe566a1c71125dee59c6bc62ef34a84a7bdac31",
+          "to": "0x6d8c04be55fb0f752c30e922aa90a497df73b04a",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 42
+        }
+      ]
+    },
+    {
+      "address": "0x37e93e99dbd77a0fba7e066fb9894097a4341278",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x58e248830a03b51aad96afba3ff44085cf46ce886384cc0dcf5f16f7037bfe2d"
+      ],
+      "firstMatch": "2026-08-21T21:48:38Z",
+      "lastMatch": "2026-08-21T21:48:38Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x58e248830a03b51aad96afba3ff44085cf46ce886384cc0dcf5f16f7037bfe2d",
+          "blockNumber": 496993363,
+          "timestamp": "2026-08-21T21:48:38Z",
+          "from": "0x37e93e99dbd77a0fba7e066fb9894097a4341278",
+          "to": "0x3614bf51ed1c6f4ea11275afcdf1075caa5a43fa",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": null
+        }
+      ]
+    },
+    {
+      "address": "0x3614bf51ed1c6f4ea11275afcdf1075caa5a43fa",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x58e248830a03b51aad96afba3ff44085cf46ce886384cc0dcf5f16f7037bfe2d"
+      ],
+      "firstMatch": "2026-08-21T21:48:38Z",
+      "lastMatch": "2026-08-21T21:48:38Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x58e248830a03b51aad96afba3ff44085cf46ce886384cc0dcf5f16f7037bfe2d",
+          "blockNumber": 496993363,
+          "timestamp": "2026-08-21T21:48:38Z",
+          "from": "0x3614bf51ed1c6f4ea11275afcdf1075caa5a43fa",
+          "to": "0xd7b44cb976fae38b6660db84de184cb1370d19d7",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 1
+        }
+      ]
+    },
+    {
+      "address": "0x0fffad507d7c3ac9df73651011a88598f665cf89",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x04bde87d5cfd7988c49b1ba019539166794716e56a236de6aa0181a40ff33b32"
+      ],
+      "firstMatch": "2026-08-21T22:29:35Z",
+      "lastMatch": "2026-08-21T22:29:35Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x04bde87d5cfd7988c49b1ba019539166794716e56a236de6aa0181a40ff33b32",
+          "blockNumber": 497003214,
+          "timestamp": "2026-08-21T22:29:35Z",
+          "from": "0x0fffad507d7c3ac9df73651011a88598f665cf89",
+          "to": "0x8c1376bff7895afa64c445e8332fcb076c3348f6",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 6
+        }
+      ]
+    },
+    {
+      "address": "0x8c1376bff7895afa64c445e8332fcb076c3348f6",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x04bde87d5cfd7988c49b1ba019539166794716e56a236de6aa0181a40ff33b32"
+      ],
+      "firstMatch": "2026-08-21T22:29:35Z",
+      "lastMatch": "2026-08-21T22:29:35Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x04bde87d5cfd7988c49b1ba019539166794716e56a236de6aa0181a40ff33b32",
+          "blockNumber": 497003214,
+          "timestamp": "2026-08-21T22:29:35Z",
+          "from": "0x8c1376bff7895afa64c445e8332fcb076c3348f6",
+          "to": "0x49697fd82eef1d038f4d24bf78a558567a5c68e3",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 7
+        }
+      ]
+    },
+    {
+      "address": "0xc179715d8fdbbe59bb837b1c870aa0a86d4aba4e",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0xb013c880100652388ddcf0ce0d7a9946c1eb0c5805a7f9e628a7f00e2d45ff8c"
+      ],
+      "firstMatch": "2026-08-21T23:12:32Z",
+      "lastMatch": "2026-08-21T23:12:32Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0xb013c880100652388ddcf0ce0d7a9946c1eb0c5805a7f9e628a7f00e2d45ff8c",
+          "blockNumber": 497013525,
+          "timestamp": "2026-08-21T23:12:32Z",
+          "from": "0xc179715d8fdbbe59bb837b1c870aa0a86d4aba4e",
+          "to": "0x7f403503e960e204a29cb6e520c2d84081b1eafc",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 45
+        }
+      ]
+    },
+    {
+      "address": "0x7f403503e960e204a29cb6e520c2d84081b1eafc",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0xb013c880100652388ddcf0ce0d7a9946c1eb0c5805a7f9e628a7f00e2d45ff8c"
+      ],
+      "firstMatch": "2026-08-21T23:12:32Z",
+      "lastMatch": "2026-08-21T23:12:32Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0xb013c880100652388ddcf0ce0d7a9946c1eb0c5805a7f9e628a7f00e2d45ff8c",
+          "blockNumber": 497013525,
+          "timestamp": "2026-08-21T23:12:32Z",
+          "from": "0x7f403503e960e204a29cb6e520c2d84081b1eafc",
+          "to": "0x49697fd82eef1d038f4d24bf78a558567a5c68e3",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 46
+        }
+      ]
+    },
+    {
+      "address": "0x39caca73d032548f2d5660fb7af59997f149acab",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x61d0b341bdc80f8d300cab1ba1cd27f90337a870e2b8e2f0bfabbbdd52b45a54"
+      ],
+      "firstMatch": "2026-08-22T01:58:43Z",
+      "lastMatch": "2026-08-22T01:58:43Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x61d0b341bdc80f8d300cab1ba1cd27f90337a870e2b8e2f0bfabbbdd52b45a54",
+          "blockNumber": 497053345,
+          "timestamp": "2026-08-22T01:58:43Z",
+          "from": "0x39caca73d032548f2d5660fb7af59997f149acab",
+          "to": "0x54b790e7219e8c9c715dd6eceddf662e53760bec",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 4
+        }
+      ]
+    },
+    {
+      "address": "0x54b790e7219e8c9c715dd6eceddf662e53760bec",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x61d0b341bdc80f8d300cab1ba1cd27f90337a870e2b8e2f0bfabbbdd52b45a54"
+      ],
+      "firstMatch": "2026-08-22T01:58:43Z",
+      "lastMatch": "2026-08-22T01:58:43Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x61d0b341bdc80f8d300cab1ba1cd27f90337a870e2b8e2f0bfabbbdd52b45a54",
+          "blockNumber": 497053345,
+          "timestamp": "2026-08-22T01:58:43Z",
+          "from": "0x54b790e7219e8c9c715dd6eceddf662e53760bec",
+          "to": "0x563f385213142987266f07ced835e96ddd1e1ad0",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 5
+        }
+      ]
+    },
+    {
+      "address": "0x6a48ef723ecb34e46fd144369f502490f523da39",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x841930dd4fbfd3270ac7991527b6ce88163b2a13f0409932a71fd95bc472796e"
+      ],
+      "firstMatch": "2026-08-22T03:34:06Z",
+      "lastMatch": "2026-08-22T03:34:06Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x841930dd4fbfd3270ac7991527b6ce88163b2a13f0409932a71fd95bc472796e",
+          "blockNumber": 497076222,
+          "timestamp": "2026-08-22T03:34:06Z",
+          "from": "0x6a48ef723ecb34e46fd144369f502490f523da39",
+          "to": "0x74324238732a42c4c77a94494981c632c7fabb44",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 25
+        }
+      ]
+    },
+    {
+      "address": "0x74324238732a42c4c77a94494981c632c7fabb44",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x841930dd4fbfd3270ac7991527b6ce88163b2a13f0409932a71fd95bc472796e"
+      ],
+      "firstMatch": "2026-08-22T03:34:06Z",
+      "lastMatch": "2026-08-22T03:34:06Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x841930dd4fbfd3270ac7991527b6ce88163b2a13f0409932a71fd95bc472796e",
+          "blockNumber": 497076222,
+          "timestamp": "2026-08-22T03:34:06Z",
+          "from": "0x74324238732a42c4c77a94494981c632c7fabb44",
+          "to": "0x7868b4073a06731f408c2b416a28aee6032677e9",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 26
+        }
+      ]
+    },
+    {
+      "address": "0xea0023359824fcd9e44cff1f00291c6c4fb97cc8",
+      "matches": 1,
+      "amounts": [
+        3000
+      ],
+      "hashes": [
+        "0x0188e0a964955bb47901c2d0f8b8aeb4c00127885414f1a09bb5951a9be24a27"
+      ],
+      "firstMatch": "2026-08-22T04:52:28Z",
+      "lastMatch": "2026-08-22T04:52:28Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x0188e0a964955bb47901c2d0f8b8aeb4c00127885414f1a09bb5951a9be24a27",
+          "blockNumber": 497095001,
+          "timestamp": "2026-08-22T04:52:28Z",
+          "from": "0xea0023359824fcd9e44cff1f00291c6c4fb97cc8",
+          "to": "0x03e1cfa8f303a4eae423c3e94d1e5cda57742f35",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 6
+        }
+      ]
+    },
+    {
+      "address": "0x03e1cfa8f303a4eae423c3e94d1e5cda57742f35",
+      "matches": 1,
+      "amounts": [
+        3000
+      ],
+      "hashes": [
+        "0x0188e0a964955bb47901c2d0f8b8aeb4c00127885414f1a09bb5951a9be24a27"
+      ],
+      "firstMatch": "2026-08-22T04:52:28Z",
+      "lastMatch": "2026-08-22T04:52:28Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x0188e0a964955bb47901c2d0f8b8aeb4c00127885414f1a09bb5951a9be24a27",
+          "blockNumber": 497095001,
+          "timestamp": "2026-08-22T04:52:28Z",
+          "from": "0x03e1cfa8f303a4eae423c3e94d1e5cda57742f35",
+          "to": "0xd20efbe22d4442a81aeb79b72a8b28f8ea9e34c2",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 7
+        }
+      ]
+    },
+    {
+      "address": "0x240c280b8fe34480e8a9303fa80ec5987c9ab667",
+      "matches": 1,
+      "amounts": [
+        3000
+      ],
+      "hashes": [
+        "0x15e367f7b402e4d75083840a36c81bfe885fb6656fcaceca5720369abd3a0605"
+      ],
+      "firstMatch": "2026-08-22T12:21:57Z",
+      "lastMatch": "2026-08-22T12:21:57Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x15e367f7b402e4d75083840a36c81bfe885fb6656fcaceca5720369abd3a0605",
+          "blockNumber": 497202679,
+          "timestamp": "2026-08-22T12:21:57Z",
+          "from": "0x240c280b8fe34480e8a9303fa80ec5987c9ab667",
+          "to": "0xa14d559d447a89ef6db7ecdd1a4011d7ca4d4f3d",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": null
+        }
+      ]
+    },
+    {
+      "address": "0xa14d559d447a89ef6db7ecdd1a4011d7ca4d4f3d",
+      "matches": 1,
+      "amounts": [
+        3000
+      ],
+      "hashes": [
+        "0x15e367f7b402e4d75083840a36c81bfe885fb6656fcaceca5720369abd3a0605"
+      ],
+      "firstMatch": "2026-08-22T12:21:57Z",
+      "lastMatch": "2026-08-22T12:21:57Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x15e367f7b402e4d75083840a36c81bfe885fb6656fcaceca5720369abd3a0605",
+          "blockNumber": 497202679,
+          "timestamp": "2026-08-22T12:21:57Z",
+          "from": "0xa14d559d447a89ef6db7ecdd1a4011d7ca4d4f3d",
+          "to": "0x49697fd82eef1d038f4d24bf78a558567a5c68e3",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 1
+        }
+      ]
+    },
+    {
+      "address": "0x05a9891f22e231759be1ee73edefba88b0580973",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x83bd231f78e28d7c95e0989c97e3c872f2f28c8b8097a050162fc47a5882ce5e"
+      ],
+      "firstMatch": "2026-08-22T12:40:08Z",
+      "lastMatch": "2026-08-22T12:40:08Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x83bd231f78e28d7c95e0989c97e3c872f2f28c8b8097a050162fc47a5882ce5e",
+          "blockNumber": 497207026,
+          "timestamp": "2026-08-22T12:40:08Z",
+          "from": "0x05a9891f22e231759be1ee73edefba88b0580973",
+          "to": "0x113b1c7ee19ffbaa80419cc57b39669dfbecc183",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": null
+        }
+      ]
+    },
+    {
+      "address": "0x113b1c7ee19ffbaa80419cc57b39669dfbecc183",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x83bd231f78e28d7c95e0989c97e3c872f2f28c8b8097a050162fc47a5882ce5e"
+      ],
+      "firstMatch": "2026-08-22T12:40:08Z",
+      "lastMatch": "2026-08-22T12:40:08Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x83bd231f78e28d7c95e0989c97e3c872f2f28c8b8097a050162fc47a5882ce5e",
+          "blockNumber": 497207026,
+          "timestamp": "2026-08-22T12:40:08Z",
+          "from": "0x113b1c7ee19ffbaa80419cc57b39669dfbecc183",
+          "to": "0xd20efbe22d4442a81aeb79b72a8b28f8ea9e34c2",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 1
+        }
+      ]
+    },
+    {
+      "address": "0x31cd565e4286172d092de1e83976564364960032",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x40708758e2d80d5b17f4ea24840f35b93c39dafec88d6e5e46c712754309fb0c"
+      ],
+      "firstMatch": "2026-08-22T14:23:24Z",
+      "lastMatch": "2026-08-22T14:23:24Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x40708758e2d80d5b17f4ea24840f35b93c39dafec88d6e5e46c712754309fb0c",
+          "blockNumber": 497231755,
+          "timestamp": "2026-08-22T14:23:24Z",
+          "from": "0x31cd565e4286172d092de1e83976564364960032",
+          "to": "0x1bb9bd968156afbad8367e88135ab3741ab41e09",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 1
+        }
+      ]
+    },
+    {
+      "address": "0x1bb9bd968156afbad8367e88135ab3741ab41e09",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x40708758e2d80d5b17f4ea24840f35b93c39dafec88d6e5e46c712754309fb0c"
+      ],
+      "firstMatch": "2026-08-22T14:23:24Z",
+      "lastMatch": "2026-08-22T14:23:24Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x40708758e2d80d5b17f4ea24840f35b93c39dafec88d6e5e46c712754309fb0c",
+          "blockNumber": 497231755,
+          "timestamp": "2026-08-22T14:23:24Z",
+          "from": "0x1bb9bd968156afbad8367e88135ab3741ab41e09",
+          "to": "0x7868b4073a06731f408c2b416a28aee6032677e9",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 2
+        }
+      ]
+    },
+    {
+      "address": "0xd32780feb75e43d6bb39a1ca522bc4338078c21f",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x52971b2a520d586ebabbb593f59b0f3c0b37f9b26d31e1522468315bb00f06b9"
+      ],
+      "firstMatch": "2026-08-22T17:09:47Z",
+      "lastMatch": "2026-08-22T17:09:47Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x52971b2a520d586ebabbb593f59b0f3c0b37f9b26d31e1522468315bb00f06b9",
+          "blockNumber": 497271549,
+          "timestamp": "2026-08-22T17:09:47Z",
+          "from": "0xd32780feb75e43d6bb39a1ca522bc4338078c21f",
+          "to": "0xd83dd549bc5e378e2ca6a12a2bb32996f05df657",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": null
+        }
+      ]
+    },
+    {
+      "address": "0xd83dd549bc5e378e2ca6a12a2bb32996f05df657",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x52971b2a520d586ebabbb593f59b0f3c0b37f9b26d31e1522468315bb00f06b9"
+      ],
+      "firstMatch": "2026-08-22T17:09:47Z",
+      "lastMatch": "2026-08-22T17:09:47Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x52971b2a520d586ebabbb593f59b0f3c0b37f9b26d31e1522468315bb00f06b9",
+          "blockNumber": 497271549,
+          "timestamp": "2026-08-22T17:09:47Z",
+          "from": "0xd83dd549bc5e378e2ca6a12a2bb32996f05df657",
+          "to": "0x7868b4073a06731f408c2b416a28aee6032677e9",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 1
+        }
+      ]
+    },
+    {
+      "address": "0xbfa1d53f711c5270f2b667559a23c3736d86ea60",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0xf03ef20033abd13be909a9c294f71e4c153f45718349f9015df2c955fe2ed7d4"
+      ],
+      "firstMatch": "2026-08-22T21:38:00Z",
+      "lastMatch": "2026-08-22T21:38:00Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0xf03ef20033abd13be909a9c294f71e4c153f45718349f9015df2c955fe2ed7d4",
+          "blockNumber": 497335320,
+          "timestamp": "2026-08-22T21:38:00Z",
+          "from": "0xbfa1d53f711c5270f2b667559a23c3736d86ea60",
+          "to": "0x479181a130cb2fbb5b9d9e00b6c004969113de04",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": null
+        }
+      ]
+    },
+    {
+      "address": "0x479181a130cb2fbb5b9d9e00b6c004969113de04",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0xf03ef20033abd13be909a9c294f71e4c153f45718349f9015df2c955fe2ed7d4"
+      ],
+      "firstMatch": "2026-08-22T21:38:00Z",
+      "lastMatch": "2026-08-22T21:38:00Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0xf03ef20033abd13be909a9c294f71e4c153f45718349f9015df2c955fe2ed7d4",
+          "blockNumber": 497335320,
+          "timestamp": "2026-08-22T21:38:00Z",
+          "from": "0x479181a130cb2fbb5b9d9e00b6c004969113de04",
+          "to": "0xd20efbe22d4442a81aeb79b72a8b28f8ea9e34c2",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 1
+        }
+      ]
+    },
+    {
+      "address": "0x79f45eda7c59f3eb2a8c824014b9732516074c3c",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x9ce23dc4ed8880193095bceaa218b947f4986b2d4b6fdcbe4784154db3fd77e7"
+      ],
+      "firstMatch": "2026-08-22T22:49:52Z",
+      "lastMatch": "2026-08-22T22:49:52Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x9ce23dc4ed8880193095bceaa218b947f4986b2d4b6fdcbe4784154db3fd77e7",
+          "blockNumber": 497352437,
+          "timestamp": "2026-08-22T22:49:52Z",
+          "from": "0x79f45eda7c59f3eb2a8c824014b9732516074c3c",
+          "to": "0x7868b4073a06731f408c2b416a28aee6032677e9",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 44
+        }
+      ]
+    },
+    {
+      "address": "0x6c2e4129226f5635a6d04db546f31af1f3f7affd",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x897d27c5b43c8a6e0446f621dde28338b3cb03250c0342f9cb0be51c8ee481f5"
+      ],
+      "firstMatch": "2026-08-22T23:52:54Z",
+      "lastMatch": "2026-08-22T23:52:54Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x897d27c5b43c8a6e0446f621dde28338b3cb03250c0342f9cb0be51c8ee481f5",
+          "blockNumber": 497367349,
+          "timestamp": "2026-08-22T23:52:54Z",
+          "from": "0x6c2e4129226f5635a6d04db546f31af1f3f7affd",
+          "to": "0xa356e4948005de04fdf5283d1d8db42da9b7beed",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 2
+        }
+      ]
+    },
+    {
+      "address": "0xa356e4948005de04fdf5283d1d8db42da9b7beed",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x897d27c5b43c8a6e0446f621dde28338b3cb03250c0342f9cb0be51c8ee481f5"
+      ],
+      "firstMatch": "2026-08-22T23:52:54Z",
+      "lastMatch": "2026-08-22T23:52:54Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x897d27c5b43c8a6e0446f621dde28338b3cb03250c0342f9cb0be51c8ee481f5",
+          "blockNumber": 497367349,
+          "timestamp": "2026-08-22T23:52:54Z",
+          "from": "0xa356e4948005de04fdf5283d1d8db42da9b7beed",
+          "to": "0x7868b4073a06731f408c2b416a28aee6032677e9",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 3
+        }
+      ]
+    },
+    {
+      "address": "0xcb15b958279350298bf323fb0f6c8bcd0e7460b5",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x7925fe7eb9ddabb72276f8cde00d84b714d25dc49863f28bcb74ffbc257aff3c"
+      ],
+      "firstMatch": "2026-08-23T08:29:33Z",
+      "lastMatch": "2026-08-23T08:29:33Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x7925fe7eb9ddabb72276f8cde00d84b714d25dc49863f28bcb74ffbc257aff3c",
+          "blockNumber": 497489843,
+          "timestamp": "2026-08-23T08:29:33Z",
+          "from": "0xcb15b958279350298bf323fb0f6c8bcd0e7460b5",
+          "to": "0x410bd9ef3b30fac977a53f5b2f4f949da1b30b3c",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 70
+        }
+      ]
+    },
+    {
+      "address": "0x410bd9ef3b30fac977a53f5b2f4f949da1b30b3c",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x7925fe7eb9ddabb72276f8cde00d84b714d25dc49863f28bcb74ffbc257aff3c"
+      ],
+      "firstMatch": "2026-08-23T08:29:33Z",
+      "lastMatch": "2026-08-23T08:29:33Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x7925fe7eb9ddabb72276f8cde00d84b714d25dc49863f28bcb74ffbc257aff3c",
+          "blockNumber": 497489843,
+          "timestamp": "2026-08-23T08:29:33Z",
+          "from": "0x410bd9ef3b30fac977a53f5b2f4f949da1b30b3c",
+          "to": "0xd7b44cb976fae38b6660db84de184cb1370d19d7",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 71
+        }
+      ]
+    },
+    {
+      "address": "0xd7b44cb976fae38b6660db84de184cb1370d19d7",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x7925fe7eb9ddabb72276f8cde00d84b714d25dc49863f28bcb74ffbc257aff3c"
+      ],
+      "firstMatch": "2026-08-23T08:29:33Z",
+      "lastMatch": "2026-08-23T08:29:33Z",
+      "movementTypes": {
+        "burns": 1,
+        "transfers": 0,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x7925fe7eb9ddabb72276f8cde00d84b714d25dc49863f28bcb74ffbc257aff3c",
+          "blockNumber": 497489843,
+          "timestamp": "2026-08-23T08:29:33Z",
+          "from": "0xd7b44cb976fae38b6660db84de184cb1370d19d7",
+          "to": "0x0000000000000000000000000000000000000000",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "burn",
+          "logIndex": 72
+        }
+      ]
+    },
+    {
+      "address": "0x13beb04e925db9cecea3467cb5ec7a00a32fe9c6",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0xd1f1eec3f539bc8a99faf9f2d2ee0daaa796c9b3491bfb73ad84a027bdbd38df"
+      ],
+      "firstMatch": "2026-08-23T09:41:07Z",
+      "lastMatch": "2026-08-23T09:41:07Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0xd1f1eec3f539bc8a99faf9f2d2ee0daaa796c9b3491bfb73ad84a027bdbd38df",
+          "blockNumber": 497506867,
+          "timestamp": "2026-08-23T09:41:07Z",
+          "from": "0x13beb04e925db9cecea3467cb5ec7a00a32fe9c6",
+          "to": "0xd021cfa6022e1770784233a4e17f9072436ace27",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": null
+        }
+      ]
+    },
+    {
+      "address": "0xd021cfa6022e1770784233a4e17f9072436ace27",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0xd1f1eec3f539bc8a99faf9f2d2ee0daaa796c9b3491bfb73ad84a027bdbd38df"
+      ],
+      "firstMatch": "2026-08-23T09:41:07Z",
+      "lastMatch": "2026-08-23T09:41:07Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0xd1f1eec3f539bc8a99faf9f2d2ee0daaa796c9b3491bfb73ad84a027bdbd38df",
+          "blockNumber": 497506867,
+          "timestamp": "2026-08-23T09:41:07Z",
+          "from": "0xd021cfa6022e1770784233a4e17f9072436ace27",
+          "to": "0xd20efbe22d4442a81aeb79b72a8b28f8ea9e34c2",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 1
+        }
+      ]
+    },
+    {
+      "address": "0x21154b7556cf689cd8b60c39bbe7ab4a2bb5bb86",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x8f3268867b618444e7d59bc9760d8228d2d836251a02ee6210bd76b49c2c33ac"
+      ],
+      "firstMatch": "2026-08-23T14:29:55Z",
+      "lastMatch": "2026-08-23T14:29:55Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x8f3268867b618444e7d59bc9760d8228d2d836251a02ee6210bd76b49c2c33ac",
+          "blockNumber": 497575880,
+          "timestamp": "2026-08-23T14:29:55Z",
+          "from": "0x21154b7556cf689cd8b60c39bbe7ab4a2bb5bb86",
+          "to": "0x476fbafca6a98a79047db826848b8e85c8f8ee02",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 6
+        }
+      ]
+    },
+    {
+      "address": "0x476fbafca6a98a79047db826848b8e85c8f8ee02",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x8f3268867b618444e7d59bc9760d8228d2d836251a02ee6210bd76b49c2c33ac"
+      ],
+      "firstMatch": "2026-08-23T14:29:55Z",
+      "lastMatch": "2026-08-23T14:29:55Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x8f3268867b618444e7d59bc9760d8228d2d836251a02ee6210bd76b49c2c33ac",
+          "blockNumber": 497575880,
+          "timestamp": "2026-08-23T14:29:55Z",
+          "from": "0x476fbafca6a98a79047db826848b8e85c8f8ee02",
+          "to": "0x7868b4073a06731f408c2b416a28aee6032677e9",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 7
+        }
+      ]
+    },
+    {
+      "address": "0x2f54250cf9539e43804f47d21cdd17075ab9937c",
+      "matches": 1,
+      "amounts": [
+        3000
+      ],
+      "hashes": [
+        "0x9094c5a204a56e855e69a0d3a69ff25767f72f7c2c65a3320a72aaa830c94c68"
+      ],
+      "firstMatch": "2026-08-23T16:06:58Z",
+      "lastMatch": "2026-08-23T16:06:58Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x9094c5a204a56e855e69a0d3a69ff25767f72f7c2c65a3320a72aaa830c94c68",
+          "blockNumber": 497599154,
+          "timestamp": "2026-08-23T16:06:58Z",
+          "from": "0x2f54250cf9539e43804f47d21cdd17075ab9937c",
+          "to": "0x7d9a9f633b2813971a3b0b611ead483151a2257f",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": null
+        }
+      ]
+    },
+    {
+      "address": "0x7d9a9f633b2813971a3b0b611ead483151a2257f",
+      "matches": 1,
+      "amounts": [
+        3000
+      ],
+      "hashes": [
+        "0x9094c5a204a56e855e69a0d3a69ff25767f72f7c2c65a3320a72aaa830c94c68"
+      ],
+      "firstMatch": "2026-08-23T16:06:58Z",
+      "lastMatch": "2026-08-23T16:06:58Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x9094c5a204a56e855e69a0d3a69ff25767f72f7c2c65a3320a72aaa830c94c68",
+          "blockNumber": 497599154,
+          "timestamp": "2026-08-23T16:06:58Z",
+          "from": "0x7d9a9f633b2813971a3b0b611ead483151a2257f",
+          "to": "0x328db6099416fd8010caa4b09d0283004c874653",
+          "amount": 3000,
+          "amountRaw": "3000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 1
+        }
+      ]
+    },
+    {
+      "address": "0x7d28bf7251eb1a5c27a36472e1c3cba448917253",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x75e0bac7573c16d70ae38861803db56cac4218e91438eb0494ba9df54f343125"
+      ],
+      "firstMatch": "2026-08-23T20:59:55Z",
+      "lastMatch": "2026-08-23T20:59:55Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x75e0bac7573c16d70ae38861803db56cac4218e91438eb0494ba9df54f343125",
+          "blockNumber": 497668908,
+          "timestamp": "2026-08-23T20:59:55Z",
+          "from": "0x7d28bf7251eb1a5c27a36472e1c3cba448917253",
+          "to": "0x718e56152052b898d0b3f60d5378d7a299bf761f",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": null
+        }
+      ]
+    },
+    {
+      "address": "0x718e56152052b898d0b3f60d5378d7a299bf761f",
+      "matches": 1,
+      "amounts": [
+        2000
+      ],
+      "hashes": [
+        "0x75e0bac7573c16d70ae38861803db56cac4218e91438eb0494ba9df54f343125"
+      ],
+      "firstMatch": "2026-08-23T20:59:55Z",
+      "lastMatch": "2026-08-23T20:59:55Z",
+      "movementTypes": {
+        "burns": 0,
+        "transfers": 1,
+        "mints": 0
+      },
+      "transactions": [
+        {
+          "transactionHash": "0x75e0bac7573c16d70ae38861803db56cac4218e91438eb0494ba9df54f343125",
+          "blockNumber": 497668908,
+          "timestamp": "2026-08-23T20:59:55Z",
+          "from": "0x718e56152052b898d0b3f60d5378d7a299bf761f",
+          "to": "0x7868b4073a06731f408c2b416a28aee6032677e9",
+          "amount": 2000,
+          "amountRaw": "2000000000",
+          "token": "0xace876e867ecf2c3d1b8097b160a666adce04cd0",
+          "movementType": "transfer",
+          "logIndex": 1
+        }
+      ]
+    }
+  ],
+  "warning": null
+}
