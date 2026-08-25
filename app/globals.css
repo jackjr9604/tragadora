@@ -128,3 +128,46 @@
     @apply font-sans;
   }
 }
+
+html {
+  scroll-behavior: smooth;
+}
+
+.home-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+.live-ticker-track {
+  display: flex;
+  width: max-content;
+  animation: ticker-scroll 65s linear infinite;
+  will-change: transform;
+}
+
+.live-ticker-viewport:hover .live-ticker-track {
+  animation-play-state: paused;
+}
+
+.live-ticker-viewport {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.motion-override {
+  display: none;
+}
+
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .live-ticker-track:not(.motion-enabled) { animation: none; }
+  .motion-override { display: inline-flex; }
+}

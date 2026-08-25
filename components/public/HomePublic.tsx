@@ -1,0 +1,48 @@
+import Link from 'next/link'
+import { ArrowRight, ArrowUpRight, Database, Globe2, ShieldCheck } from 'lucide-react'
+import type { HomeOffer, HomePayout, HomePlatform, PublicCountry } from '@/lib/home-data'
+import type { PageContent } from '@/lib/site-content'
+import { pageValue, sectionEnabled } from '@/lib/site-content'
+import { getContentPage } from '@/lib/content-schema'
+import type { PublicLanguage } from '@/lib/public-language'
+import type { RecommendableFirm, RecommendationCriteria } from '@/lib/prop-firm-recommender'
+import { PlatformLogo } from './PlatformLogo'
+import { PublicPageShell } from './PublicPageShell'
+import { PropFirmFinder } from './PropFirmFinder'
+import { compactMoney, money } from './public-format'
+
+type Props = {
+  content: PageContent
+  latestPayouts: HomePayout[]
+  featuredPlatforms: HomePlatform[]
+  offers: HomeOffer[]
+  language: PublicLanguage
+  recommendationFirms: RecommendableFirm[]
+  countries: PublicCountry[]
+  initialCriteria: Partial<RecommendationCriteria>
+  stats: { totalPaid: number; totalPayouts: number; paidToday: number; payoutsToday: number; firmsTracked: number }
+}
+
+export function HomePublic(props: Props) {
+  const { content, latestPayouts, featuredPlatforms, offers, language, recommendationFirms, countries, initialCriteria, stats } = props
+  const sectionNodes: Record<string, React.ReactNode> = {
+    hero: <section className="home-grid"><div className="mx-auto grid max-w-7xl gap-12 px-4 py-16 sm:px-6 lg:grid-cols-[1.05fr_.95fr] lg:px-8 lg:py-24"><div><Badge>{pageValue(content, 'hero', 'badge', 'Datos para operar con criterio')}</Badge><h1 className="mt-6 text-5xl font-bold leading-[.98] tracking-[-.055em] sm:text-6xl">{pageValue(content, 'hero', 'title', 'Compara antes de poner tu capital en juego.')}</h1><p className="mt-6 max-w-2xl text-lg leading-8 text-slate-400">{pageValue(content, 'hero', 'subtitle', 'Prop firms, ofertas y pagos verificados en un mismo lugar.')}</p><div className="mt-8 flex flex-wrap gap-3"><Link href={`/prop-firms?lang=${language}`} className="button-gold">{pageValue(content, 'hero', 'primary_cta', 'Explorar Prop Firms')} <ArrowRight className="size-4" /></Link><Link href={`/payouts?lang=${language}`} className="button-outline">{pageValue(content, 'hero', 'secondary_cta', 'Ver pagos verificados')}</Link></div></div><div className="rounded-[1.75rem] border border-white/12 bg-[#111c2e]/90 p-7"><p className="font-mono text-xs uppercase text-slate-400">Pagado hoy · <span className="text-cyan-300">Live</span></p><strong className="mt-5 block font-mono text-4xl text-emerald-400">{money.format(stats.paidToday)}</strong><p className="mt-2 text-xs text-slate-500">{stats.payoutsToday} retiros · {stats.firmsTracked} firmas</p>{latestPayouts.slice(0, 3).map((payout) => <div key={payout.id} className="mt-3 flex items-center gap-3 rounded-xl bg-white/[.04] p-3">{payout.platform && <PlatformLogo platform={payout.platform} small />}<span className="min-w-0 flex-1 truncate text-sm font-semibold">{payout.platform?.name ?? 'Payout verificado'}</span><span className="font-mono text-emerald-400">{money.format(payout.amount)}</span></div>)}</div></div></section>,
+    finder: <PropFirmFinder firms={recommendationFirms} countries={countries} language={language} initial={initialCriteria} badge={pageValue(content, 'finder', 'badge', 'Recomendador')} title={pageValue(content, 'finder', 'title', 'Encuentra la Prop Firm adecuada para ti')} subtitle={pageValue(content, 'finder', 'subtitle', 'Cuéntanos cómo operas y Tragadora compara las firmas por ti.')} cta={pageValue(content, 'finder', 'cta', 'Encontrar mis mejores opciones')} />,
+    payouts_preview: <section className="border-y border-white/8 bg-[#0c1626] py-16"><SectionHeader badge={pageValue(content, 'payouts_preview', 'badge', 'Payout tracker')} title={pageValue(content, 'payouts_preview', 'title', 'Pagos reales. Evidencia rastreable.')} subtitle={pageValue(content, 'payouts_preview', 'subtitle', 'Una lectura rápida de la actividad registrada.')} href={`/payouts?lang=${language}`} cta={pageValue(content, 'payouts_preview', 'cta', 'Ver Payout Tracker')} /><div className="mx-auto mt-8 grid max-w-7xl gap-4 px-4 sm:grid-cols-3 sm:px-6 lg:px-8">{[['Total registrado', compactMoney.format(stats.totalPaid)], ['Payouts', stats.totalPayouts.toLocaleString('es-CO')], ['Firmas rastreadas', String(stats.firmsTracked)]].map(([label, value]) => <Stat key={label} label={label} value={value} />)}</div></section>,
+    featured_firms: <section className="py-20"><SectionHeader badge={pageValue(content, 'featured_firms', 'badge', 'Directorio')} title={pageValue(content, 'featured_firms', 'title', 'Prop Firms destacadas')} href={`/prop-firms?lang=${language}`} cta={pageValue(content, 'featured_firms', 'cta', 'Ver todas las firmas')} /><div className="mx-auto mt-8 grid max-w-7xl gap-4 px-4 md:grid-cols-3 sm:px-6 lg:px-8">{featuredPlatforms.slice(0, 3).map((platform) => <article key={platform.id} className="rounded-2xl border border-white/10 bg-[#111c2e] p-6"><div className="flex items-center gap-3"><PlatformLogo platform={platform} /><h3 className="font-bold">{platform.name}</h3></div><p className="mt-5 min-h-12 text-sm text-slate-400">{platform.description || 'Consulta sus datos y condiciones.'}</p><Link href={`/go/${platform.slug}`} className="mt-5 inline-flex items-center gap-2 text-sm font-bold">Visitar <ArrowUpRight className="size-4" /></Link></article>)}</div></section>,
+    featured_offers: <section className="border-y border-white/8 bg-[#0c1626] py-20"><SectionHeader badge={pageValue(content, 'featured_offers', 'badge', 'Ofertas vigentes')} title={pageValue(content, 'featured_offers', 'title', 'Beneficios activos ahora.')} href={`/ofertas?lang=${language}`} cta={pageValue(content, 'featured_offers', 'cta', 'Ver todas las ofertas')} /><div className="mx-auto mt-8 grid max-w-7xl gap-4 px-4 md:grid-cols-2 lg:grid-cols-4 sm:px-6 lg:px-8">{offers.slice(0, 4).map((offer) => <article key={offer.id} className="rounded-2xl border border-white/10 bg-[#111c2e] p-5"><p className="text-sm font-semibold">{offer.platform.name}</p><strong className="mt-5 block text-3xl text-[#f7c64b]">{offer.discountValue}{offer.discountType === 'percentage' ? '%' : ' USD'}</strong><h3 className="mt-2 font-bold">{offer.title}</h3><Link href={`/go/${offer.platform.slug}`} className="mt-5 inline-flex items-center gap-2 text-sm font-bold">Ver oferta <ArrowUpRight className="size-4" /></Link></article>)}</div></section>,
+    methodology: <section className="mx-auto grid max-w-7xl gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[.75fr_1.25fr] lg:px-8"><div><Badge>{pageValue(content, 'methodology', 'badge', 'Metodología')}</Badge><h2 className="mt-3 text-3xl font-bold sm:text-4xl">{pageValue(content, 'methodology', 'title', 'La confianza necesita trazabilidad.')}</h2><p className="mt-4 text-slate-400">{pageValue(content, 'methodology', 'subtitle', 'Separamos datos observados y fuentes públicas.')}</p></div><div className="grid gap-4 sm:grid-cols-3">{[[Database, 'Datos propios'], [ShieldCheck, 'On-chain'], [Globe2, 'Fuentes públicas']].map(([Icon, title]) => <div key={String(title)} className="rounded-2xl border border-white/10 bg-[#111c2e] p-5"><Icon className="size-7 text-cyan-300" /><h3 className="mt-5 font-bold">{String(title)}</h3></div>)}</div></section>,
+    final_cta: <section className="mx-auto w-full max-w-7xl px-4 pb-20 sm:px-6 lg:px-8"><div className="rounded-[2rem] bg-[#f7c64b] p-8 text-[#101827] sm:p-12"><Badge>{pageValue(content, 'final_cta', 'badge', 'Decide con contexto')}</Badge><div className="mt-3 flex flex-col justify-between gap-8 lg:flex-row lg:items-center"><h2 className="max-w-3xl text-3xl font-bold sm:text-5xl">{pageValue(content, 'final_cta', 'title', 'Menos promesas. Más datos para comparar.')}</h2><Link href={`/prop-firms?lang=${language}`} className="button-dark">{pageValue(content, 'final_cta', 'cta', 'Explorar firmas')} <ArrowRight className="size-4" /></Link></div></div></section>,
+  }
+
+  const schema = getContentPage('home')
+  const sections = (schema?.sections ?? [])
+    .filter((section) => sectionEnabled(content, section.name) && sectionNodes[section.name])
+    .sort((a, b) => Number(content[a.name]?.order ?? schema!.sections.indexOf(a) + 1) - Number(content[b.name]?.order ?? schema!.sections.indexOf(b) + 1))
+
+  return <PublicPageShell payouts={latestPayouts} language={language}>{sections.map((section) => <div key={section.name} data-home-section={section.name}>{sectionNodes[section.name]}</div>)}</PublicPageShell>
+}
+
+function Badge({ children }: { children: React.ReactNode }) { return <span className="inline-flex rounded-full border border-cyan-300/25 bg-cyan-300/[.07] px-3 py-2 font-mono text-[11px] uppercase tracking-[.18em] text-cyan-300">{children}</span> }
+function Stat({ label, value }: { label: string; value: string }) { return <div className="rounded-2xl border border-white/10 bg-[#111c2e] p-5"><p className="text-sm text-slate-500">{label}</p><strong className="mt-2 block font-mono text-2xl">{value}</strong></div> }
+function SectionHeader({ badge, title, subtitle, href, cta }: { badge: string; title: string; subtitle?: string; href: string; cta: string }) { return <div className="mx-auto flex max-w-7xl flex-col justify-between gap-5 px-4 sm:flex-row sm:items-end sm:px-6 lg:px-8"><div><p className="font-mono text-xs uppercase tracking-[.2em] text-cyan-300">{badge}</p><h2 className="mt-3 text-3xl font-bold sm:text-4xl">{title}</h2>{subtitle && <p className="mt-3 text-slate-400">{subtitle}</p>}</div><Link href={href} className="inline-flex items-center gap-2 font-bold text-[#f7c64b]">{cta} <ArrowRight className="size-4" /></Link></div> }
