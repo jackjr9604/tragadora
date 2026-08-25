@@ -1,8 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-
-const SOURCE_NAME =
-  'FundingPips RiseUSD - Arbitrum'
+import PayoutSourceSelector from './PayoutSourceSelector'
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('es-CO', {
@@ -24,7 +22,13 @@ function formatDate(value: string | null) {
   }).format(new Date(value))
 }
 
-export default async function PayoutsPage() {
+export default async function PayoutsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    source?: string | string[]
+  }>
+}) {
   const supabase = await createClient()
 
   const {
@@ -45,20 +49,35 @@ export default async function PayoutsPage() {
       config,
       last_sync_at,
       last_success_at,
-      last_error
+      last_error,
+      platforms (
+        name
+      )
     `)
-    .eq('name', SOURCE_NAME)
-    .maybeSingle()
+    .order('name', { ascending: true })
 
   if (sourceResult.error) {
     throw new Error(sourceResult.error.message)
   }
 
-  const payoutSource = sourceResult.data
+  const sources = sourceResult.data ?? []
 
-  if (!payoutSource) {
+  if (sources.length === 0) {
     throw new Error('Fuente de payouts no encontrada')
   }
+
+  const params = await searchParams
+  const requestedSourceId = Array.isArray(params.source)
+    ? params.source[0]
+    : params.source
+  const payoutSource = sources.find(
+    (source) => source.id === requestedSourceId
+  ) ?? sources[0]
+  const sourceOptions = sources.map((source) => ({
+    id: source.id,
+    label:
+      source.platforms?.[0]?.name ?? source.name,
+  }))
 
   const [latestResult, firstStatsResult] =
     await Promise.all([
@@ -76,8 +95,8 @@ export default async function PayoutsPage() {
           external_id
         `)
         .eq(
-          'platform_id',
-          payoutSource.platform_id
+          'payout_source_id',
+          payoutSource.id
         )
         .order('payout_date', { ascending: false })
         .limit(25),
@@ -88,8 +107,8 @@ export default async function PayoutsPage() {
           count: 'exact',
         })
         .eq(
-          'platform_id',
-          payoutSource.platform_id
+          'payout_source_id',
+          payoutSource.id
         )
         .order('payout_date', { ascending: true })
         .range(0, 999),
@@ -111,8 +130,8 @@ export default async function PayoutsPage() {
       .from('payouts')
       .select('amount, payout_date')
       .eq(
-        'platform_id',
-        payoutSource.platform_id
+        'payout_source_id',
+        payoutSource.id
       )
       .order('payout_date', { ascending: true })
       .range(offset, offset + 999)
@@ -183,13 +202,20 @@ export default async function PayoutsPage() {
   return (
     <main className="min-h-screen bg-slate-100 p-8">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">
-            Monitoreo de payouts
-          </h1>
-          <p className="mt-1 text-slate-500">
-            Seguimiento automático de pagos verificados en blockchain.
-          </p>
+        <div className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+          <div>
+            <h1 className="text-3xl font-bold">
+              Monitoreo de payouts
+            </h1>
+            <p className="mt-1 text-slate-500">
+              Seguimiento automático de pagos verificados en blockchain.
+            </p>
+          </div>
+
+          <PayoutSourceSelector
+            sources={sourceOptions}
+            selectedId={payoutSource.id}
+          />
         </div>
 
         <section className="mb-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
