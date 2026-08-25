@@ -121,6 +121,21 @@ export async function POST(
     const config =
       payoutSource.config ?? {}
 
+    const historyComplete =
+      Boolean(config.history_complete)
+
+    if (historyComplete) {
+      return NextResponse.json({
+        success: true,
+        collector: 'fundingpips',
+        mode: 'historical',
+        historyComplete: true,
+        inserted: 0,
+        message:
+          'El histórico de FundingPips ya está completo.',
+      })
+    }
+
     const historyPage =
       Number(config.history_page ?? 1)
 
@@ -129,7 +144,7 @@ export async function POST(
     let currentPage = historyPage
     let totalTransactions = 0
     let allPayouts: BlockchainPayout[] = []
-    let historyComplete = false
+    let historyCompletedThisRun = false
 
     for (let i = 0; i < PAGES_PER_RUN; i++) {
       if (i > 0) {
@@ -148,7 +163,7 @@ export async function POST(
       ]
 
       if (!result.hasMore) {
-        historyComplete = true
+        historyCompletedThisRun = true
         break
       }
 
@@ -293,7 +308,7 @@ export async function POST(
     }
 
     const nextPage =
-      historyComplete
+      historyCompletedThisRun
         ? currentPage
         : currentPage + 1
 
@@ -304,7 +319,7 @@ export async function POST(
         nextPage,
 
       history_complete:
-        historyComplete,
+        historyCompletedThisRun,
     }
 
     await supabase
@@ -353,11 +368,12 @@ export async function POST(
         newPayouts.length,
 
       nextPage:
-        historyComplete
+        historyCompletedThisRun
           ? null
           : nextPage,
 
-      historyComplete,
+      historyComplete:
+        historyCompletedThisRun,
     })
   } catch (error) {
     console.error(error)
