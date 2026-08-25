@@ -92,16 +92,16 @@ export default async function PlatformsPage() {
                   className="border-b last:border-0"
                 >
                   <td className="px-6 py-4">
-  {platform.media ? (
-    <img
-      src={platform.media.file_url}
-      alt={
-        platform.media.alt_text ||
-        platform.name
-      }
-      className="h-10 w-10 rounded-lg object-contain"
-    />
-  ) : (
+  {platform.media?.[0] ? (
+  <img
+    src={platform.media[0].file_url}
+    alt={
+      platform.media[0].alt_text ||
+      platform.name
+    }
+    className="h-10 w-10 rounded-lg object-contain"
+  />
+) : (
     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-xs text-slate-400">
       —
     </div>
