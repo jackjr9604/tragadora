@@ -12,6 +12,10 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [recoveryLoading, setRecoveryLoading] =
+    useState(false)
+  const [recoveryMessage, setRecoveryMessage] =
+    useState('')
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -35,6 +39,37 @@ export default function LoginPage() {
 
     router.push('/admin')
     router.refresh()
+  }
+
+  async function handlePasswordRecovery() {
+    setError('')
+    setRecoveryMessage('')
+
+    if (!email) {
+      setError(
+        'Escribe tu correo electrónico para recuperar la contraseña.'
+      )
+      return
+    }
+
+    setRecoveryLoading(true)
+
+    const { error: recoveryError } =
+      await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo:
+          `${window.location.origin}/reset-password`,
+      })
+
+    if (recoveryError) {
+      setError(recoveryError.message)
+      setRecoveryLoading(false)
+      return
+    }
+
+    setRecoveryMessage(
+      'Revisa tu correo para continuar con la recuperación.'
+    )
+    setRecoveryLoading(false)
   }
 
   return (
@@ -68,8 +103,17 @@ export default function LoginPage() {
           />
 
           {error && (
-            <p className="text-sm text-red-600">
+            <p className="text-sm text-red-600" role="alert">
               {error}
+            </p>
+          )}
+
+          {recoveryMessage && (
+            <p
+              className="text-sm text-green-700"
+              role="status"
+            >
+              {recoveryMessage}
             </p>
           )}
 
@@ -79,6 +123,17 @@ export default function LoginPage() {
             className="w-full rounded-lg bg-black p-3 text-white"
           >
             {loading ? 'Ingresando...' : 'Iniciar sesión'}
+          </button>
+
+          <button
+            type="button"
+            onClick={handlePasswordRecovery}
+            disabled={loading || recoveryLoading}
+            className="w-full text-sm font-medium text-slate-600 underline disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {recoveryLoading
+              ? 'Enviando enlace...'
+              : 'Olvidé mi contraseña'}
           </button>
         </form>
       </div>
