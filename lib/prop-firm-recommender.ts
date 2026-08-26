@@ -19,6 +19,10 @@ export type RecommendableFirm = {
   supportsEa: boolean | null
   allowsNews: boolean | null
   allowsWeekend: boolean | null
+  allowsScalping: boolean | null
+  allowsDayTrading: boolean | null
+  allowsCopyTrading: boolean | null
+  markets: string[]
   verification: PayoutVerification
   verificationLabel: string
   availableCountryCodes: string[]
@@ -74,6 +78,18 @@ export function recommendPropFirms(criteria: RecommendationCriteria, firms: Reco
     const negatives: string[] = []
     const unavailable: string[] = []
 
+    if (criteria.market) {
+      availableWeight += 25
+      if (firm.markets.length === 0) {
+        unavailable.push('Mercado no confirmado')
+      } else if (firm.markets.includes(criteria.market)) {
+        earned += 25
+        positives.push(`Opera ${marketLabel(criteria.market)}`)
+      } else {
+        negatives.push(`No opera ${marketLabel(criteria.market)}`)
+      }
+    }
+
     const compatiblePlans = firm.plans.filter((plan) => {
       const budgetMatch = criteria.budget === null || plan.price === null || plan.price <= criteria.budget
       const sizeMatch = criteria.accountSize === null || plan.accountSize === null || plan.accountSize >= criteria.accountSize
@@ -102,14 +118,15 @@ export function recommendPropFirms(criteria: RecommendationCriteria, firms: Reco
       ['ea', firm.supportsEa, 8, 'Permite EA / Bots'],
       ['news', firm.allowsNews, 8, 'Permite operar noticias'],
       ['weekend', firm.allowsWeekend, 8, 'Permite mantener el fin de semana'],
+      ['scalping', firm.allowsScalping, 8, 'Permite scalping'],
+      ['day', firm.allowsDayTrading, 8, 'Permite Day Trading'],
+      ['copy', firm.allowsCopyTrading, 8, 'Permite Copy Trading'],
     ] as const
     for (const [style, value, weight, label] of styleChecks) {
       if (!criteria.styles.includes(style)) continue
       if (value === null) unavailable.push(`${label}: dato no disponible`)
       else { availableWeight += weight; if (value) { earned += weight; positives.push(label) } else negatives.push(`No ${label.toLowerCase()}`) }
     }
-    for (const style of criteria.styles.filter((item) => ['scalping', 'day'].includes(item))) unavailable.push(`${style === 'scalping' ? 'Scalping' : 'Day trading'}: dato no disponible`)
-
     const bestProfitSplit = Math.max(firm.profitSplit ?? 0, ...firm.plans.map((plan) => plan.profitSplit ?? 0))
     if (bestProfitSplit > 0) { availableWeight += 10; const points = bestProfitSplit >= 90 ? 10 : bestProfitSplit >= 80 ? 8 : 5; earned += points; positives.push(`Profit split de hasta ${bestProfitSplit}%`) }
     else unavailable.push('Profit split no disponible')
@@ -121,9 +138,17 @@ export function recommendPropFirms(criteria: RecommendationCriteria, firms: Reco
     }
     if (firm.score !== null) { availableWeight += 6; earned += Math.max(0, Math.min(6, (firm.score / 10) * 6)); positives.push(`Score público ${firm.score.toFixed(1)}`) }
     else unavailable.push('Score público no disponible')
-    if (criteria.market) unavailable.push('Mercado específico no estructurado todavía')
-
     const compatibility = availableWeight > 0 ? Math.round((earned / availableWeight) * 100) : 50
     return [{ firm, compatibility: Math.max(0, Math.min(100, compatibility)), positives, negatives, unavailable, recommendedPlan }]
   }).sort((a, b) => b.compatibility - a.compatibility || (b.firm.score ?? 0) - (a.firm.score ?? 0)).slice(0, 5)
+}
+
+function marketLabel(market: string) {
+  const labels: Record<string, string> = {
+    cfd: 'CFD / Forex',
+    futures: 'Futures',
+    crypto: 'Crypto',
+    options: 'Options',
+  }
+  return labels[market] ?? market
 }

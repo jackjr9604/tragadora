@@ -15,6 +15,10 @@ export type HomePlatform = {
   supportsEa: boolean | null
   allowsNews: boolean | null
   allowsWeekend: boolean | null
+  allowsScalping: boolean | null
+  allowsDayTrading: boolean | null
+  allowsCopyTrading: boolean | null
+  markets: string[]
 }
 
 export type HomeOffer = {
@@ -62,7 +66,7 @@ export async function getHomeData() {
   const supabase = await createClient()
   const now = new Date()
 
-  const [platformResult, detailResult, translationResult, sourceResult, challengeResult, planResult, availabilityResult, countryResult] =
+  const [platformResult, detailResult, translationResult, sourceResult, challengeResult, planResult, availabilityResult, countryResult, marketResult] =
     await Promise.all([
       supabase
         .from('platforms')
@@ -77,7 +81,8 @@ export async function getHomeData() {
         .from('prop_firm_details')
         .select(`
           platform_id, profit_split_max, supports_ea,
-          allows_news_trading, allows_weekend_holding
+          allows_news_trading, allows_weekend_holding,
+          allows_scalping, allows_day_trading, allows_copy_trading
         `),
       supabase
         .from('platform_translations')
@@ -91,6 +96,7 @@ export async function getHomeData() {
       supabase.from('account_plans').select('challenge_id, account_size, price, profit_split, max_drawdown'),
       supabase.from('platform_availability').select('*'),
       supabase.from('countries').select('*'),
+      supabase.from('platform_markets').select('platform_id, market'),
     ])
 
   const details = new Map(
@@ -99,6 +105,12 @@ export async function getHomeData() {
   const translations = new Map(
     (translationResult.data ?? []).map((item) => [item.platform_id, item])
   )
+  const marketsByPlatform = new Map<string, string[]>()
+  for (const item of marketResult.data ?? []) {
+    const current = marketsByPlatform.get(item.platform_id) ?? []
+    current.push(item.market)
+    marketsByPlatform.set(item.platform_id, current)
+  }
 
   const platforms: HomePlatform[] = (platformResult.data ?? []).map((row) => {
     const media = first(row.media)
@@ -121,6 +133,10 @@ export async function getHomeData() {
       supportsEa: detail?.supports_ea ?? null,
       allowsNews: detail?.allows_news_trading ?? null,
       allowsWeekend: detail?.allows_weekend_holding ?? null,
+      allowsScalping: detail?.allows_scalping ?? null,
+      allowsDayTrading: detail?.allows_day_trading ?? null,
+      allowsCopyTrading: detail?.allows_copy_trading ?? null,
+      markets: marketsByPlatform.get(row.id) ?? [],
     }
   })
   const platformMap = new Map(platforms.map((platform) => [platform.id, platform]))
@@ -278,7 +294,7 @@ export async function getHomeData() {
     const availableCountryCodes = platformAvailability.flatMap((item) => {
       const direct = String(item.country_code ?? item.code ?? '').toUpperCase()
       const related = countryCodeById.get(String(item.country_id ?? '')) ?? ''
-      const enabled = item.status === undefined || item.status === true || item.status === 'active' || item.available === true
+      const enabled = item.status === 'available'
       return enabled && (direct || related) ? [direct || related] : []
     })
     const verification = classifyPayoutVerification(sources.filter((source) => source.platform_id === platform.id))
@@ -287,6 +303,8 @@ export async function getHomeData() {
       id: platform.id, name: platform.name, slug: platform.slug, score: platform.score,
       logoUrl: platform.logoUrl, logoAlt: platform.logoAlt, profitSplit: platform.profitSplit,
       supportsEa: platform.supportsEa, allowsNews: platform.allowsNews, allowsWeekend: platform.allowsWeekend,
+      allowsScalping: platform.allowsScalping, allowsDayTrading: platform.allowsDayTrading,
+      allowsCopyTrading: platform.allowsCopyTrading, markets: platform.markets,
       verification: verification.level, verificationLabel: verification.label,
       availableCountryCodes, availabilityKnown: platformAvailability.length > 0,
       plans: platformChallenges.length ? plans : [],

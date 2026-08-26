@@ -9,9 +9,10 @@ type Platform = {
   name: string
 }
 
+const supabase = createClient()
+
 export default function NewChallengePage() {
   const router = useRouter()
-  const supabase = createClient()
 
   const [platforms, setPlatforms] = useState<Platform[]>([])
 
@@ -33,6 +34,19 @@ export default function NewChallengePage() {
         .order('name')
 
       setPlatforms(data ?? [])
+
+      const requestedPlatform = new URLSearchParams(
+        window.location.search
+      ).get('platform')
+
+      if (
+        requestedPlatform &&
+        (data ?? []).some(
+          (platform) => platform.id === requestedPlatform
+        )
+      ) {
+        setPlatformId(requestedPlatform)
+      }
     }
 
     loadPlatforms()
@@ -63,7 +77,7 @@ export default function NewChallengePage() {
       return
     }
 
-    router.push('/admin/challenges')
+    router.push(`/admin/challenges/platform/${platformId}`)
     router.refresh()
   }
 
@@ -180,7 +194,11 @@ export default function NewChallengePage() {
             <button
               type="button"
               onClick={() =>
-                router.push('/admin/challenges')
+                router.push(
+                  platformId
+                    ? `/admin/challenges/platform/${platformId}`
+                    : '/admin/challenges'
+                )
               }
               className="rounded-lg border px-5 py-3"
             >
