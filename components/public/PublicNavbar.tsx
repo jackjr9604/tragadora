@@ -2,10 +2,10 @@
 
 import Link from 'next/link'
 import { Menu, Search, X } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { BrandMark } from './BrandMark'
-import { languageUrl, type PublicLanguage } from '@/lib/public-language'
+import { languageUrl, type PublicLanguage, type PublicLanguageOption } from '@/lib/public-language'
 
 const links = [
   ['Payouts', '/payouts'],
@@ -20,12 +20,16 @@ const links = [
   ['Giveaway', '/giveaway'],
 ] as const
 
-export function PublicNavbar({ language = 'es' }: { language?: PublicLanguage }) {
+export function PublicNavbar({ language = 'es', languages }: { language?: PublicLanguage; languages: PublicLanguageOption[] }) {
   const [open, setOpen] = useState(false)
   const languageParam = useSearchParams().get('lang')
-  const activeLanguage = languageParam === 'en' || languageParam === 'pt' || languageParam === 'es'
-    ? languageParam
+  const activeLanguage = languages.some((item) => item.code === languageParam)
+    ? languageParam as string
     : language
+
+  useEffect(() => {
+    document.documentElement.lang = activeLanguage
+  }, [activeLanguage])
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/8 bg-[#0a1220]/92 backdrop-blur-xl">
@@ -53,9 +57,7 @@ export function PublicNavbar({ language = 'es' }: { language?: PublicLanguage })
             />
           </label>
           <select aria-label="Idioma" value={activeLanguage} onChange={(event) => { const next = event.target.value as PublicLanguage; window.location.href = languageUrl(window.location.href, next) }} className="h-10 rounded-xl border border-cyan-300/20 bg-[#111c2e] px-3 text-sm font-semibold text-cyan-200 outline-none">
-            <option value="es">ES</option>
-            <option value="en">EN</option>
-            <option value="pt">PT</option>
+            {languages.map((item) => <option key={item.code} value={item.code}>{item.code.toUpperCase()}</option>)}
           </select>
           <Link href="/payouts" className="rounded-xl border border-white/12 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/5">
             Metodología

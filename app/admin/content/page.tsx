@@ -1,14 +1,17 @@
 import Link from 'next/link'
-import { ArrowRight, FileText } from 'lucide-react'
+import { ArrowRight, FileText, Languages } from 'lucide-react'
 import { contentPages } from '@/lib/content-schema'
 
 export default function ContentPage() {
   return (
     <main className="min-h-screen bg-slate-100 p-8">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-8">
+        <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+          <div>
           <h1 className="text-3xl font-bold">Contenido</h1>
           <p className="mt-1 text-slate-500">Selecciona una página para editar sus secciones e idiomas.</p>
+          </div>
+          <Link href="/admin/content/languages" className="inline-flex items-center gap-2 rounded-lg bg-black px-5 py-3 text-sm font-medium text-white"><Languages className="size-4" /> Gestionar idiomas</Link>
         </div>
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {contentPages.map((page) => (

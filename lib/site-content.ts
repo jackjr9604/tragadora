@@ -1,8 +1,9 @@
 import 'server-only'
 
 import { createClient } from '@/lib/supabase/server'
+import type { PublicLanguageOption } from '@/lib/public-language'
 
-export type SiteLanguage = 'es' | 'en' | 'pt'
+export type SiteLanguage = string
 export type SiteContent = Record<string, string>
 export type PageSectionContent = Record<string, string | boolean | number>
 export type PageContent = Record<string, PageSectionContent>
@@ -14,11 +15,12 @@ export async function getSiteContent(
   const { data } = await supabase
     .from('site_content')
     .select('key, value, language')
-    .in('language', language === 'es' ? ['es'] : ['es', language])
+    .in('language', language === 'es' ? ['global', 'es'] : ['global', 'es', language])
 
   const rows = data ?? []
   const fallback = rows.filter((row) => row.language === 'es')
   const localized = rows.filter((row) => row.language === language)
+  const global = rows.filter((row) => row.language === 'global')
 
   const content = fallback.reduce<SiteContent>((result, row) => {
     if (row.value?.trim()) result[row.key] = row.value
@@ -29,7 +31,36 @@ export async function getSiteContent(
     if (row.value?.trim()) content[row.key] = row.value
   }
 
+  for (const row of global) {
+    if (row.value?.trim()) content[row.key] = row.value
+  }
+
   return content
+}
+
+export async function getActivePublicLanguages(): Promise<PublicLanguageOption[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('languages')
+    .select('code, name, native_name, is_default')
+    .eq('is_active', true)
+    .order('sort_order')
+    .order('name')
+
+  if (error || !data?.length) {
+    return [
+      { code: 'es', name: 'Español', nativeName: 'Español', isDefault: true },
+      { code: 'en', name: 'English', nativeName: 'English', isDefault: false },
+      { code: 'pt', name: 'Portuguese', nativeName: 'Português', isDefault: false },
+    ]
+  }
+
+  return data.map((language) => ({
+    code: language.code,
+    name: language.name,
+    nativeName: language.native_name,
+    isDefault: language.is_default,
+  }))
 }
 
 export function contentValue(

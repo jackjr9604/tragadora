@@ -4,7 +4,12 @@ import { LivePayoutTicker } from './LivePayoutTicker'
 import { PublicFooter } from './PublicFooter'
 import { PublicNavbar } from './PublicNavbar'
 import type { PublicLanguage } from '@/lib/public-language'
+import { getActivePublicLanguages } from '@/lib/site-content'
 
-export function PublicPageShell({ payouts, language = 'es', children }: { payouts: HomePayout[]; language?: PublicLanguage; children: ReactNode }) {
-  return <main className="min-h-screen overflow-hidden bg-[#09111f] text-slate-100"><LivePayoutTicker payouts={payouts} /><PublicNavbar language={language} /><div className="flex flex-col">{children}</div><PublicFooter /></main>
+export async function PublicPageShell({ payouts, language = 'es', children }: { payouts: HomePayout[]; language?: PublicLanguage; children: ReactNode }) {
+  const languages = await getActivePublicLanguages()
+  const activeLanguage = languages.some((item) => item.code === language)
+    ? language
+    : languages.find((item) => item.isDefault)?.code ?? 'es'
+  return <main className="min-h-screen overflow-hidden bg-[#09111f] text-slate-100"><LivePayoutTicker payouts={payouts} /><PublicNavbar language={activeLanguage} languages={languages} /><div className="flex flex-col">{children}</div><PublicFooter /></main>
 }

@@ -1,9 +1,17 @@
-export const publicLanguages = ['es', 'en', 'pt'] as const
-export type PublicLanguage = typeof publicLanguages[number]
+export type PublicLanguage = string
+
+export type PublicLanguageOption = {
+  code: string
+  name: string
+  nativeName: string
+  isDefault: boolean
+}
 
 export function resolvePublicLanguage(value: string | string[] | undefined): PublicLanguage {
-  const candidate = Array.isArray(value) ? value[0] : value
-  return publicLanguages.includes(candidate as PublicLanguage) ? candidate as PublicLanguage : 'es'
+  const candidate = (Array.isArray(value) ? value[0] : value)?.trim().toLowerCase()
+  return candidate && /^[a-z]{2,3}(?:-[a-z0-9]{2,8})?$/.test(candidate)
+    ? candidate
+    : 'es'
 }
 
 export function languageUrl(currentUrl: string, language: PublicLanguage) {

@@ -8,6 +8,7 @@ const ETHERSCAN_API_URL =
 const ZERO_ADDRESS =
   '0x0000000000000000000000000000000000000000'
 const PAGE_SIZE = 100
+const BLOCK_RESULT_LIMIT = 10_000
 const HASH_BATCH_SIZE = 75
 const MAX_RATE_LIMIT_RETRIES = 3
 
@@ -38,6 +39,8 @@ export type TradeifyConfig = {
   decimals: number
   settlementAddress: string
   historyPage: number
+  historyStartBlock: number | null
+  historyLastBlock: number | null
   historyComplete: boolean
   raw: Record<string, unknown>
 }
@@ -62,6 +65,12 @@ export type PayoutPageResult = {
   payouts: BlockchainPayout[]
   transactionCount: number
   hasMore: boolean
+}
+
+export type PayoutBlockRangeResult = {
+  payouts: BlockchainPayout[]
+  transactionCount: number
+  requestCount: number
 }
 
 export function isAuthorized(request: Request) {
@@ -217,6 +226,143 @@ export async function getTradeifyPayoutPage({
     payouts,
     transactionCount: transactions.length,
     hasMore: transactions.length === PAGE_SIZE,
+  }
+}
+
+export async function getTradeifyCurrentBlock(
+  config: TradeifyConfig
+) {
+  const result = await requestEtherscan(new URLSearchParams({
+    chainid: String(config.chainId),
+    module: 'proxy',
+    action: 'eth_blockNumber',
+  }))
+  if (result === 'window-too-large') {
+    throw new Error('Respuesta inesperada consultando el bloque actual')
+  }
+  const block = typeof result.result === 'string'
+    ? Number.parseInt(result.result, 16)
+    : Number.NaN
+
+  if (!Number.isSafeInteger(block) || block < 0) {
+    throw new Error('Etherscan no devolvió un bloque actual válido')
+  }
+
+  return block
+}
+
+export async function getTradeifyFirstTransferBlock({
+  config,
+  currentBlock,
+}: {
+  config: TradeifyConfig
+  currentBlock: number
+}) {
+  const result = await requestEtherscan(new URLSearchParams({
+    chainid: String(config.chainId),
+    module: 'account',
+    action: 'tokentx',
+    contractaddress: config.tokenAddress,
+    address: config.settlementAddress,
+    startblock: '0',
+    endblock: String(currentBlock),
+    page: '1',
+    offset: '1',
+    sort: 'asc',
+  }), true)
+  if (result === 'window-too-large') {
+    throw new Error('Respuesta inesperada consultando el primer bloque')
+  }
+  const transactions = getTokenTransfers(result)
+
+  if (transactions.length === 0) {
+    return null
+  }
+
+  const block = Number(transactions[0].blockNumber)
+  if (!Number.isSafeInteger(block) || block < 0) {
+    throw new Error('Etherscan no devolvió un bloque inicial válido')
+  }
+
+  return block
+}
+
+export async function getTradeifyPayoutBlockRange({
+  config,
+  startBlock,
+  endBlock,
+}: {
+  config: TradeifyConfig
+  startBlock: number
+  endBlock: number
+}): Promise<PayoutBlockRangeResult> {
+  if (startBlock > endBlock) {
+    return { payouts: [], transactionCount: 0, requestCount: 0 }
+  }
+
+  const result = await requestEtherscan(new URLSearchParams({
+    chainid: String(config.chainId),
+    module: 'account',
+    action: 'tokentx',
+    contractaddress: config.tokenAddress,
+    address: config.settlementAddress,
+    startblock: String(startBlock),
+    endblock: String(endBlock),
+    page: '1',
+    offset: String(BLOCK_RESULT_LIMIT),
+    sort: 'asc',
+  }), true, true)
+
+  if (result === 'window-too-large') {
+    return splitBlockRange({ config, startBlock, endBlock })
+  }
+
+  const transactions = getTokenTransfers(result)
+  if (transactions.length >= BLOCK_RESULT_LIMIT) {
+    return splitBlockRange({ config, startBlock, endBlock })
+  }
+
+  return {
+    payouts: mapTradeifyPayouts(transactions, config),
+    transactionCount: transactions.length,
+    requestCount: 1,
+  }
+}
+
+async function splitBlockRange({
+  config,
+  startBlock,
+  endBlock,
+}: {
+  config: TradeifyConfig
+  startBlock: number
+  endBlock: number
+}): Promise<PayoutBlockRangeResult> {
+  if (startBlock === endBlock) {
+    throw new Error(
+      `El bloque ${startBlock} contiene al menos ${BLOCK_RESULT_LIMIT} transferencias y no puede subdividirse más`
+    )
+  }
+
+  const middleBlock = Math.floor((startBlock + endBlock) / 2)
+  await delay(400)
+  const left = await getTradeifyPayoutBlockRange({
+    config,
+    startBlock,
+    endBlock: middleBlock,
+  })
+  await delay(400)
+  const right = await getTradeifyPayoutBlockRange({
+    config,
+    startBlock: middleBlock + 1,
+    endBlock,
+  })
+
+  return {
+    payouts: [...left.payouts, ...right.payouts],
+    transactionCount:
+      left.transactionCount + right.transactionCount,
+    requestCount: left.requestCount + right.requestCount + 1,
   }
 }
 
@@ -421,6 +567,90 @@ export function delay(milliseconds: number) {
   })
 }
 
+async function requestEtherscan(
+  searchParams: URLSearchParams,
+  validateTokenTransfers = false,
+  allowWindowSplit = false
+): Promise<EtherscanResponse | 'window-too-large'> {
+  const apiKey = process.env.ETHERSCAN_API_KEY
+  if (!apiKey) {
+    throw new Error('ETHERSCAN_API_KEY no configurada')
+  }
+
+  searchParams.set('apikey', apiKey)
+  const url = `${ETHERSCAN_API_URL}?${searchParams.toString()}`
+  let result: EtherscanResponse = {}
+
+  for (let attempt = 0; attempt < MAX_RATE_LIMIT_RETRIES; attempt++) {
+    const response = await fetch(url, { cache: 'no-store' })
+    if (!response.ok) {
+      if (attempt === MAX_RATE_LIMIT_RETRIES - 1) {
+        throw new Error(`Etherscan respondió HTTP ${response.status}`)
+      }
+      await delay(1_000 * (attempt + 1))
+      continue
+    }
+
+    result = await response.json() as EtherscanResponse
+    const message = getEtherscanMessage(result).toLowerCase()
+    if (allowWindowSplit && isWindowTooLargeMessage(message)) {
+      return 'window-too-large'
+    }
+    if (!message.includes('rate limit')) break
+    if (attempt === MAX_RATE_LIMIT_RETRIES - 1) {
+      throw new Error('Etherscan rate limit alcanzado después de 3 reintentos')
+    }
+    await delay(1_000 * (attempt + 1))
+  }
+
+  if (validateTokenTransfers) {
+    const message = getEtherscanMessage(result).toLowerCase()
+    const noTransactions = message.includes('no transactions')
+    if (result.status !== '1' && !noTransactions) {
+      throw new Error(getEtherscanMessage(result, 'Error consultando RiseUSD para Tradeify'))
+    }
+  }
+
+  return result
+}
+
+function isWindowTooLargeMessage(message: string) {
+  return (
+    message.includes('result window is too large') ||
+    message.includes('pageno x offset') ||
+    message.includes('page no x offset') ||
+    message.includes('query timeout') ||
+    message.includes('smaller result dataset') ||
+    message.includes('more than 10000')
+  )
+}
+
+function getTokenTransfers(result: EtherscanResponse) {
+  return Array.isArray(result.result)
+    ? result.result as EtherscanTokenTransfer[]
+    : []
+}
+
+function mapTradeifyPayouts(
+  transactions: EtherscanTokenTransfer[],
+  config: TradeifyConfig
+) {
+  const divisor = Math.pow(10, config.decimals)
+  return transactions
+    .filter((transaction) => (
+      transaction.from?.toLowerCase() === config.settlementAddress.toLowerCase() &&
+      transaction.to?.toLowerCase() === ZERO_ADDRESS
+    ))
+    .map((transaction) => ({
+      hash: transaction.hash,
+      block: Number(transaction.blockNumber),
+      date: new Date(Number(transaction.timeStamp) * 1_000).toISOString(),
+      recipient: ZERO_ADDRESS,
+      amountRaw: transaction.value,
+      amount: Number(transaction.value) / divisor,
+    }))
+}
+
 function parseTradeifyConfig(
   value: unknown
 ): TradeifyConfig {
@@ -449,6 +679,14 @@ function parseTradeifyConfig(
   const historyPageValue = Number(
     config.history_page ?? 1
   )
+  const historyStartBlock = optionalNonNegativeInteger(
+    config.history_start_block,
+    'history_start_block'
+  )
+  const historyLastBlock = optionalNonNegativeInteger(
+    config.history_last_block,
+    'history_last_block'
+  )
 
   if (
     !Number.isSafeInteger(historyPageValue) ||
@@ -467,9 +705,27 @@ function parseTradeifyConfig(
     decimals,
     settlementAddress,
     historyPage: historyPageValue,
+    historyStartBlock,
+    historyLastBlock,
     historyComplete: Boolean(config.history_complete),
     raw: config,
   }
+}
+
+function optionalNonNegativeInteger(
+  value: unknown,
+  key: string
+) {
+  if (value === undefined || value === null || value === '') {
+    return null
+  }
+
+  const number = Number(value)
+  if (!Number.isSafeInteger(number) || number < 0) {
+    throw new Error(`Tradeify config.${key} debe ser un entero no negativo`)
+  }
+
+  return number
 }
 
 function requireString(

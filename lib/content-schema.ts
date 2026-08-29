@@ -9,7 +9,12 @@ export type ContentSectionSchema = {
   name: string
   label: string
   description: string
-  fields: ContentFieldSchema[]
+  globalConfig: {
+    enabled: boolean
+    align: 'left' | 'center' | 'right'
+    titleSize: 'small' | 'large' | 'xlarge'
+  }
+  translatableFields: ContentFieldSchema[]
 }
 
 export type ContentPageSchema = {
@@ -22,7 +27,8 @@ export type ContentPageSchema = {
 
 const standardHero = (title: string, subtitle: string): ContentSectionSchema => ({
   name: 'hero', label: 'Hero', description: 'Encabezado principal de la página.',
-  fields: [
+  globalConfig: { enabled: true, align: 'left', titleSize: 'xlarge' },
+  translatableFields: [
     { name: 'badge', label: 'Badge', fallback: 'Tragadora' },
     { name: 'title', label: 'Título', fallback: title },
     { name: 'subtitle', label: 'Subtítulo', type: 'textarea', fallback: subtitle },
@@ -33,7 +39,8 @@ const standardHero = (title: string, subtitle: string): ContentSectionSchema => 
 
 const previewSection = (name: string, label: string, description: string, badge: string, title: string, subtitle: string, cta?: string): ContentSectionSchema => ({
   name, label, description,
-  fields: [
+  globalConfig: { enabled: true, align: 'left', titleSize: 'large' },
+  translatableFields: [
     { name: 'badge', label: 'Badge', fallback: badge },
     { name: 'title', label: 'Título', fallback: title },
     { name: 'subtitle', label: 'Subtítulo', type: 'textarea', fallback: subtitle },
@@ -51,7 +58,7 @@ export const contentPages: ContentPageSchema[] = [
       previewSection('featured_offers', 'Ofertas destacadas', 'Preview de promociones vigentes.', 'Ofertas vigentes', 'Beneficios activos ahora.', 'Promociones configuradas y dentro de su vigencia.', 'Ver todas las ofertas'),
       previewSection('methodology', 'Metodología', 'Explicación sobre la trazabilidad.', 'Metodología', 'La confianza necesita trazabilidad.', 'Separamos datos observados, información declarada y enlaces comerciales.'),
       previewSection('finder', 'Buscador de Prop Firms', 'Experiencia principal de recomendación.', 'Recomendador', 'Encuentra la Prop Firm adecuada para ti', 'Cuéntanos cómo operas y Tragadora compara las firmas por ti.', 'Encontrar mis mejores opciones'),
-      { name: 'final_cta', label: 'CTA final', description: 'Cierre de la portada.', fields: [
+      { name: 'final_cta', label: 'CTA final', description: 'Cierre de la portada.', globalConfig: { enabled: true, align: 'center', titleSize: 'large' }, translatableFields: [
         { name: 'badge', label: 'Badge', fallback: 'Decide con contexto' },
         { name: 'title', label: 'Título', fallback: 'Menos promesas. Más datos para comparar.' },
         { name: 'cta', label: 'Texto del botón', fallback: 'Explorar firmas' },
