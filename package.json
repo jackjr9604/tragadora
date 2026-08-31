@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "collect:pfm": "tsx scripts/collect-propfirmmatch.ts",
+    "capture:pfm": "tsx scripts/capture-propfirmmatch.ts",
+    "collect:mondo": "tsx scripts/collect-mondotraders.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
@@ -29,7 +32,9 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.2",
+    "playwright": "^1.62.1",
     "tailwindcss": "^4",
+    "tsx": "^4.23.12",
     "typescript": "^5"
   }
 }

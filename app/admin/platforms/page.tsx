@@ -45,12 +45,12 @@ export default async function PlatformsPage() {
             </p>
           </div>
 
-          <Link
+          <div className="flex gap-3"><Link href="/admin/platforms/research" className="rounded-lg border bg-white px-5 py-3 text-sm font-medium">Banco de investigación</Link><Link
             href="/admin/platforms/new"
             className="rounded-lg bg-black px-5 py-3 text-sm font-medium text-white hover:bg-slate-800"
           >
             + Nueva Prop Firm
-          </Link>
+          </Link></div>
         </div>
 
         <div className="overflow-hidden rounded-xl bg-white shadow">

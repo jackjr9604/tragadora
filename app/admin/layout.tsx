@@ -41,6 +41,13 @@ export default function AdminLayout({
           </Link>
 
           <Link
+            href="/admin/platforms/research"
+            className="block rounded-lg px-3 py-2 hover:bg-slate-100"
+          >
+            Investigación
+          </Link>
+
+          <Link
             href="/admin/payouts"
             className="block rounded-lg px-3 py-2 hover:bg-slate-100"
           >

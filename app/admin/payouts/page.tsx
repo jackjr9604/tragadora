@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { MondoTradersStatusPanel } from '@/components/admin/MondoTradersStatusPanel'
 import PayoutSourceSelector from './PayoutSourceSelector'
 
 function formatCurrency(value: number) {
@@ -75,6 +76,8 @@ export default async function PayoutsPage({
               Seguimiento automático de pagos verificados en blockchain.
             </p>
           </div>
+
+          <MondoTradersStatusPanel />
 
           <div className="rounded-xl bg-white p-8 text-center shadow">
             <h2 className="text-xl font-semibold">
@@ -255,6 +258,12 @@ export default async function PayoutsPage({
                 Editar fuente
               </Link>
               <Link
+                href={`/admin/platforms/${payoutSource.platform_id}/edit`}
+                className="rounded-lg border bg-white px-4 py-2 text-sm font-medium"
+              >
+                Editar Prop Firm
+              </Link>
+              <Link
                 href="/admin/payouts/sources/new"
                 className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white"
               >
@@ -263,6 +272,8 @@ export default async function PayoutsPage({
             </div>
           </div>
         </div>
+
+        <MondoTradersStatusPanel />
 
         <section className="mb-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
           {stats.map((stat) => (
