@@ -144,7 +144,7 @@ export class OpenAITranslationProvider implements TranslationProvider {
   }
 }
 
-const TRANSLATION_INSTRUCTIONS = `Translate CMS copy for Tragadora, a LATAM comparison platform for Prop Firms, brokers and trading products. Preserve company names, brands, URLs, slugs, identifiers, codes and common trading terms. Return only valid JSON: an array with the keys "key" and "translatedValue".`
+const TRANSLATION_INSTRUCTIONS = `Translate CMS copy for Tradagora, a LATAM comparison platform for Prop Firms, brokers and trading products. Preserve company names, brands, URLs, slugs, identifiers, codes and common trading terms. Return only valid JSON: an array with the keys "key" and "translatedValue".`
 
 export function getTranslationProvider(): TranslationProvider | null {
   const selected = selectedProviderName()

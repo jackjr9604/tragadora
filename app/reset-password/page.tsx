@@ -102,7 +102,7 @@ export default function ResetPasswordPage() {
         </h1>
 
         <p className="mb-6 text-sm text-slate-500">
-          Establece una nueva contraseña para tu cuenta de Tragadora.
+          Establece una nueva contraseña para tu cuenta de Tradagora.
         </p>
 
         {checkingSession ? (

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { resolvePublicLanguage } from '@/lib/language'
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,17 +15,19 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Tragadora | Datos para traders',
-    template: '%s | Tragadora',
+    default: 'Tradagora | Datos para traders',
+    template: '%s | Tradagora',
   },
   description:
     'Compara Prop Firms, ofertas y payouts verificados con datos para traders de Latinoamérica.',
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const language = await resolvePublicLanguage()
+
   return (
     <html
-      lang="es"
+      lang={language}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>

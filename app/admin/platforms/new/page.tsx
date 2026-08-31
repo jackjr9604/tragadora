@@ -97,7 +97,7 @@ export default function NewPlatformPage() {
         </h1>
 
         <p className="mt-1 mb-8 text-slate-500">
-          Registra una nueva Prop Firm en Tragadora.
+          Registra una nueva Prop Firm en Tradagora.
         </p>
 
         <form

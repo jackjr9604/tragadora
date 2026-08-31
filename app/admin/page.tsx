@@ -115,7 +115,7 @@ export default async function AdminDashboard() {
           </h1>
 
           <p className="mt-1 text-slate-500">
-            Centro de administración de Tragadora.
+            Centro de administración de Tradagora.
           </p>
         </div>
 

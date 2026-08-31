@@ -239,7 +239,7 @@ export default function NewAffiliateLinkPage() {
               onChange={(e) =>
                 setCampaign(e.target.value)
               }
-              placeholder="tragadora-home"
+              placeholder="tradagora-home"
               className="w-full rounded-lg border p-3"
             />
           </div>

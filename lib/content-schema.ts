@@ -29,7 +29,7 @@ const standardHero = (title: string, subtitle: string): ContentSectionSchema => 
   name: 'hero', label: 'Hero', description: 'Encabezado principal de la página.',
   globalConfig: { enabled: true, align: 'left', titleSize: 'xlarge' },
   translatableFields: [
-    { name: 'badge', label: 'Badge', fallback: 'Tragadora' },
+    { name: 'badge', label: 'Badge', fallback: 'Tradagora' },
     { name: 'title', label: 'Título', fallback: title },
     { name: 'subtitle', label: 'Subtítulo', type: 'textarea', fallback: subtitle },
     { name: 'primary_cta', label: 'Texto botón principal', fallback: 'Explorar' },
@@ -57,7 +57,7 @@ export const contentPages: ContentPageSchema[] = [
       previewSection('featured_firms', 'Prop Firms destacadas', 'Preview del directorio de firmas.', 'Directorio', 'Prop Firms destacadas', 'Firmas con datos disponibles para comparar.', 'Ver todas las firmas'),
       previewSection('featured_offers', 'Ofertas destacadas', 'Preview de promociones vigentes.', 'Ofertas vigentes', 'Beneficios activos ahora.', 'Promociones configuradas y dentro de su vigencia.', 'Ver todas las ofertas'),
       previewSection('methodology', 'Metodología', 'Explicación sobre la trazabilidad.', 'Metodología', 'La confianza necesita trazabilidad.', 'Separamos datos observados, información declarada y enlaces comerciales.'),
-      previewSection('finder', 'Buscador de Prop Firms', 'Experiencia principal de recomendación.', 'Recomendador', 'Encuentra la Prop Firm adecuada para ti', 'Cuéntanos cómo operas y Tragadora compara las firmas por ti.', 'Encontrar mis mejores opciones'),
+      previewSection('finder', 'Buscador de Prop Firms', 'Experiencia principal de recomendación.', 'Recomendador', 'Encuentra la Prop Firm adecuada para ti', 'Cuéntanos cómo operas y Tradagora compara las firmas por ti.', 'Encontrar mis mejores opciones'),
       { name: 'final_cta', label: 'CTA final', description: 'Cierre de la portada.', globalConfig: { enabled: true, align: 'center', titleSize: 'large' }, translatableFields: [
         { name: 'badge', label: 'Badge', fallback: 'Decide con contexto' },
         { name: 'title', label: 'Título', fallback: 'Menos promesas. Más datos para comparar.' },

@@ -46,7 +46,7 @@ export default async function AffiliateLinksPage() {
           </h1>
 
           <p className="mt-1 text-slate-500">
-            Gestiona los enlaces de referido de Tragadora.
+            Gestiona los enlaces de referido de Tradagora.
           </p>
         </div>
 

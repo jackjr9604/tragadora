@@ -19,7 +19,7 @@ python -m pip install --upgrade pip
 python -m pip install libretranslate
 ```
 
-La instalación es independiente de las dependencias Node.js de Tragadora.
+La instalación es independiente de las dependencias Node.js de Tradagora.
 
 ## 3. Iniciar los idiomas del CMS
 
@@ -45,7 +45,7 @@ Invoke-RestMethod -Uri 'http://127.0.0.1:5000/languages' -Method GET
 
 La respuesta debe incluir `es`, `en`, `pt` y `fr`.
 
-## 5. Configurar Tragadora
+## 5. Configurar Tradagora
 
 Agrega a `.env.local`:
 

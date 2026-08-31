@@ -1,7 +1,7 @@
 import 'server-only'
 
 import { createClient } from '@/lib/supabase/server'
-import type { PublicLanguageOption } from '@/lib/public-language'
+import { visibleBrandText, type PublicLanguageOption } from '@/lib/public-language'
 
 export type SiteLanguage = string
 export type SiteContent = Record<string, string>
@@ -22,17 +22,17 @@ export async function getSiteContent(
   const localized = rows.filter((row) => row.language === language)
   const global = rows.filter((row) => row.language === 'global')
 
-  const content = fallback.reduce<SiteContent>((result, row) => {
-    if (row.value?.trim()) result[row.key] = row.value
+  const content = global.reduce<SiteContent>((result, row) => {
+    if (row.value?.trim()) result[row.key] = visibleBrandText(row.value)
     return result
   }, {})
 
-  for (const row of localized) {
-    if (row.value?.trim()) content[row.key] = row.value
+  for (const row of fallback) {
+    if (row.value?.trim()) content[row.key] = visibleBrandText(row.value)
   }
 
-  for (const row of global) {
-    if (row.value?.trim()) content[row.key] = row.value
+  for (const row of localized) {
+    if (row.value?.trim()) content[row.key] = visibleBrandText(row.value)
   }
 
   return content

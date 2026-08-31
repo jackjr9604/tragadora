@@ -6,7 +6,7 @@ export function BrandMark({ compact = false }: { compact?: boolean }) {
       <span className="flex size-9 items-center justify-center rounded-xl bg-[#f7c64b] text-[#0a1220] shadow-[0_0_28px_rgba(247,198,75,.24)]">
         <Landmark className="size-5" aria-hidden="true" />
       </span>
-      {!compact && <span className="text-lg tracking-tight">Tragadora</span>}
+      {!compact && <span className="text-lg tracking-tight">Tradagora</span>}
     </span>
   )
 }

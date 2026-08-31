@@ -160,7 +160,7 @@ export default function MediaPage() {
         </h1>
 
         <p className="mt-1 text-slate-500">
-          Gestiona las imágenes utilizadas en Tragadora.
+          Gestiona las imágenes utilizadas en Tradagora.
         </p>
       </div>
 

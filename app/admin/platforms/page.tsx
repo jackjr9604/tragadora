@@ -41,7 +41,7 @@ export default async function PlatformsPage() {
             </h1>
 
             <p className="mt-1 text-slate-500">
-              Gestiona las plataformas de Tragadora.
+              Gestiona las plataformas de Tradagora.
             </p>
           </div>
 

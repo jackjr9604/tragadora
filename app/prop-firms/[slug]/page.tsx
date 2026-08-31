@@ -5,7 +5,7 @@ import { ArrowUpRight, Check, HelpCircle, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { getHomeData, type HomePlatform } from '@/lib/home-data'
 import { classifyPayoutVerification } from '@/lib/prop-firm-recommender'
-import { resolvePublicLanguage } from '@/lib/public-language'
+import { resolvePublicLanguage } from '@/lib/language'
 import { PlatformLogo } from '@/components/public/PlatformLogo'
 import { PublicPageShell } from '@/components/public/PublicPageShell'
 
@@ -20,12 +20,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params
   const supabase = await createClient()
   const { data } = await supabase.from('platforms').select('name').eq('slug', slug).maybeSingle()
-  return data ? { title: `${data.name} | Tragadora`, description: `Condiciones, reglas, cuentas y payouts verificados de ${data.name}.` } : {}
+  return data ? { title: `${data.name} | Tradagora`, description: `Condiciones, reglas, cuentas y payouts verificados de ${data.name}.` } : {}
 }
 
 export default async function PropFirmDetailPage({ params, searchParams }: PageProps) {
   const [{ slug }, query] = await Promise.all([params, searchParams])
-  const language = resolvePublicLanguage(query.lang)
+  const language = await resolvePublicLanguage(query.lang)
   const supabase = await createClient()
 
   const platformResult = await supabase.from('platforms').select(`
@@ -36,7 +36,7 @@ export default async function PropFirmDetailPage({ params, searchParams }: PageP
   const row = platformResult.data
 
   const [homeData, detailsResult, translationsResult, marketsResult, availabilityResult, countriesResult, challengesResult, plansResult, sourcesResult, payoutsResult, offersResult] = await Promise.all([
-    getHomeData(),
+    getHomeData(language),
     supabase.from('prop_firm_details').select('*').eq('platform_id', row.id).maybeSingle(),
     supabase.from('platform_translations').select('language, short_description').eq('platform_id', row.id).in('language', [language, 'es']),
     supabase.from('platform_markets').select('market').eq('platform_id', row.id),

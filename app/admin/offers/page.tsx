@@ -18,6 +18,7 @@ export default async function OffersPage() {
     .from('offers')
     .select(`
       id,
+      platform_id,
       title,
       discount_value,
       discount_type,
@@ -26,16 +27,24 @@ export default async function OffersPage() {
       language,
       starts_at,
       expires_at,
-      status,
-      platforms (
-        name
-      )
+      status
     `)
     .order('created_at', { ascending: false })
 
   if (error) {
     throw new Error(error.message)
   }
+
+  const platformIds = [...new Set((offers ?? []).map((offer) => offer.platform_id).filter(Boolean))]
+  const platformResult = platformIds.length
+    ? await supabase.from('platforms').select('id, name').in('id', platformIds)
+    : { data: [], error: null }
+
+  if (platformResult.error) {
+    throw new Error(platformResult.error.message)
+  }
+
+  const platformNames = new Map((platformResult.data ?? []).map((platform) => [platform.id, platform.name]))
 
   return (
     <main className="p-8">
@@ -102,7 +111,7 @@ export default async function OffersPage() {
                 className="border-b last:border-0"
               >
                 <td className="px-6 py-4 font-medium">
-                  {offer.platforms?.[0]?.name ?? '—'}
+                  {platformNames.get(offer.platform_id) ?? '—'}
                 </td>
 
                 <td className="px-6 py-4">

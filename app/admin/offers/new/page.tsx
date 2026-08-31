@@ -280,7 +280,7 @@ export default function NewOfferPage() {
               onChange={(e) =>
                 setPromoCode(e.target.value)
               }
-              placeholder="TRAGADORA20"
+              placeholder="TRADAGORA20"
               className="w-full rounded-lg border p-3 uppercase"
             />
           </div>

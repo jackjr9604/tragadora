@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { createClient } from '@/lib/supabase/server'
+import { visibleBrandText } from '@/lib/public-language'
 import { classifyPayoutVerification, type RecommendableFirm } from '@/lib/prop-firm-recommender'
 
 export type HomePlatform = {
@@ -29,6 +30,8 @@ export type HomeOffer = {
   discountType: string
   promoCode: string | null
   expiresAt: string | null
+  affiliateLinkId: string | null
+  countryCode: string | null
   platform: HomePlatform
 }
 
@@ -62,7 +65,7 @@ function first<T>(value: T[] | T | null | undefined): T | null {
   return Array.isArray(value) ? value[0] ?? null : value ?? null
 }
 
-export async function getHomeData() {
+export async function getHomeData(language = 'es', countryCode?: string | null) {
   const supabase = await createClient()
   const now = new Date()
 
@@ -87,7 +90,7 @@ export async function getHomeData() {
       supabase
         .from('platform_translations')
         .select('platform_id, language, short_description')
-        .eq('language', 'es'),
+        .in('language', language === 'es' ? ['es'] : ['es', language]),
       supabase
         .from('payout_sources')
         .select('id, platform_id, name, source_type, config')
@@ -102,9 +105,11 @@ export async function getHomeData() {
   const details = new Map(
     (detailResult.data ?? []).map((item) => [item.platform_id, item])
   )
-  const translations = new Map(
-    (translationResult.data ?? []).map((item) => [item.platform_id, item])
-  )
+  const translations = new Map<string, { short_description: string | null }>()
+  for (const item of translationResult.data ?? []) {
+    const current = translations.get(item.platform_id)
+    if (!current || item.language === language) translations.set(item.platform_id, item)
+  }
   const marketsByPlatform = new Map<string, string[]>()
   for (const item of marketResult.data ?? []) {
     const current = marketsByPlatform.get(item.platform_id) ?? []
@@ -197,7 +202,7 @@ export async function getHomeData() {
   const offerResult = await supabase
     .from('offers')
     .select(`
-      id, platform_id, title, description, discount_value,
+      id, platform_id, challenge_id, title, description, discount_value,
       discount_type, promo_code, expires_at, starts_at,
       language, country_code, status, priority, affiliate_link_id
     `)
@@ -205,23 +210,36 @@ export async function getHomeData() {
     .order('priority', { ascending: true })
     .limit(24)
 
-  const offers: HomeOffer[] = (offerResult.data ?? [])
+  const validOfferRows = (offerResult.data ?? [])
     .filter((offer) => {
       const started = !offer.starts_at || new Date(offer.starts_at) <= now
       const current = !offer.expires_at || new Date(offer.expires_at) >= now
-      return started && current && (!offer.language || offer.language === 'es')
+      const knownCountry = countryCode?.trim().toUpperCase() || null
+      const countryMatches = !knownCountry || !offer.country_code || offer.country_code.toUpperCase() === knownCountry
+      return started && current && countryMatches && (!offer.language || offer.language === language || offer.language === 'es')
     })
+  const offersByPlatform = new Map<string, typeof validOfferRows>()
+  for (const offer of validOfferRows) offersByPlatform.set(offer.platform_id, [...(offersByPlatform.get(offer.platform_id) ?? []), offer])
+  const localizedOfferRows = [...offersByPlatform.values()].flatMap((rows) => {
+    const global = rows.filter((offer) => !offer.language)
+    const requested = rows.filter((offer) => offer.language === language)
+    const fallback = language === 'es' ? [] : rows.filter((offer) => offer.language === 'es')
+    return [...global, ...(requested.length ? requested : fallback)]
+  })
+  const offers: HomeOffer[] = localizedOfferRows
     .flatMap((offer) => {
       const platform = platformMap.get(offer.platform_id)
       if (!platform) return []
       return [{
         id: offer.id,
-        title: offer.title,
-        description: offer.description,
+        title: visibleBrandText(offer.title),
+        description: offer.description ? visibleBrandText(offer.description) : null,
         discountValue: Number(offer.discount_value ?? 0),
         discountType: offer.discount_type,
         promoCode: offer.promo_code,
         expiresAt: offer.expires_at,
+        affiliateLinkId: offer.affiliate_link_id,
+        countryCode: offer.country_code,
         platform,
       }]
     })

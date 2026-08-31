@@ -10,7 +10,7 @@ export default function AdminLayout({
       <aside className="fixed left-0 top-0 h-screen w-64 border-r bg-white p-5">
         <div className="mb-8">
           <h1 className="text-2xl font-bold">
-            Tragadora
+            Tradagora
           </h1>
 
           <p className="text-sm text-slate-500">

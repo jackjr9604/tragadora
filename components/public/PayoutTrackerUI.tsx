@@ -10,7 +10,7 @@ export function PeriodTabs({ active, basePath, language }: { active: PayoutPerio
 
 export function CoverageBadge({ level }: { level: VerificationLevel | null }) {
   const styles: Record<VerificationLevel, { label: string; className: string }> = {
-    verified: { label: 'Verificado por Tragadora', className: 'border-emerald-400/25 bg-emerald-400/10 text-emerald-300' },
+    verified: { label: 'Verificado por Tradagora', className: 'border-emerald-400/25 bg-emerald-400/10 text-emerald-300' },
     tracked_external: { label: 'Fuente externa', className: 'border-cyan-400/25 bg-cyan-400/10 text-cyan-300' },
     blockchain_external: { label: 'Datos externos conocidos', className: 'border-cyan-400/25 bg-cyan-400/10 text-cyan-300' },
     firm_reported: { label: 'Reportado por la firma', className: 'border-amber-300/25 bg-amber-300/10 text-amber-200' },
@@ -47,7 +47,7 @@ export function CoverageValue({ summary }: { summary: PayoutFirmSummary }) {
 }
 
 export function KnownTotalInfo() {
-  return <span title="Los datos externos de referencia provienen actualmente de MondoTraders y nunca se suman con el volumen verificado por Tragadora." className="inline-flex cursor-help items-center gap-1"><Info className="size-3.5" /> Referencia externa</span>
+  return <span title="Los datos externos de referencia provienen actualmente de MondoTraders y nunca se suman con el volumen verificado por Tradagora." className="inline-flex cursor-help items-center gap-1"><Info className="size-3.5" /> Referencia externa</span>
 }
 
 export function TrendChart({ points }: { points: Array<{ day: string; amount: number; count: number }> }) {

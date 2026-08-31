@@ -72,7 +72,7 @@ export default function EditOfferPage() {
         supabase
           .from('affiliate_links')
           .select('id, url')
-          .eq('status', 'active')
+          .eq('status', true)
           .order('priority'),
       ])
 

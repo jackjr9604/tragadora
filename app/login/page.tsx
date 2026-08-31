@@ -76,7 +76,7 @@ export default function LoginPage() {
     <main className="flex min-h-screen items-center justify-center bg-slate-100">
       <div className="w-full max-w-md rounded-xl bg-white p-8 shadow">
         <h1 className="mb-2 text-2xl font-bold">
-          Tragadora
+          Tradagora
         </h1>
 
         <p className="mb-6 text-sm text-slate-500">

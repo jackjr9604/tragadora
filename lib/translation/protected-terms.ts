@@ -9,7 +9,7 @@ const PROTECTED_TERMS = [
   'Futures',
   'Scalping',
   'CFD',
-  'Tragadora',
+  'Tradagora',
 ]
 
 type ProtectedTerm = { placeholder: string; original: string }
