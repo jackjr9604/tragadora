@@ -3,6 +3,7 @@ import 'server-only'
 import { createClient } from '@/lib/supabase/server'
 import { visibleBrandText } from '@/lib/public-language'
 import { classifyPayoutVerification, type RecommendableFirm } from '@/lib/prop-firm-recommender'
+import { conservativeMaxDrawdown, resolveChallenge, type AccountPlan, type ChallengePhase, type ChallengeRewardOption, type ChallengeVariant, type ChallengeVariantPhase } from '@/lib/challenge-resolver'
 
 export type HomePlatform = {
   id: string
@@ -69,7 +70,7 @@ export async function getHomeData(language = 'es', countryCode?: string | null) 
   const supabase = await createClient()
   const now = new Date()
 
-  const [platformResult, detailResult, translationResult, sourceResult, challengeResult, planResult, availabilityResult, countryResult, marketResult] =
+  const [platformResult, detailResult, translationResult, sourceResult, challengeResult, availabilityResult, countryResult, marketResult] =
     await Promise.all([
       supabase
         .from('platforms')
@@ -95,8 +96,7 @@ export async function getHomeData(language = 'es', countryCode?: string | null) 
         .from('payout_sources')
         .select('id, platform_id, name, source_type, config')
         .eq('status', true),
-      supabase.from('challenges').select('id, platform_id, challenge_type, phases, status').eq('status', 'active'),
-      supabase.from('account_plans').select('challenge_id, account_size, price, profit_split, max_drawdown'),
+      supabase.from('challenges').select('id, platform_id, name, challenge_type, phases, status').eq('status', 'active'),
       supabase.from('platform_availability').select('*'),
       supabase.from('countries').select('*'),
       supabase.from('platform_markets').select('platform_id, market'),
@@ -148,7 +148,30 @@ export async function getHomeData(language = 'es', countryCode?: string | null) 
   const sources = sourceResult.data ?? []
   const sourceMap = new Map(sources.map((source) => [source.id, source]))
   const challenges = challengeResult.data ?? []
-  const challengeMap = new Map(challenges.map((challenge) => [challenge.id, challenge]))
+  const challengeIds = challenges.map((challenge) => challenge.id)
+  const visibleAt = now.toISOString()
+  const [planResult, phaseResult, variantResult, rewardResult] = challengeIds.length ? await Promise.all([
+    supabase.from('account_plans').select('*').in('challenge_id', challengeIds),
+    supabase.from('challenge_phases').select('*').in('challenge_id', challengeIds).order('phase_number'),
+    supabase.from('challenge_variants').select('*').in('challenge_id', challengeIds).eq('status', true),
+    supabase.from('challenge_reward_options').select('*').in('challenge_id', challengeIds).eq('status', true)
+      .or(`effective_from.is.null,effective_from.lte.${visibleAt}`)
+      .or(`effective_to.is.null,effective_to.gt.${visibleAt}`)
+      .order('sort_order'),
+  ]) : [{ data: [], error: null }, { data: [], error: null }, { data: [], error: null }, { data: [], error: null }]
+  const challengeDataError = planResult.error ?? phaseResult.error ?? variantResult.error ?? rewardResult.error
+  if (challengeDataError) throw new Error(challengeDataError.message)
+  const variantIds = (variantResult.data ?? []).map((variant) => variant.id)
+  const variantPhaseResult = variantIds.length
+    ? await supabase.from('challenge_variant_phases').select('*').in('variant_id', variantIds)
+    : { data: [], error: null }
+  if (variantPhaseResult.error) throw new Error(variantPhaseResult.error.message)
+  const allPlans = (planResult.data ?? []) as AccountPlan[]
+  const allPhases = (phaseResult.data ?? []) as ChallengePhase[]
+  const allVariants = (variantResult.data ?? []) as ChallengeVariant[]
+  const allVariantPhases = (variantPhaseResult.data ?? []) as ChallengeVariantPhase[]
+  const allRewardOptions = (rewardResult.data ?? []) as ChallengeRewardOption[]
+  const resolvedChallengeMap = new Map(challenges.map((challenge) => [challenge.id, resolveChallenge({ challenge, plans: allPlans, phases: allPhases, variants: allVariants, variantPhases: allVariantPhases, rewardOptions: allRewardOptions, now })]))
   const rawCountries = (countryResult.data ?? []) as Array<Record<string, unknown>>
   const countries: PublicCountry[] = rawCountries.flatMap((country) => {
     const code = String(country.code ?? country.iso_code ?? country.country_code ?? '').toUpperCase()
@@ -297,16 +320,17 @@ export async function getHomeData(language = 'es', countryCode?: string | null) 
 
   const recommendationFirms: RecommendableFirm[] = platforms.map((platform) => {
     const platformChallenges = challenges.filter((challenge) => challenge.platform_id === platform.id)
-    const plans = (planResult.data ?? []).flatMap((plan) => {
-      const challenge = challengeMap.get(plan.challenge_id)
-      if (!challenge || challenge.platform_id !== platform.id) return []
-      return [{
+    const plans = platformChallenges.flatMap((challenge) => {
+      const resolved = resolvedChallengeMap.get(challenge.id)
+      if (!resolved) return []
+      return [...resolved.basePlans, ...resolved.variants.flatMap((variant) => variant.plans)].map((plan) => ({
         price: plan.price === null ? null : Number(plan.price),
         accountSize: plan.account_size === null ? null : Number(plan.account_size),
-        profitSplit: plan.profit_split === null ? null : Number(plan.profit_split),
-        maxDrawdown: plan.max_drawdown === null ? null : Number(plan.max_drawdown),
+        profitSplit: plan.effectiveProfitSplit ?? platform.profitSplit,
+        // Resumen conservador: el menor max drawdown no nulo es la fase más restrictiva.
+        maxDrawdown: conservativeMaxDrawdown(plan.effectivePhases),
         challengeType: challenge.challenge_type,
-      }]
+      }))
     })
     const platformAvailability = availability.filter((item) => String(item.platform_id ?? '') === platform.id)
     const availableCountryCodes = platformAvailability.flatMap((item) => {

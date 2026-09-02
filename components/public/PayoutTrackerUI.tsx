@@ -47,7 +47,7 @@ export function CoverageValue({ summary }: { summary: PayoutFirmSummary }) {
 }
 
 export function KnownTotalInfo() {
-  return <span title="Los datos externos de referencia provienen actualmente de MondoTraders y nunca se suman con el volumen verificado por Tradagora." className="inline-flex cursor-help items-center gap-1"><Info className="size-3.5" /> Referencia externa</span>
+  return <span title="Los datos externos de referencia se mantienen separados del volumen verificado directamente por Tradagora." className="inline-flex cursor-help items-center gap-1"><Info className="size-3.5" /> Referencia externa</span>
 }
 
 export function TrendChart({ points }: { points: Array<{ day: string; amount: number; count: number }> }) {

@@ -1,18 +1,23 @@
 'use client'
 
-import { FormEvent, useState } from 'react'
+import { FormEvent, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useParams, useRouter } from 'next/navigation'
+
+const supabase = createClient()
 
 export default function NewAccountPlanPage() {
   const params = useParams()
   const router = useRouter()
-  const supabase = createClient()
 
   const challengeId = params.id as string
 
   const [accountSize, setAccountSize] = useState('')
+  const [variants, setVariants] = useState<Array<{ id: string; name: string }>>([])
+  const [variantId, setVariantId] = useState('')
   const [price, setPrice] = useState('')
+  const [currency, setCurrency] = useState('USD')
+  const [hasNormalizedPhases, setHasNormalizedPhases] = useState(false)
   const [profitTarget, setProfitTarget] = useState('')
   const [dailyDrawdown, setDailyDrawdown] = useState('')
   const [maxDrawdown, setMaxDrawdown] = useState('')
@@ -23,6 +28,22 @@ export default function NewAccountPlanPage() {
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    async function loadChallengeData() {
+      const [variantsResult, phasesResult] = await Promise.all([
+        supabase.from('challenge_variants').select('id, name').eq('challenge_id', challengeId).eq('status', true).order('name'),
+        supabase.from('challenge_phases').select('id', { count: 'exact', head: true }).eq('challenge_id', challengeId),
+      ])
+      const loadError = variantsResult.error ?? phasesResult.error
+      if (loadError) setError(loadError.message)
+      else {
+        setVariants(variantsResult.data ?? [])
+        setHasNormalizedPhases((phasesResult.count ?? 0) > 0)
+      }
+    }
+    void loadChallengeData()
+  }, [challengeId])
 
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>
@@ -36,9 +57,10 @@ export default function NewAccountPlanPage() {
       .from('account_plans')
       .insert({
         challenge_id: challengeId,
+        variant_id: variantId || null,
         account_size: Number(accountSize),
         price: price ? Number(price) : null,
-        currency: 'USD',
+        currency: currency.trim() || 'USD',
         profit_target: profitTarget
           ? Number(profitTarget)
           : null,
@@ -86,7 +108,9 @@ export default function NewAccountPlanPage() {
           onSubmit={handleSubmit}
           className="space-y-6 rounded-xl bg-white p-8 shadow"
         >
-          <div className="grid gap-4 sm:grid-cols-2">
+          {variants.length > 0 && <div><label className="mb-2 block text-sm font-medium">Variante</label><select value={variantId} onChange={(event) => setVariantId(event.target.value)} className="w-full rounded-lg border p-3"><option value="">Plan base / sin variante</option>{variants.map((variant) => <option key={variant.id} value={variant.id}>{variant.name}</option>)}</select></div>}
+
+          <section><h2 className="text-lg font-semibold">Cuenta y precio</h2><p className="mt-1 text-sm text-slate-500">Estos datos alimentan directamente el resumen público y el recomendador.</p><div className="mt-4 grid gap-4 sm:grid-cols-2">
             <Input
               label="Tamaño de cuenta"
               type="number"
@@ -105,29 +129,15 @@ export default function NewAccountPlanPage() {
             />
 
             <Input
-              label="Profit Target %"
-              type="number"
-              value={profitTarget}
-              onChange={setProfitTarget}
-              placeholder="10"
+              label="Moneda"
+              value={currency}
+              onChange={setCurrency}
+              placeholder="USD"
+              required
             />
+          </div></section>
 
-            <Input
-              label="Daily Drawdown %"
-              type="number"
-              value={dailyDrawdown}
-              onChange={setDailyDrawdown}
-              placeholder="5"
-            />
-
-            <Input
-              label="Max Drawdown %"
-              type="number"
-              value={maxDrawdown}
-              onChange={setMaxDrawdown}
-              placeholder="10"
-            />
-
+          <section className="rounded-xl border p-5"><h2 className="text-lg font-semibold">Reward / retiro</h2><p className="mt-1 text-sm text-slate-500">Fallback legacy mientras el reward principal se termina de normalizar.</p><div className="mt-4 grid gap-4 sm:grid-cols-2">
             <Input
               label="Profit Split %"
               type="number"
@@ -137,28 +147,16 @@ export default function NewAccountPlanPage() {
             />
 
             <Input
-              label="Mínimo días de trading"
-              type="number"
-              value={minTradingDays}
-              onChange={setMinTradingDays}
-              placeholder="5"
+              label="Frecuencia de pago"
+              value={payoutFrequency}
+              onChange={setPayoutFrequency}
+              placeholder="Cada 14 días"
             />
+          </div></section>
 
-            <Input
-              label="Máximo días de trading"
-              type="number"
-              value={maxTradingDays}
-              onChange={setMaxTradingDays}
-              placeholder="30"
-            />
-          </div>
+          {!hasNormalizedPhases && <details className="rounded-xl border border-amber-200 bg-amber-50 p-5"><summary className="cursor-pointer font-semibold text-amber-900">Reglas legacy de evaluación</summary><p className="mt-2 text-sm text-amber-800">Este challenge todavía no tiene fases normalizadas. Completa estos campos solo si el plan depende de ellos.</p><div className="mt-4 grid gap-4 sm:grid-cols-2"><Input label="Profit Target %" type="number" value={profitTarget} onChange={setProfitTarget} placeholder="10" /><Input label="Daily Drawdown %" type="number" value={dailyDrawdown} onChange={setDailyDrawdown} placeholder="5" /><Input label="Max Drawdown %" type="number" value={maxDrawdown} onChange={setMaxDrawdown} placeholder="10" /><Input label="Mínimo días de trading" type="number" value={minTradingDays} onChange={setMinTradingDays} placeholder="5" /><Input label="Máximo días de trading" type="number" value={maxTradingDays} onChange={setMaxTradingDays} placeholder="30" /></div></details>}
 
-          <Input
-            label="Frecuencia de pago"
-            value={payoutFrequency}
-            onChange={setPayoutFrequency}
-            placeholder="Cada 14 días"
-          />
+          {hasNormalizedPhases && <p className="rounded-lg bg-emerald-50 p-4 text-sm text-emerald-800">Las reglas de evaluación se tomarán de las fases normalizadas. No necesitas repetir target, drawdown ni días en esta cuenta.</p>}
 
           {error && (
             <div className="rounded-lg bg-red-50 p-4 text-sm text-red-600">

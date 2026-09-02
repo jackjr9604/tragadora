@@ -9,7 +9,10 @@
     "lint": "eslint",
     "collect:pfm": "tsx scripts/collect-propfirmmatch.ts",
     "capture:pfm": "tsx scripts/capture-propfirmmatch.ts",
-    "collect:mondo": "tsx scripts/collect-mondotraders.ts"
+    "collect:mondo": "tsx scripts/collect-mondotraders.ts",
+    "catalog:mondo": "tsx scripts/collect-mondotraders.ts --catalog --headless",
+    "diagnose:mondo": "tsx scripts/collect-mondotraders.ts --diagnose --headless",
+    "test:challenge-resolver": "tsx --test lib/challenge-resolver.test.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
