@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { Menu, Search, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { BrandMark } from './BrandMark'
 import { languageUrl, persistPublicLanguage, type PublicLanguage, type PublicLanguageOption } from '@/lib/public-language'
 
@@ -16,6 +16,7 @@ const navCopy = {
 
 export function PublicNavbar({ language = 'es', languages }: { language?: PublicLanguage; languages: PublicLanguageOption[] }) {
   const [open, setOpen] = useState(false)
+  const pathname = usePathname()
   const languageParam = useSearchParams().get('lang')
   const activeLanguage = languages.some((item) => item.code === languageParam)
     ? languageParam as string
@@ -29,7 +30,7 @@ export function PublicNavbar({ language = 'es', languages }: { language?: Public
   }, [activeLanguage, languageParam, languages])
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/8 bg-[#0a1220]/92 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 border-b border-amber-300/15 bg-[#060d18]/94 shadow-[0_10px_35px_rgba(0,0,0,.22)] backdrop-blur-xl">
       <div className="mx-auto flex h-18 max-w-7xl items-center gap-7 px-4 sm:px-6 lg:px-8">
         <Link href="/" aria-label="Tradagora, inicio">
           <BrandMark />
@@ -37,7 +38,7 @@ export function PublicNavbar({ language = 'es', languages }: { language?: Public
 
         <nav className="hidden flex-1 items-center gap-6 lg:flex" aria-label="Principal">
           {links.map(([label, href]) => (
-            <Link key={label} href={href} className="text-sm text-slate-400 transition hover:text-white">
+            <Link key={label} href={href} aria-current={pathname === href || pathname.startsWith(`${href}/`) ? 'page' : undefined} className="relative py-6 text-sm text-slate-400 transition after:absolute after:inset-x-0 after:bottom-0 after:h-px after:origin-center after:scale-x-0 after:bg-[#f0c454] after:shadow-[0_0_10px_#f0c454] after:transition hover:text-white aria-[current=page]:text-[#f0c454] aria-[current=page]:after:scale-x-100">
               {label}
             </Link>
           ))}
@@ -50,33 +51,33 @@ export function PublicNavbar({ language = 'es', languages }: { language?: Public
             <input
               type="search"
               placeholder={text.search}
-              className="h-10 w-48 rounded-xl border border-white/10 bg-white/[.035] pl-9 pr-3 text-sm text-white outline-none placeholder:text-slate-600 focus:border-cyan-400/40"
+              className="tg-filter h-10 w-48 rounded-xl pl-9 pr-3 text-sm placeholder:text-slate-600"
             />
           </label>
-          <select aria-label="Idioma" value={activeLanguage} onChange={(event) => { const next = event.target.value as PublicLanguage; persistPublicLanguage(next); window.location.href = languageUrl(window.location.href, next) }} className="h-10 rounded-xl border border-cyan-300/20 bg-[#111c2e] px-3 text-sm font-semibold text-cyan-200 outline-none">
+          <select aria-label="Idioma" value={activeLanguage} onChange={(event) => { const next = event.target.value as PublicLanguage; persistPublicLanguage(next); window.location.href = languageUrl(window.location.href, next) }} className="tg-filter h-10 rounded-xl px-3 text-sm font-semibold">
             {languages.map((item) => <option key={item.code} value={item.code}>{item.code.toUpperCase()}</option>)}
           </select>
-          <Link href="/payouts" className="rounded-xl border border-white/12 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/5">
+          <Link href="/payouts" className="tg-button-secondary px-4 py-2.5 text-sm">
             {text.methodology}
           </Link>
-          <Link href="/prop-firms" className="rounded-xl bg-[#f7c64b] px-4 py-2.5 text-sm font-bold text-[#101827] transition hover:bg-[#ffd56c]">
+          <Link href="/prop-firms" className="tg-button-gold px-4 py-2.5 text-sm">
             {text.explore}
           </Link>
         </div>
 
-        <button type="button" onClick={() => setOpen(!open)} className="ml-auto rounded-lg border border-white/10 p-2 text-white md:hidden" aria-expanded={open} aria-label="Abrir navegación">
+        <button type="button" onClick={() => setOpen(!open)} className="ml-auto rounded-lg border border-amber-300/20 bg-white/[.025] p-2 text-white md:hidden" aria-expanded={open} aria-label="Abrir navegación">
           {open ? <X /> : <Menu />}
         </button>
       </div>
 
       {open && (
-        <nav className="border-t border-white/8 px-4 py-4 md:hidden" aria-label="Navegación móvil">
+        <nav className="border-t border-amber-300/10 bg-[#07111e]/98 px-4 py-4 md:hidden" aria-label="Navegación móvil">
           <div className="mx-auto grid max-w-7xl gap-1">
-            <select aria-label="Idioma" value={activeLanguage} onChange={(event) => { const next = event.target.value as PublicLanguage; persistPublicLanguage(next); window.location.href = languageUrl(window.location.href, next) }} className="mb-2 h-10 rounded-xl border border-cyan-300/20 bg-[#111c2e] px-3 text-sm font-semibold text-cyan-200 outline-none">
+            <select aria-label="Idioma" value={activeLanguage} onChange={(event) => { const next = event.target.value as PublicLanguage; persistPublicLanguage(next); window.location.href = languageUrl(window.location.href, next) }} className="tg-filter mb-2 h-10 rounded-xl px-3 text-sm font-semibold">
               {languages.map((item) => <option key={item.code} value={item.code}>{item.nativeName}</option>)}
             </select>
             {links.map(([label, href]) => (
-              <Link key={label} href={href} onClick={() => setOpen(false)} className="rounded-lg px-3 py-3 text-sm text-slate-300 hover:bg-white/5 hover:text-white">
+              <Link key={label} href={href} onClick={() => setOpen(false)} aria-current={pathname === href || pathname.startsWith(`${href}/`) ? 'page' : undefined} className="rounded-lg border border-transparent px-3 py-3 text-sm text-slate-300 hover:bg-white/5 hover:text-white aria-[current=page]:border-amber-300/20 aria-[current=page]:bg-amber-300/[.06] aria-[current=page]:text-[#f0c454]">
                 {label}
               </Link>
             ))}

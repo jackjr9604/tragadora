@@ -29,6 +29,9 @@ export type PayoutSourceDetail = {
   status: boolean; last_sync_at: string | null; last_success_at: string | null; last_error: string | null
   payoutCount: number; payoutAmount: number; firstPayoutAt: string | null; lastPayoutAt: string | null
 }
+export type PayoutPolicy = { challenge: string; option: string; frequency: string | null; minimumDays: number | null }
+export type PayoutContext = { country: string | null; foundedAt: string | null; profitSplit: number | null; payoutMethods: string[]; policies: PayoutPolicy[] }
+export type AwaitedPayoutDetail = NonNullable<Awaited<ReturnType<typeof getPayoutFirmDetail>>>
 
 export async function getPayoutTrackerSummaries(period: PayoutPeriodKey) {
   const supabase = createAdminClient()
@@ -55,20 +58,25 @@ export async function getPayoutFirmDetail(slug: string, period: PayoutPeriodKey)
   if (!summaryResult.data) return null
   const platformId = summaryResult.data.platform_id
   const since = payoutPeriodSince(period)
+  const trendSince = period === 'all' || period === '24h' ? since : new Date(Date.now() - ({ '7d': 14, '30d': 60, '365d': 730 } as const)[period] * 86_400_000).toISOString()
   let trendQuery = supabase.from('platform_payout_daily').select('payout_day, payout_count, payout_amount').eq('platform_id', platformId).order('payout_day')
   let payoutsQuery = supabase.from('payouts').select('id, amount, currency, payout_date, payment_method, source, verification_status, source_url, payout_source_id').eq('platform_id', platformId).order('payout_date', { ascending: false }).limit(20)
   if (since) {
-    trendQuery = trendQuery.gte('payout_day', since)
+    trendQuery = trendQuery.gte('payout_day', trendSince ?? since)
     payoutsQuery = payoutsQuery.gte('payout_date', since)
   }
-  const [platformResult, marketsResult, metricsResult, sourcesResult, sourceStatsResult, payoutsResult, trendResult] = await Promise.all([
-    supabase.from('platforms').select('id, name, slug, website_url, logo_url, media:logo_media_id(file_url, alt_text)').eq('id', platformId).single(),
+  const [platformResult, marketsResult, metricsResult, sourcesResult, sourceStatsResult, payoutsResult, trendResult, detailsResult, countriesResult, methodsResult, challengesResult] = await Promise.all([
+    supabase.from('platforms').select('id, name, slug, website_url, logo_url, origin_country_code, media:logo_media_id(file_url, alt_text)').eq('id', platformId).single(),
     supabase.from('platform_markets').select('market').eq('platform_id', platformId),
     supabase.from('platform_payout_metrics').select('*').eq('platform_id', platformId).eq('period_key', period).eq('metric_type', 'payout_summary').eq('source_type', 'third_party_public').eq('source_name', 'MondoTraders').eq('verification_level', 'blockchain_external').eq('is_current', true).order('updated_at', { ascending: false }),
     supabase.from('payout_sources').select('id, name, source_type, source_url, config, status, last_sync_at, last_success_at, last_error').eq('platform_id', platformId).order('name'),
     supabase.from('payout_source_summary').select('*').eq('platform_id', platformId), payoutsQuery, trendQuery,
+    supabase.from('prop_firm_details').select('*').eq('platform_id', platformId).maybeSingle(),
+    supabase.from('countries').select('code, name'),
+    supabase.from('platform_transaction_methods').select('supports_payout, method:transaction_method_id(name)').eq('platform_id', platformId).eq('supports_payout', true),
+    supabase.from('challenges').select('id, name').eq('platform_id', platformId).eq('status', 'active'),
   ])
-  const failure = [platformResult, marketsResult, metricsResult, sourcesResult, sourceStatsResult, payoutsResult, trendResult].find((result) => result.error)
+  const failure = [platformResult, marketsResult, metricsResult, sourcesResult, sourceStatsResult, payoutsResult, trendResult, detailsResult, countriesResult, methodsResult, challengesResult].find((result) => result.error)
   if (failure?.error) throw new Error(migrationError(failure.error.message))
   const statsMap = new Map((sourceStatsResult.data ?? []).map((item) => [item.payout_source_id, item]))
   const sources: PayoutSourceDetail[] = (sourcesResult.data ?? []).map((source) => {
@@ -77,11 +85,25 @@ export async function getPayoutFirmDetail(slug: string, period: PayoutPeriodKey)
   })
   const platform = platformResult.data
   if (!platform) return null
+  const challengeRows = challengesResult.data ?? []
+  const challengeIds = challengeRows.map((challenge) => challenge.id)
+  const rewardResult = challengeIds.length ? await supabase.from('challenge_reward_options').select('challenge_id, name, payout_frequency, minimum_payout_days, status, effective_from, effective_to').in('challenge_id', challengeIds).eq('status', true).order('sort_order') : { data: [], error: null }
+  if (rewardResult.error) throw new Error(rewardResult.error.message)
+  const now = Date.now()
+  const challengeNames = new Map(challengeRows.map((challenge) => [challenge.id, challenge.name]))
+  const countryNames = new Map((countriesResult.data ?? []).map((country) => [country.code, country.name]))
+  const context: PayoutContext = {
+    country: platform.origin_country_code ? countryNames.get(platform.origin_country_code) ?? platform.origin_country_code : null,
+    foundedAt: detailsResult.data?.founded_at ?? null,
+    profitSplit: numeric(detailsResult.data?.profit_split_max),
+    payoutMethods: (methodsResult.data ?? []).flatMap((row) => { const method = first(row.method as { name: string } | Array<{ name: string }> | null); return method?.name ? [method.name] : [] }),
+    policies: (rewardResult.data ?? []).filter((option) => (!option.effective_from || new Date(option.effective_from).getTime() <= now) && (!option.effective_to || new Date(option.effective_to).getTime() > now)).map((option) => ({ challenge: challengeNames.get(option.challenge_id) ?? 'Challenge', option: option.name, frequency: option.payout_frequency, minimumDays: numeric(option.minimum_payout_days) })),
+  }
   return {
     summary: toSummary(summaryResult.data, platform, (marketsResult.data ?? []).map((item) => item.market)),
     websiteUrl: platform.website_url,
     metrics: (metricsResult.data ?? []).map((metric) => ({ ...metric, amount: numeric(metric.amount), payout_count: numeric(metric.payout_count), largest_payout: numeric(metric.largest_payout), average_payout: numeric(metric.average_payout), median_payout: numeric(metric.median_payout), median_time_minutes: numeric(metric.median_time_minutes) })) as PayoutMetric[],
-    sources, payouts: payoutsResult.data ?? [],
+    sources, payouts: payoutsResult.data ?? [], context,
     trend: (trendResult.data ?? []).map((item) => ({ day: item.payout_day, count: Number(item.payout_count), amount: Number(item.payout_amount) })),
   }
 }

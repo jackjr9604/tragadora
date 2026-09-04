@@ -140,6 +140,277 @@ html {
   background-size: 48px 48px;
 }
 
+/* Identidad pública Tradagora: profundidad navy y una única trama diagonal. */
+.tradagora-shell {
+  --tg-gold-1: #c89424;
+  --tg-gold-2: #f0c454;
+  --tg-gold-3: #ffdc7b;
+  --tg-navy-1: #060b14;
+  --tg-navy-2: #091522;
+  --tg-navy-3: #0d1b2d;
+  background:
+    radial-gradient(ellipse 72% 38% at 50% 8%, rgba(18, 54, 89, 0.42), transparent 68%),
+    linear-gradient(90deg, #060b14 0%, #091421 17%, #0b1828 50%, #091421 83%, #060b14 100%);
+  background-attachment: fixed;
+}
+
+.tradagora-shell h1,
+.tradagora-shell h2,
+.tradagora-shell h3 {
+  font-family: Georgia, "Times New Roman", serif;
+  letter-spacing: -0.025em;
+}
+
+.tg-surface {
+  border: 1px solid rgba(132, 158, 190, 0.18);
+  background: linear-gradient(145deg, rgba(14, 29, 48, 0.94), rgba(8, 18, 31, 0.96));
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.025), 0 18px 60px rgba(0, 0, 0, 0.18);
+}
+
+.tg-surface-gold {
+  border: 1px solid rgba(240, 196, 84, 0.48);
+  background: linear-gradient(145deg, rgba(17, 32, 50, 0.97), rgba(7, 15, 26, 0.98));
+  box-shadow: inset 0 1px rgba(255, 221, 132, 0.08), 0 0 28px rgba(200, 148, 36, 0.08);
+}
+
+.tg-button-gold,
+.button-gold {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  border: 1px solid rgba(255, 225, 143, 0.65);
+  border-radius: .75rem;
+  background: linear-gradient(110deg, var(--tg-gold-1), var(--tg-gold-2) 48%, var(--tg-gold-3));
+  color: #111827;
+  font-weight: 800;
+  box-shadow: 0 8px 26px rgba(200, 148, 36, 0.2), inset 0 1px rgba(255,255,255,.42);
+  transition: transform .2s ease, filter .2s ease, box-shadow .2s ease;
+}
+
+.tg-button-gold:hover,
+.button-gold:hover { transform: translateY(-1px); filter: brightness(1.06); box-shadow: 0 10px 34px rgba(240, 196, 84, .28); }
+
+.tg-button-secondary,
+.button-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  border: 1px solid rgba(240, 196, 84, 0.26);
+  border-radius: .75rem;
+  background: rgba(8, 18, 31, .72);
+  color: #f8fafc;
+  font-weight: 700;
+  transition: border-color .2s ease, background .2s ease;
+}
+
+.tg-button-secondary:hover,
+.button-outline:hover { border-color: rgba(240, 196, 84, .58); background: rgba(20, 38, 60, .9); }
+
+.tg-eyebrow {
+  color: var(--tg-gold-2);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+}
+
+.tg-gold-rule { height: 1px; background: linear-gradient(90deg, transparent, rgba(240,196,84,.85), transparent); }
+
+.tg-filter {
+  border: 1px solid rgba(132, 158, 190, .2);
+  background: rgba(8, 18, 31, .78);
+  color: #e2e8f0;
+}
+
+.tg-filter:focus { border-color: rgba(240, 196, 84, .62); outline: none; }
+
+.tg-empty {
+  border: 1px dashed rgba(240, 196, 84, .34);
+  background: radial-gradient(circle at 50% 0%, rgba(200,148,36,.09), transparent 55%), rgba(9, 21, 34, .72);
+}
+
+/* Compatibility layer for existing public modules while they share one visual system. */
+.tradagora-shell [class*="bg-[#111c2e]"] {
+  border-color: rgba(132, 158, 190, .18);
+  background: linear-gradient(145deg, rgba(14, 29, 48, .94), rgba(8, 18, 31, .96));
+  box-shadow: inset 0 1px rgba(255,255,255,.025);
+}
+
+.tradagora-shell [class*="bg-[#0c1626]"] {
+  background: linear-gradient(90deg, rgba(6, 13, 24, .98), rgba(11, 29, 48, .94), rgba(6, 13, 24, .98));
+  border-color: rgba(240, 196, 84, .12);
+}
+
+.tradagora-shell [class*="bg-[#f7c64b]"] {
+  border-color: rgba(255, 225, 143, .62);
+  background: linear-gradient(110deg, var(--tg-gold-1), var(--tg-gold-2) 48%, var(--tg-gold-3));
+  box-shadow: 0 8px 26px rgba(200, 148, 36, .18), inset 0 1px rgba(255,255,255,.38);
+}
+
+.tradagora-shell input,
+.tradagora-shell select,
+.tradagora-shell textarea { accent-color: var(--tg-gold-2); }
+
+.tradagora-shell input:focus,
+.tradagora-shell select:focus,
+.tradagora-shell textarea:focus { border-color: rgba(240, 196, 84, .55); }
+
+.tg-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(240, 196, 84, .18);
+  background:
+    radial-gradient(circle at 74% 25%, rgba(24, 76, 119, .26), transparent 30%),
+    linear-gradient(110deg, rgba(5, 11, 20, .98), rgba(10, 28, 47, .94) 52%, rgba(5, 12, 22, .98));
+}
+
+.tg-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(45deg, transparent 48.5%, rgba(240,196,84,.11) 49%, rgba(240,196,84,.11) 51%, transparent 51.5%),
+    linear-gradient(-45deg, transparent 48.5%, rgba(66,123,171,.1) 49%, rgba(66,123,171,.1) 51%, transparent 51.5%);
+  background-size: 54px 54px;
+  -webkit-mask-image: linear-gradient(90deg, #000, transparent 35%, transparent 66%, #000);
+  mask-image: linear-gradient(90deg, #000, transparent 35%, transparent 66%, #000);
+}
+
+.tg-hero::after {
+  content: "";
+  position: absolute;
+  right: 8%;
+  bottom: 0;
+  width: 32%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--tg-gold-2), transparent);
+  box-shadow: 0 0 18px rgba(240,196,84,.65);
+}
+
+.tradagora-shell > div > section:first-child:not(.tg-hero) {
+  border-bottom-color: rgba(240, 196, 84, .16);
+  background:
+    radial-gradient(circle at 78% 18%, rgba(25, 78, 120, .24), transparent 34%),
+    linear-gradient(110deg, rgba(5, 11, 20, .97), rgba(10, 28, 47, .92), rgba(5, 12, 22, .97));
+}
+
+[data-home-section="hero"] > section {
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(240, 196, 84, .15);
+  background:
+    radial-gradient(circle at 80% 18%, rgba(200,148,36,.09), transparent 28%),
+    radial-gradient(circle at 68% 30%, rgba(24,76,119,.25), transparent 36%),
+    linear-gradient(110deg, rgba(5,11,20,.98), rgba(10,28,47,.92), rgba(5,12,22,.98));
+}
+
+[data-home-section="hero"] > section::before,
+[data-home-section="final_cta"] > section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(45deg, transparent 48.5%, rgba(240,196,84,.09) 49%, rgba(240,196,84,.09) 51%, transparent 51.5%);
+  background-size: 52px 52px;
+  -webkit-mask-image: linear-gradient(90deg, transparent 44%, #000 100%);
+  mask-image: linear-gradient(90deg, transparent 44%, #000 100%);
+}
+
+[data-home-section="featured_firms"] article,
+[data-home-section="featured_offers"] article,
+[data-home-section="methodology"] article,
+[data-home-section="methodology"] div[class*="rounded-2xl"] {
+  transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease;
+}
+
+[data-home-section="featured_firms"] article:hover,
+[data-home-section="featured_offers"] article:hover {
+  transform: translateY(-3px);
+  border-color: rgba(240,196,84,.36);
+  box-shadow: 0 18px 42px rgba(0,0,0,.24), 0 0 24px rgba(200,148,36,.05);
+}
+
+/* Brand interaction states: gold replaces decorative cyan, charts stay cyan. */
+.tradagora-shell nav[aria-label="Vistas de la firma"] a[aria-current="page"] {
+  border: 1px solid rgba(240,196,84,.3);
+  background: rgba(20, 36, 57, .96) !important;
+  color: #f4cf72 !important;
+  box-shadow: inset 0 -2px #f0c454, 0 0 18px rgba(200,148,36,.08);
+}
+
+.tradagora-shell nav[aria-label="Vistas de la firma"] a:not([aria-current="page"]):hover {
+  color: #f8fafc;
+  background: rgba(255,255,255,.04);
+}
+
+#directorio > div > div:first-child {
+  border-color: rgba(132,158,190,.18);
+  background: linear-gradient(145deg, rgba(14,29,48,.94), rgba(8,18,31,.96));
+}
+
+#directorio article {
+  border-color: rgba(240,196,84,.16);
+  background: linear-gradient(105deg, rgba(15,31,50,.92), rgba(8,19,32,.96));
+}
+
+#directorio article:hover {
+  border-color: rgba(240,196,84,.42) !important;
+  box-shadow: 0 12px 30px rgba(0,0,0,.22), 0 0 20px rgba(200,148,36,.05);
+}
+
+#directorio article:focus-within { --tw-ring-color: rgba(240,196,84,.48) !important; }
+
+[data-home-section="finder"] [class*="text-cyan"],
+[data-home-section="methodology"] [class*="text-cyan"] { color: #f0c454 !important; }
+
+[data-home-section="finder"] [class*="border-cyan"] { border-color: rgba(240,196,84,.3) !important; }
+[data-home-section="finder"] [class*="bg-cyan"] { background-color: rgba(240,196,84,.14) !important; }
+
+#ofertas [class*="text-cyan"] { color: #f4cf72 !important; }
+#ofertas [class*="border-cyan"] { border-color: rgba(240,196,84,.3) !important; }
+
+.tradagora-pattern {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 78% 18%, rgba(34, 211, 238, 0.07), transparent 34%),
+    linear-gradient(110deg, rgba(7, 14, 25, 0.88), rgba(12, 31, 51, 0.78) 50%, rgba(7, 14, 25, 0.9));
+}
+
+.tradagora-pattern::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(45deg, transparent 48%, rgba(247, 198, 75, 0.07) 49%, rgba(247, 198, 75, 0.07) 51%, transparent 52%),
+    linear-gradient(-45deg, transparent 48%, rgba(74, 139, 191, 0.08) 49%, rgba(74, 139, 191, 0.08) 51%, transparent 52%);
+  background-size: 42px 42px;
+  opacity: 0.72;
+  -webkit-mask-image: linear-gradient(90deg, #000 0%, transparent 38%, transparent 62%, #000 100%);
+  mask-image: linear-gradient(90deg, #000 0%, transparent 38%, transparent 62%, #000 100%);
+}
+
+.tradagora-pattern-gold::before {
+  opacity: 0.48;
+  background-size: 50px 50px;
+  -webkit-mask-image: radial-gradient(circle at 85% 50%, #000 0%, transparent 58%);
+  mask-image: radial-gradient(circle at 85% 50%, #000 0%, transparent 58%);
+}
+
+@media (max-width: 640px) {
+  .tradagora-shell { background-attachment: scroll; }
+  .tg-hero::before { opacity: .62; -webkit-mask-image: linear-gradient(90deg, #000, transparent 72%); mask-image: linear-gradient(90deg, #000, transparent 72%); }
+}
+
 .live-ticker-track {
   display: flex;
   width: max-content;
