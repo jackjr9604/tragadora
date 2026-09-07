@@ -1,8 +1,8 @@
 'use client'
 
-import { FormEvent, useEffect, useState } from 'react'
+import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 type Platform = {
   id: string
@@ -16,12 +16,13 @@ type Challenge = {
 
 export default function NewOfferPage() {
   const router = useRouter()
-  const supabase = createClient()
+  const searchParams = useSearchParams()
+  const supabase = useMemo(() => createClient(), [])
 
   const [platforms, setPlatforms] = useState<Platform[]>([])
   const [challenges, setChallenges] = useState<Challenge[]>([])
 
-  const [platformId, setPlatformId] = useState('')
+  const [platformId, setPlatformId] = useState(() => searchParams.get('platform') ?? '')
   const [challengeId, setChallengeId] = useState('')
 
   const [title, setTitle] = useState('')
@@ -54,7 +55,7 @@ export default function NewOfferPage() {
     }
 
     loadPlatforms()
-  }, [])
+  }, [supabase])
 
   useEffect(() => {
     async function loadChallenges() {
@@ -73,7 +74,7 @@ export default function NewOfferPage() {
     }
 
     loadChallenges()
-  }, [platformId])
+  }, [platformId, supabase])
 
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>

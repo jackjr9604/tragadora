@@ -1,0 +1,17 @@
+import Link from 'next/link'
+import { notFound, redirect } from 'next/navigation'
+import { AdminFirmIdentity, StatusBadge } from '@/components/admin/AdminDirectory'
+import { createClient } from '@/lib/supabase/server'
+
+export default async function PlatformAffiliateLinksPage({ params, searchParams }: { params: Promise<{ platformId: string }>; searchParams: Promise<{ returnTo?: string }> }) {
+  const supabase = await createClient(); const { data: { user } } = await supabase.auth.getUser(); if (!user) redirect('/login'); const [{ platformId }, query] = await Promise.all([params, searchParams])
+  const [firm, links] = await Promise.all([supabase.from('platforms').select('id, name, logo_url, media:logo_media_id(file_url, alt_text)').eq('id', platformId).maybeSingle(), supabase.from('affiliate_links').select('id, url, campaign, country_code, language, priority, status, challenge_id, created_at').eq('platform_id', platformId).order('priority')]); if (firm.error || links.error) throw new Error(firm.error?.message ?? links.error?.message); if (!firm.data) notFound()
+  const challengeIds = [...new Set((links.data ?? []).flatMap((link) => link.challenge_id ? [link.challenge_id] : []))]
+  const challenges = challengeIds.length > 0
+    ? await supabase.from('challenges').select('id, name').in('id', challengeIds)
+    : { data: [], error: null }
+  if (challenges.error) throw new Error(challenges.error.message)
+  const challengeNames = new Map((challenges.data ?? []).map((challenge) => [challenge.id, challenge.name]))
+  return <main className="p-4 sm:p-6 lg:p-8"><div className="mx-auto max-w-6xl"><Link href={safeReturn(query.returnTo, '/admin/affiliate-links')} className="text-sm text-slate-600">← Volver al directorio</Link><header className="mt-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-center"><AdminFirmIdentity name={firm.data.name} media={firm.data.media} legacyUrl={firm.data.logo_url} /><Link href={`/admin/affiliate-links/new?platform=${platformId}`} className="rounded-lg bg-black px-4 py-2.5 text-sm text-white">+ Nuevo enlace</Link></header><section className="mt-6 overflow-hidden rounded-xl border bg-white"><div className="overflow-x-auto"><table className="w-full min-w-[900px] text-sm"><thead className="border-b bg-slate-50 text-left"><tr><th className="px-4 py-3">Destino</th><th>Challenge</th><th>País</th><th>Idioma</th><th>Campaña</th><th>Prioridad</th><th>Estado</th></tr></thead><tbody>{links.data?.map((link) => <tr key={link.id} className="border-b last:border-0"><td className="max-w-xs truncate px-4 py-3 font-mono text-xs" title={link.url}>{link.url}</td><td>{link.challenge_id ? challengeNames.get(link.challenge_id) ?? <span className="text-slate-400">Challenge no disponible</span> : 'General'}</td><td>{link.country_code || 'Todos'}</td><td>{link.language || 'Todos'}</td><td>{link.campaign || '—'}</td><td>{link.priority}</td><td><StatusBadge tone={link.status ? 'success' : 'neutral'}>{link.status ? 'Activo' : 'Inactivo'}</StatusBadge></td></tr>)}{!links.data?.length && <tr><td colSpan={7} className="p-12 text-center text-slate-500">Esta firma todavía no tiene enlaces.</td></tr>}</tbody></table></div></section><p className="mt-4 text-sm text-slate-500">La resolución pública mediante <code>/go/[slug]</code> y el tracking existente no fueron modificados.</p></div></main>
+}
+function safeReturn(value: string | undefined, fallback: string) { return value?.startsWith('/admin/') ? value : fallback }

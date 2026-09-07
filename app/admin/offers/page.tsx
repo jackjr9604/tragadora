@@ -1,182 +1,23 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { AdminDirectoryHeader, AdminFirmIdentity, AdminPagination } from '@/components/admin/AdminDirectory'
 import { createClient } from '@/lib/supabase/server'
-import ToggleOfferStatus from './ToggleOfferStatus'
 
-export default async function OffersPage() {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/login')
-  }
-
-  const { data: offers, error } = await supabase
-    .from('offers')
-    .select(`
-      id,
-      platform_id,
-      title,
-      discount_value,
-      discount_type,
-      promo_code,
-      country_code,
-      language,
-      starts_at,
-      expires_at,
-      status
-    `)
-    .order('created_at', { ascending: false })
-
-  if (error) {
-    throw new Error(error.message)
-  }
-
-  const platformIds = [...new Set((offers ?? []).map((offer) => offer.platform_id).filter(Boolean))]
-  const platformResult = platformIds.length
-    ? await supabase.from('platforms').select('id, name').in('id', platformIds)
-    : { data: [], error: null }
-
-  if (platformResult.error) {
-    throw new Error(platformResult.error.message)
-  }
-
-  const platformNames = new Map((platformResult.data ?? []).map((platform) => [platform.id, platform.name]))
-
-  return (
-    <main className="p-8">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">
-            Ofertas
-          </h1>
-
-          <p className="mt-1 text-slate-500">
-            Gestiona las promociones de las Prop Firms.
-          </p>
-        </div>
-
-        <Link
-          href="/admin/offers/new"
-          className="rounded-lg bg-black px-5 py-3 text-sm font-medium text-white"
-        >
-          + Nueva oferta
-        </Link>
-      </div>
-
-      <div className="overflow-hidden rounded-xl bg-white shadow">
-        <table className="w-full">
-          <thead className="border-b bg-slate-50">
-            <tr>
-              <th className="px-6 py-4 text-left">
-                Prop Firm
-              </th>
-
-              <th className="px-6 py-4 text-left">
-                Oferta
-              </th>
-
-              <th className="px-6 py-4 text-left">
-                Descuento
-              </th>
-
-              <th className="px-6 py-4 text-left">
-                Código
-              </th>
-
-              <th className="px-6 py-4 text-left">
-                País
-              </th>
-
-              <th className="px-6 py-4 text-left">
-                Vigencia
-              </th>
-
-              <th className="px-6 py-4 text-left">
-                Estado
-              </th>
-              <th className="px-6 py-4 text-left">
-                Acción
-              </th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {offers?.map((offer) => (
-              <tr
-                key={offer.id}
-                className="border-b last:border-0"
-              >
-                <td className="px-6 py-4 font-medium">
-                  {platformNames.get(offer.platform_id) ?? '—'}
-                </td>
-
-                <td className="px-6 py-4">
-                  {offer.title}
-                </td>
-
-                <td className="px-6 py-4">
-                  {offer.discount_value}
-                  {offer.discount_type === 'percentage'
-                    ? '%'
-                    : ' USD'}
-                </td>
-
-                <td className="px-6 py-4 font-mono">
-                  {offer.promo_code || '—'}
-                </td>
-
-                <td className="px-6 py-4">
-                  {offer.country_code || 'Todos'}
-                </td>
-
-                <td className="px-6 py-4 text-sm">
-                  {offer.starts_at
-                    ? new Date(
-                        offer.starts_at
-                      ).toLocaleDateString()
-                    : '—'}
-                  {' → '}
-                  {offer.expires_at
-                    ? new Date(
-                        offer.expires_at
-                      ).toLocaleDateString()
-                    : 'Sin vencimiento'}
-                </td>
-
-                <td className="px-6 py-4">
-  <ToggleOfferStatus
-    id={offer.id}
-    status={offer.status}
-  />
-</td>
-                <td className="px-6 py-4">
-  <Link
-    href={`/admin/offers/${offer.id}`}
-    className="underline"
-  >
-    Editar
-  </Link>
-</td>
-              </tr>
-            ))}
-
-            {(!offers || offers.length === 0) && (
-              <tr>
-                <td
-                  colSpan={8}
-                  className="px-6 py-12 text-center text-slate-500"
-                >
-                  No hay ofertas registradas.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </main>
-  )
+const PAGE_SIZE = 25
+export default async function OffersPage({ searchParams }: { searchParams: Promise<{ q?: string; offers?: string; sort?: string; page?: string }> }) {
+  const supabase = await createClient(); const { data: { user } } = await supabase.auth.getUser(); if (!user) redirect('/login')
+  const params = await searchParams, q = params.q ?? '', filter = params.offers ?? '', sort = params.sort ?? 'name', page = positiveInt(params.page)
+  const allOffers = await supabase.from('offers').select('platform_id, status'); if (allOffers.error) throw new Error(allOffers.error.message)
+  const allIds = new Set((allOffers.data ?? []).map((row) => row.platform_id)), activeIds = new Set((allOffers.data ?? []).filter((row) => row.status).map((row) => row.platform_id))
+  let firmsQuery = supabase.from('platforms').select('id, name, logo_url, media:logo_media_id(file_url, alt_text)', { count: 'exact' }).eq('type', 'prop_firm')
+  if (q) firmsQuery = firmsQuery.ilike('name', `%${q}%`); const ids = filter === 'active' ? activeIds : filter === 'with' ? allIds : null
+  if (ids) firmsQuery = ids.size ? firmsQuery.in('id', [...ids]) : firmsQuery.in('id', ['00000000-0000-0000-0000-000000000000']); if (filter === 'without' && allIds.size) firmsQuery = firmsQuery.not('id', 'in', `(${[...allIds].join(',')})`)
+  firmsQuery = firmsQuery.order('name', { ascending: sort !== 'za' }); const result = await firmsQuery.range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1); if (result.error) throw new Error(result.error.message)
+  const pageIds = (result.data ?? []).map((row) => row.id), offers = pageIds.length ? await supabase.from('offers').select('platform_id, status, expires_at').in('platform_id', pageIds) : { data: [], error: null }; if (offers.error) throw new Error(offers.error.message)
+  const stats = new Map<string, { total: number; active: number; next: string | null }>(); for (const item of offers.data ?? []) { const row = stats.get(item.platform_id) ?? { total: 0, active: 0, next: null }; row.total++; if (item.status) row.active++; if (item.expires_at && new Date(item.expires_at) > new Date() && (!row.next || item.expires_at < row.next)) row.next = item.expires_at; stats.set(item.platform_id, row) }
+  const href = (next: number) => url('/admin/offers', { q, offers: filter, sort, page: String(next) })
+  return <main className="p-4 sm:p-6 lg:p-8"><div className="mx-auto max-w-[1500px]"><AdminDirectoryHeader title="Ofertas" description="Selecciona una firma para gestionar sus promociones." count={result.count ?? 0} action={<Link href="/admin/offers/new" className="rounded-lg bg-black px-4 py-2.5 text-sm text-white">+ Nueva oferta</Link>} /><Toolbar q={q} filter={filter} sort={sort} /><div className="overflow-hidden rounded-xl border bg-white"><table className="w-full text-sm"><thead className="border-b bg-slate-50 text-left"><tr><th className="px-4 py-3">Firma</th><th className="px-4 py-3">Activas</th><th className="px-4 py-3">Total</th><th className="hidden px-4 py-3 sm:table-cell">Próxima expiración</th><th className="px-4 py-3 text-right">Acción</th></tr></thead><tbody>{result.data?.map((firm) => { const row = stats.get(firm.id); return <tr key={firm.id} className="border-b last:border-0 hover:bg-slate-50"><td className="px-4 py-3"><AdminFirmIdentity name={firm.name} media={firm.media} legacyUrl={firm.logo_url} /></td><td className="px-4 py-3">{row?.active ?? 0}</td><td className="px-4 py-3">{row?.total ?? 0}</td><td className="hidden px-4 py-3 text-slate-500 sm:table-cell">{row?.next ? new Date(row.next).toLocaleDateString('es-CO') : '—'}</td><td className="px-4 py-3 text-right"><Link href={`/admin/offers/platform/${firm.id}?returnTo=${encodeURIComponent(href(page))}`} className="rounded-lg border px-3 py-2 font-medium">Gestionar</Link></td></tr>})}{!result.data?.length && <tr><td colSpan={5} className="p-12 text-center text-slate-500">No encontramos firmas con estos filtros.</td></tr>}</tbody></table></div><AdminPagination page={page} total={result.count ?? 0} pageSize={PAGE_SIZE} href={href} /></div></main>
 }
+function Toolbar({ q, filter, sort }: { q: string; filter: string; sort: string }) { return <form className="mb-5 grid gap-3 rounded-xl bg-white p-3 shadow-sm md:grid-cols-[1fr_220px_180px_auto]"><input name="q" defaultValue={q} placeholder="Buscar firma..." className="rounded-lg border px-3 py-2.5" /><select name="offers" defaultValue={filter} className="rounded-lg border px-3"><option value="">Todas</option><option value="active">Con ofertas activas</option><option value="with">Con ofertas</option><option value="without">Sin ofertas</option></select><select name="sort" defaultValue={sort} className="rounded-lg border px-3"><option value="name">Nombre A-Z</option><option value="za">Nombre Z-A</option></select><button className="rounded-lg bg-black px-4 py-2.5 text-sm text-white">Aplicar</button></form> }
+function positiveInt(value?: string) { const number = Number(value); return Number.isInteger(number) && number > 0 ? number : 1 }
+function url(path: string, values: Record<string, string>) { const query = new URLSearchParams(); Object.entries(values).forEach(([key, value]) => { if (value && !(key === 'page' && value === '1')) query.set(key, value) }); return query.size ? `${path}?${query}` : path }

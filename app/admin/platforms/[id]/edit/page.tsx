@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { PayoutMetricsManager } from '@/components/admin/PayoutMetricsManager'
 import { PropFirmMatchSnapshotsManager } from '@/components/admin/PropFirmMatchSnapshotsManager'
 import { MondoTradersMetricsPanel } from '@/components/admin/MondoTradersMetricsPanel'
+import { MediaPicker } from '@/components/admin/MediaPicker'
 
 type NullableBoolean = boolean | null
 type Market = 'cfd' | 'futures' | 'crypto' | 'options'
@@ -184,7 +185,7 @@ export default function EditPlatformPage() {
       <div className="grid gap-5 md:grid-cols-2"><Field label="CEO"><input value={ceoName} onChange={(e) => setCeoName(e.target.value)} className={INPUT} /></Field><Field label="Fecha de fundación"><input type="date" value={foundedAt} onChange={(e) => setFoundedAt(e.target.value)} className={INPUT} /></Field><Field label="Broker / proveedor de liquidez"><input value={brokerProvider} onChange={(e) => setBrokerProvider(e.target.value)} className={INPUT} /></Field><Field label="Días de inactividad"><input type="number" min="0" step="1" value={inactivityDays} onChange={(e) => setInactivityDays(e.target.value)} className={INPUT} /></Field></div>
       <label className="mt-5 flex items-center gap-3 rounded-lg border p-4"><input type="checkbox" checked={isNew} onChange={(event) => setIsNew(event.target.checked)} className="size-4" /><span><strong className="block text-sm">Mostrar como nueva</strong><span className="text-xs text-slate-500">Activa la etiqueta editorial “Nueva” en el directorio público.</span></span></label>
       <Field label="Descripción"><textarea value={description} onChange={(e) => setDescription(e.target.value)} className={`${INPUT} min-h-32`} /></Field>
-      <Field label="Logo"><select value={logoMediaId} onChange={(e) => setLogoMediaId(e.target.value)} className={INPUT}><option value="">Sin logo</option>{media.map((item) => <option key={item.id} value={item.id}>{item.file_name}</option>)}</select>{selectedMedia && <div className="mt-3 flex items-center gap-4"><MediaPreview media={selectedMedia} /><span className="text-sm text-slate-500">{selectedMedia.file_name}</span></div>}</Field>
+      <MediaPicker label="Logo" value={selectedMedia ?? null} onChange={(item) => setLogoMediaId(item?.id ?? '')} />
 
       <Section title="Plataformas de trading" description="Catálogo oficial asociado explícitamente a la firma." />
       <CatalogChecklist items={tradingPlatforms} selected={selectedTradingPlatforms} onToggle={(catalogId) => setSelectedTradingPlatforms((current) => toggleId(current, catalogId))} />
@@ -243,11 +244,6 @@ function NullableSelect({ label, value, onChange }: { label: string; value: Null
 function Summary({ label, value }: { label: string; value: string }) { return <div className="rounded-xl border bg-slate-50 p-5"><p className="text-sm text-slate-500">{label}</p><p className="mt-2 text-xl font-bold">{value}</p></div> }
 function Choice({ active, label, onChange }: { active: boolean; label: string; onChange: () => void }) { return <label className={`rounded-lg border p-4 ${active ? 'border-black bg-slate-100' : ''}`}><input type="radio" name="availability" checked={active} onChange={onChange} className="mr-3" />{label}</label> }
 function CatalogChecklist({ items, selected, onToggle }: { items: CatalogItem[]; selected: string[]; onToggle: (id: string) => void }) { return <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{items.map((item) => <label key={item.id} className="flex items-center gap-3 rounded-lg border p-4"><input type="checkbox" checked={selected.includes(item.id)} onChange={() => onToggle(item.id)} /><span>{item.name}{!item.status && <span className="ml-2 text-xs text-slate-400">Inactivo</span>}</span></label>)}{!items.length && <Hint>El catálogo estará disponible después de ejecutar la migración.</Hint>}</div> }
-function MediaPreview({ media }: { media: Media }) {
-  // Las URLs dinámicas son administradas por la biblioteca de medios de Supabase.
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img src={media.file_url} alt={media.alt_text || media.file_name} className="size-20 rounded-lg border object-contain" />
-}
 function numberOrNull(value: string) { return value.trim() ? Number(value) : null }
 function nonNegativeIntegerOrNull(value: string) { return value.trim() ? Number(value) : null }
 function textOrNull(value: string) { return value.trim() || null }

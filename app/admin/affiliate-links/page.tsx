@@ -1,146 +1,19 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { AdminDirectoryHeader, AdminFirmIdentity, AdminPagination } from '@/components/admin/AdminDirectory'
 import { createClient } from '@/lib/supabase/server'
 
-export default async function AffiliateLinksPage() {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/login')
-  }
-
-  const { data: links, error } = await supabase
-    .from('affiliate_links')
-    .select(`
-      id,
-      country_code,
-      language,
-      url,
-      campaign,
-      priority,
-      status,
-      created_at,
-      platforms (
-        name
-      ),
-      challenges (
-        name
-      )
-    `)
-    .order('priority', { ascending: true })
-
-  if (error) {
-    throw new Error(error.message)
-  }
-
-  return (
-    <main className="p-8">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">
-            Enlaces de afiliados
-          </h1>
-
-          <p className="mt-1 text-slate-500">
-            Gestiona los enlaces de referido de Tradagora.
-          </p>
-        </div>
-
-        <Link
-          href="/admin/affiliate-links/new"
-          className="rounded-lg bg-black px-5 py-3 text-sm font-medium text-white"
-        >
-          + Nuevo enlace
-        </Link>
-      </div>
-
-      <div className="overflow-hidden rounded-xl bg-white shadow">
-        <table className="w-full">
-          <thead className="border-b bg-slate-50">
-            <tr>
-              <th className="px-6 py-4 text-left text-sm">
-                Prop Firm
-              </th>
-
-              <th className="px-6 py-4 text-left text-sm">
-                Challenge
-              </th>
-
-              <th className="px-6 py-4 text-left text-sm">
-                País
-              </th>
-
-              <th className="px-6 py-4 text-left text-sm">
-                Idioma
-              </th>
-
-              <th className="px-6 py-4 text-left text-sm">
-                Campaña
-              </th>
-
-              <th className="px-6 py-4 text-left text-sm">
-                Prioridad
-              </th>
-
-              <th className="px-6 py-4 text-left text-sm">
-                Estado
-              </th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {links?.map((link) => (
-              <tr
-                key={link.id}
-                className="border-b last:border-0"
-              >
-                <td className="px-6 py-4 font-medium">
-                  {link.platforms?.[0]?.name ?? '—'}
-                </td>
-
-                <td className="px-6 py-4">
-                  {link.challenges?.[0]?.name ?? 'Todos'}
-                </td>
-
-                <td className="px-6 py-4">
-                  {link.country_code || 'Todos'}
-                </td>
-
-                <td className="px-6 py-4">
-                  {link.language || 'Todos'}
-                </td>
-
-                <td className="px-6 py-4">
-                  {link.campaign || '—'}
-                </td>
-
-                <td className="px-6 py-4">
-                  {link.priority}
-                </td>
-
-                <td className="px-6 py-4">
-                  {link.status ? 'Activo' : 'Inactivo'}
-                </td>
-              </tr>
-            ))}
-
-            {(!links || links.length === 0) && (
-              <tr>
-                <td
-                  colSpan={7}
-                  className="px-6 py-12 text-center text-slate-500"
-                >
-                  No hay enlaces de afiliados.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </main>
-  )
+const PAGE_SIZE = 25
+export default async function AffiliateLinksPage({ searchParams }: { searchParams: Promise<{ q?: string; links?: string; sort?: string; page?: string }> }) {
+  const supabase = await createClient(); const { data: { user } } = await supabase.auth.getUser(); if (!user) redirect('/login'); const params = await searchParams, q = params.q ?? '', filter = params.links ?? '', sort = params.sort ?? 'name', page = positiveInt(params.page)
+  const allLinks = await supabase.from('affiliate_links').select('platform_id, status'); if (allLinks.error) throw new Error(allLinks.error.message)
+  const allIds = new Set((allLinks.data ?? []).map((row) => row.platform_id)), activeIds = new Set((allLinks.data ?? []).filter((row) => row.status).map((row) => row.platform_id))
+  let query = supabase.from('platforms').select('id, name, logo_url, media:logo_media_id(file_url, alt_text)', { count: 'exact' }).eq('type', 'prop_firm'); if (q) query = query.ilike('name', `%${q}%`); const ids = filter === 'active' ? activeIds : filter === 'with' ? allIds : null; if (ids) query = ids.size ? query.in('id', [...ids]) : query.in('id', ['00000000-0000-0000-0000-000000000000']); if (filter === 'without' && allIds.size) query = query.not('id', 'in', `(${[...allIds].join(',')})`); query = query.order('name', { ascending: sort !== 'za' })
+  const firms = await query.range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1); if (firms.error) throw new Error(firms.error.message); const pageIds = (firms.data ?? []).map((row) => row.id)
+  const links = pageIds.length ? await supabase.from('affiliate_links').select('platform_id, status, country_code, language').in('platform_id', pageIds) : { data: [], error: null }; if (links.error) throw new Error(links.error.message)
+  const stats = new Map<string, { total: number; active: number; scopes: Set<string> }>(); for (const item of links.data ?? []) { const row = stats.get(item.platform_id) ?? { total: 0, active: 0, scopes: new Set<string>() }; row.total++; if (item.status) row.active++; row.scopes.add(`${item.country_code || 'Global'} / ${item.language || 'Todos'}`); stats.set(item.platform_id, row) }
+  const href = (next: number) => url('/admin/affiliate-links', { q, links: filter, sort, page: String(next) })
+  return <main className="p-4 sm:p-6 lg:p-8"><div className="mx-auto max-w-[1500px]"><AdminDirectoryHeader title="Enlaces de afiliados" description="Selecciona una firma para gestionar sus destinos de /go/[slug]." count={firms.count ?? 0} action={<Link href="/admin/affiliate-links/new" className="rounded-lg bg-black px-4 py-2.5 text-sm text-white">+ Nuevo enlace</Link>} /><form className="mb-5 grid gap-3 rounded-xl bg-white p-3 shadow-sm md:grid-cols-[1fr_220px_180px_auto]"><input name="q" defaultValue={q} placeholder="Buscar firma..." className="rounded-lg border px-3 py-2.5" /><select name="links" defaultValue={filter} className="rounded-lg border px-3"><option value="">Todas</option><option value="active">Con links activos</option><option value="with">Con links</option><option value="without">Sin links</option></select><select name="sort" defaultValue={sort} className="rounded-lg border px-3"><option value="name">Nombre A-Z</option><option value="za">Nombre Z-A</option></select><button className="rounded-lg bg-black px-4 py-2.5 text-sm text-white">Aplicar</button></form><div className="overflow-hidden rounded-xl border bg-white"><table className="w-full text-sm"><thead className="border-b bg-slate-50 text-left"><tr><th className="px-4 py-3">Firma</th><th className="px-4 py-3">Activos</th><th className="px-4 py-3">Total</th><th className="hidden px-4 py-3 md:table-cell">Países / idiomas</th><th className="px-4 py-3 text-right">Acción</th></tr></thead><tbody>{firms.data?.map((firm) => { const row = stats.get(firm.id); return <tr key={firm.id} className="border-b last:border-0 hover:bg-slate-50"><td className="px-4 py-3"><AdminFirmIdentity name={firm.name} media={firm.media} legacyUrl={firm.logo_url} /></td><td className="px-4 py-3">{row?.active ?? 0}</td><td className="px-4 py-3">{row?.total ?? 0}</td><td className="hidden max-w-sm truncate px-4 py-3 text-slate-500 md:table-cell">{row ? [...row.scopes].join(' · ') : '—'}</td><td className="px-4 py-3 text-right"><Link href={`/admin/affiliate-links/platform/${firm.id}?returnTo=${encodeURIComponent(href(page))}`} className="rounded-lg border px-3 py-2 font-medium">Gestionar</Link></td></tr>})}{!firms.data?.length && <tr><td colSpan={5} className="p-12 text-center text-slate-500">No encontramos firmas con estos filtros.</td></tr>}</tbody></table></div><AdminPagination page={page} total={firms.count ?? 0} pageSize={PAGE_SIZE} href={href} /></div></main>
 }
+function positiveInt(value?: string) { const number = Number(value); return Number.isInteger(number) && number > 0 ? number : 1 }
+function url(path: string, values: Record<string, string>) { const query = new URLSearchParams(); Object.entries(values).forEach(([key, value]) => { if (value && !(key === 'page' && value === '1')) query.set(key, value) }); return query.size ? `${path}?${query}` : path }

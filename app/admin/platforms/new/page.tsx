@@ -3,6 +3,7 @@
 import { FormEvent, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { MediaPicker, type PickedMedia } from '@/components/admin/MediaPicker'
 
 export default function NewPlatformPage() {
   const router = useRouter()
@@ -12,7 +13,7 @@ export default function NewPlatformPage() {
   const [slug, setSlug] = useState('')
   const [description, setDescription] = useState('')
   const [websiteUrl, setWebsiteUrl] = useState('')
-  const [logoUrl, setLogoUrl] = useState('')
+  const [logoMedia, setLogoMedia] = useState<PickedMedia | null>(null)
 
   const [profitSplitMin, setProfitSplitMin] = useState('')
   const [profitSplitMax, setProfitSplitMax] = useState('')
@@ -38,7 +39,7 @@ export default function NewPlatformPage() {
           slug,
           type: 'prop_firm',
           website_url: websiteUrl || null,
-          logo_url: logoUrl || null,
+          logo_media_id: logoMedia?.id ?? null,
           status: 'active',
         })
         .select()
@@ -159,19 +160,7 @@ export default function NewPlatformPage() {
             />
           </div>
 
-          <div>
-            <label className="mb-2 block text-sm font-medium">
-              URL del logo
-            </label>
-
-            <input
-              type="url"
-              value={logoUrl}
-              onChange={(e) => setLogoUrl(e.target.value)}
-              placeholder="https://..."
-              className="w-full rounded-lg border p-3"
-            />
-          </div>
+          <MediaPicker label="Logo" value={logoMedia} onChange={setLogoMedia} />
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>

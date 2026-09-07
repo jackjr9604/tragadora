@@ -1,158 +1,30 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { AdminDirectoryHeader, AdminFirmIdentity, AdminPagination, StatusBadge } from '@/components/admin/AdminDirectory'
 import { createClient } from '@/lib/supabase/server'
 
-export default async function PlatformsPage() {
-  const supabase = await createClient()
+const PAGE_SIZE = 25
+type Params = { q?: string | string[]; status?: string | string[]; market?: string | string[]; country?: string | string[]; new?: string | string[]; sort?: string | string[]; page?: string | string[] }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/login')
-  }
-
-  const { data: platforms, error } = await supabase
-  .from('platforms')
-  .select(`
-    id,
-    name,
-    slug,
-    type,
-    status,
-    score,
-    logo_media_id,
-    created_at,
-    media:logo_media_id (
-      id,
-      file_url,
-      alt_text
-    )
-  `)
-
-  return (
-    <main className="min-h-screen bg-slate-100 p-8">
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">
-              Plataformas
-            </h1>
-
-            <p className="mt-1 text-slate-500">
-              Gestiona las plataformas de Tradagora.
-            </p>
-          </div>
-
-          <div className="flex gap-3"><Link href="/admin/platforms/research" className="rounded-lg border bg-white px-5 py-3 text-sm font-medium">Banco de investigación</Link><Link
-            href="/admin/platforms/new"
-            className="rounded-lg bg-black px-5 py-3 text-sm font-medium text-white hover:bg-slate-800"
-          >
-            + Nueva Prop Firm
-          </Link></div>
-        </div>
-
-        <div className="overflow-hidden rounded-xl bg-white shadow">
-          <table className="w-full">
-            <thead className="border-b bg-slate-50">
-              <tr>
-                <th className="px-6 py-4 text-left text-sm font-semibold">
-  Logo
-</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold">
-                  Nombre
-                </th>
-
-                <th className="px-6 py-4 text-left text-sm font-semibold">
-                  Tipo
-                </th>
-
-                <th className="px-6 py-4 text-left text-sm font-semibold">
-                  Estado
-                </th>
-
-                <th className="px-6 py-4 text-left text-sm font-semibold">
-                  Puntuación
-                </th>
-
-                <th className="px-6 py-4 text-left text-sm font-semibold">
-                  Fecha
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold">
-  Acciones
-</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {platforms?.map((platform) => (
-                <tr
-                  key={platform.id}
-                  className="border-b last:border-0"
-                >
-                  <td className="px-6 py-4">
-  {platform.media?.[0] ? (
-  <img
-    src={platform.media[0].file_url}
-    alt={
-      platform.media[0].alt_text ||
-      platform.name
-    }
-    className="h-10 w-10 rounded-lg object-contain"
-  />
-) : (
-    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-xs text-slate-400">
-      —
-    </div>
-  )}
-</td>
-                  <td className="px-6 py-4 font-medium">
-                    {platform.name}
-                  </td>
-
-                  <td className="px-6 py-4">
-                    {platform.type}
-                  </td>
-
-                  <td className="px-6 py-4">
-                    {platform.status}
-                  </td>
-
-                  <td className="px-6 py-4">
-                    {platform.score ?? '—'}
-                  </td>
-
-                  <td className="px-6 py-4 text-sm text-slate-500">
-                    {new Date(
-                      platform.created_at
-                    ).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4">
-  <Link
-    href={`/admin/platforms/${platform.id}/edit`}
-    className="text-sm font-medium underline"
-  >
-    Editar
-  </Link>
-</td>
-                </tr>
-              ))}
-
-              {(!platforms || platforms.length === 0) && (
-                <tr>
-                  <td
-                    colSpan={7}
-                    className="px-6 py-12 text-center text-slate-500"
-                  >
-                    Todavía no hay plataformas registradas.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </main>
-  )
+export default async function PlatformsPage({ searchParams }: { searchParams: Promise<Params> }) {
+  const supabase = await createClient(); const { data: { user } } = await supabase.auth.getUser(); if (!user) redirect('/login')
+  const params = await searchParams, q = scalar(params.q), status = scalar(params.status), market = scalar(params.market), country = scalar(params.country), isNew = scalar(params.new), sort = scalar(params.sort) || 'az', page = positiveInt(scalar(params.page))
+  let allowedIds: string[] | null = null
+  if (market) { const result = await supabase.from('platform_markets').select('platform_id').eq('market', market); if (result.error) throw new Error(result.error.message); allowedIds = result.data.map((row) => row.platform_id) }
+  if (isNew) { const result = await supabase.from('prop_firm_details').select('platform_id').eq('is_new', isNew === 'yes'); if (result.error) throw new Error(result.error.message); const ids = result.data.map((row) => row.platform_id); allowedIds = allowedIds === null ? ids : allowedIds.filter((id) => ids.includes(id)) }
+  let query = supabase.from('platforms').select('id, name, slug, status, score, logo_url, origin_country_code, created_at, media:logo_media_id(file_url, alt_text)', { count: 'exact' }).eq('type', 'prop_firm')
+  if (q) query = query.ilike('name', `%${q}%`); if (status) query = query.eq('status', status); if (country) query = query.eq('origin_country_code', country); if (allowedIds !== null) query = allowedIds.length ? query.in('id', allowedIds) : query.in('id', ['00000000-0000-0000-0000-000000000000'])
+  query = sort === 'za' ? query.order('name', { ascending: false }) : sort === 'recent' ? query.order('created_at', { ascending: false }) : sort === 'score' ? query.order('score', { ascending: false, nullsFirst: false }) : query.order('name')
+  const [{ data: firms, count, error }, countriesResult] = await Promise.all([query.range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1), supabase.from('countries').select('code, name').order('name')])
+  if (error) throw new Error(error.message)
+  const total = count ?? 0, queryHref = (nextPage: number) => paramsUrl('/admin/platforms', { q, status, market, country, new: isNew, sort, page: String(nextPage) })
+  return <main className="p-4 sm:p-6 lg:p-8"><div className="mx-auto max-w-[1500px]"><AdminDirectoryHeader title="Prop Firms" description="Localiza y administra las firmas de Tradagora." count={total} action={<div className="flex gap-2"><Link href="/admin/platforms/research" className="rounded-lg border bg-white px-4 py-2.5 text-sm font-medium">Investigación</Link><Link href="/admin/platforms/new" className="rounded-lg bg-black px-4 py-2.5 text-sm font-medium text-white">+ Nueva Prop Firm</Link></div>} />
+    <form className="mb-5 grid gap-3 rounded-xl bg-white p-3 shadow-sm md:grid-cols-3 xl:grid-cols-[minmax(240px,1fr)_160px_150px_180px_150px_170px_auto]"><input name="q" defaultValue={q} placeholder="Buscar firma..." className="rounded-lg border px-3 py-2.5" /><Filter name="status" value={status} label="Todos los estados" options={[["active","Activas"],["draft","Borrador"],["inactive","Inactivas"]]} /><Filter name="market" value={market} label="Todos los mercados" options={[["cfd","CFD"],["futures","Futures"],["crypto","Crypto"],["options","Options"]]} /><Filter name="country" value={country} label="Todos los países" options={(countriesResult.data ?? []).map((item) => [item.code, item.name])} /><Filter name="new" value={isNew} label="Nueva: todas" options={[["yes","Nueva: sí"],["no","Nueva: no"]]} /><Filter name="sort" value={sort} label="Nombre A-Z" options={[["az","Nombre A-Z"],["za","Nombre Z-A"],["recent","Más recientes"],["score","Mayor score"]]} /><button className="rounded-lg bg-black px-4 py-2.5 text-sm font-medium text-white">Aplicar</button></form>
+    <div className="overflow-hidden rounded-xl border bg-white"><div className="overflow-x-auto"><table className="w-full min-w-[820px] text-sm"><thead className="border-b bg-slate-50 text-left"><tr><th className="px-4 py-3">Firma</th><th className="px-4 py-3">País</th><th className="px-4 py-3">Estado</th><th className="px-4 py-3">Score</th><th className="px-4 py-3">Creada</th><th className="px-4 py-3 text-right">Acción</th></tr></thead><tbody>{(firms ?? []).map((firm) => <tr key={firm.id} className="border-b last:border-0 hover:bg-slate-50"><td className="px-4 py-3"><AdminFirmIdentity name={firm.name} media={firm.media} legacyUrl={firm.logo_url} /></td><td className="px-4 py-3 text-slate-600">{firm.origin_country_code || '—'}</td><td className="px-4 py-3"><StatusBadge tone={firm.status === 'active' ? 'success' : firm.status === 'draft' ? 'warning' : 'neutral'}>{firm.status}</StatusBadge></td><td className="px-4 py-3">{firm.score ?? '—'}</td><td className="px-4 py-3 text-slate-500">{new Date(firm.created_at).toLocaleDateString('es-CO')}</td><td className="px-4 py-3 text-right"><Link href={`/admin/platforms/${firm.id}/edit?returnTo=${encodeURIComponent(queryHref(page))}`} className="rounded-lg border px-3 py-2 font-medium">Editar</Link></td></tr>)}{!firms?.length && <tr><td colSpan={6} className="p-12 text-center text-slate-500">No encontramos Prop Firms con estos filtros.</td></tr>}</tbody></table></div></div><AdminPagination page={page} total={total} pageSize={PAGE_SIZE} href={queryHref} />
+  </div></main>
 }
+
+function Filter({ name, value, label, options }: { name: string; value: string; label: string; options: string[][] }) { return <select name={name} defaultValue={value} className="rounded-lg border px-3 py-2.5"><option value="">{label}</option>{options.map(([key, text]) => <option key={key} value={key}>{text}</option>)}</select> }
+function scalar(value: string | string[] | undefined) { return Array.isArray(value) ? value[0] ?? '' : value ?? '' }
+function positiveInt(value: string) { const parsed = Number(value); return Number.isInteger(parsed) && parsed > 0 ? parsed : 1 }
+function paramsUrl(path: string, values: Record<string, string>) { const query = new URLSearchParams(); for (const [key, value] of Object.entries(values)) if (value && !(key === 'page' && value === '1')) query.set(key, value); const text = query.toString(); return text ? `${path}?${text}` : path }
