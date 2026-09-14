@@ -5,6 +5,6 @@ export function PlatformLogo({ platform, small = false }: { platform: HomePlatfo
   return platform.logoUrl ? (
     // Storage domains are configured from Supabase and intentionally remain unoptimized.
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={platform.logoUrl} alt={platform.logoAlt || platform.name} className={`${classes} bg-white/5 object-contain p-1`} />
+    <img src={platform.logoUrl} alt={platform.logoAlt || platform.name} width={small ? 32 : 48} height={small ? 32 : 48} loading="lazy" decoding="async" className={`${classes} bg-white/5 object-contain p-1`} />
   ) : <span className={`${classes} flex items-center justify-center bg-white/5 font-bold text-slate-400`}>{platform.name.slice(0, 1)}</span>
 }

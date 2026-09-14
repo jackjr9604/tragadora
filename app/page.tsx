@@ -1,4 +1,6 @@
-import { HomePublic } from '@/components/public/HomePublic'
+import { Suspense } from 'react'
+import { HomeHeroFallback, HomePublic } from '@/components/public/HomePublic'
+import { PublicPageShell } from '@/components/public/PublicPageShell'
 import { getHomeData } from '@/lib/home-data'
 import { getPageContent } from '@/lib/site-content'
 import { resolvePublicLanguage } from '@/lib/language'
@@ -18,22 +20,18 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
     country: stringParam(params.country)?.toUpperCase(), market: stringParam(params.market),
     experience: stringParam(params.experience), budget: numberParam(params.budget), accountSize: numberParam(params.account),
   }
-  const [content, data] = await Promise.all([
-    getPageContent('home', language),
-    getHomeData(language),
-  ])
+  const content = await getPageContent('home', language)
 
   return (
-    <HomePublic
-      content={content}
-      language={language}
-      latestPayouts={data.latestPayouts}
-      featuredPlatforms={data.featuredPlatforms}
-      offers={data.offers}
-      recommendationFirms={data.recommendationFirms}
-      countries={data.countries}
-      initialCriteria={initialCriteria}
-      stats={data.stats}
-    />
+    <PublicPageShell language={language}>
+      <Suspense fallback={<HomeHeroFallback content={content} language={language} />}>
+        <HomeData content={content} language={language} initialCriteria={initialCriteria} />
+      </Suspense>
+    </PublicPageShell>
   )
+}
+
+async function HomeData({ content, language, initialCriteria }: { content: Awaited<ReturnType<typeof getPageContent>>; language: Awaited<ReturnType<typeof resolvePublicLanguage>>; initialCriteria: Partial<RecommendationCriteria> }) {
+  const data = await getHomeData(language)
+  return <HomePublic content={content} language={language} latestPayouts={data.latestPayouts} featuredPlatforms={data.featuredPlatforms} offers={data.offers} recommendationFirms={data.recommendationFirms} countries={data.countries} initialCriteria={initialCriteria} stats={data.stats} />
 }

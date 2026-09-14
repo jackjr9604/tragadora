@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { resolvePublicLanguage } from '@/lib/language'
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -22,12 +21,10 @@ export const metadata: Metadata = {
     'Compara Prop Firms, ofertas y payouts verificados con datos para traders de Latinoamérica.',
 };
 
-export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const language = await resolvePublicLanguage()
-
+export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
-      lang={language}
+      lang="es"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>

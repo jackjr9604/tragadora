@@ -1,6 +1,7 @@
 import 'server-only'
 
-import { createClient } from '@/lib/supabase/server'
+import { unstable_cache } from 'next/cache'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { visibleBrandText } from '@/lib/public-language'
 import { classifyPayoutVerification, type RecommendableFirm } from '@/lib/prop-firm-recommender'
 import { conservativeMaxDrawdown, resolveChallenge, type AccountPlan, type ChallengePhase, type ChallengeRewardOption, type ChallengeVariant, type ChallengeVariantPhase } from '@/lib/challenge-resolver'
@@ -58,16 +59,14 @@ export type PublicCountry = { code: string; name: string }
 type PayoutRow = {
   amount: number | string | null
   payout_date: string
-  platform_id: string
-  payout_source_id: string | null
 }
 
 function first<T>(value: T[] | T | null | undefined): T | null {
   return Array.isArray(value) ? value[0] ?? null : value ?? null
 }
 
-export async function getHomeData(language = 'es', countryCode?: string | null) {
-  const supabase = await createClient()
+async function getHomeDataUncached(language = 'es', countryCode?: string | null) {
+  const supabase = createAdminClient()
   const now = new Date()
 
   const [platformResult, detailResult, translationResult, sourceResult, challengeResult, availabilityResult, countryResult, marketResult] =
@@ -150,6 +149,21 @@ export async function getHomeData(language = 'es', countryCode?: string | null) 
   const challenges = challengeResult.data ?? []
   const challengeIds = challenges.map((challenge) => challenge.id)
   const visibleAt = now.toISOString()
+  const recentWindowStart = new Date(now.getTime() - 36 * 60 * 60 * 1_000).toISOString()
+  const payoutDataPromise = Promise.all([
+    supabase.from('payout_source_summary').select('platform_id, payout_count, payout_amount'),
+    supabase.from('payouts').select('amount, payout_date').gte('payout_date', recentWindowStart),
+    supabase.from('payouts').select('amount').order('amount', { ascending: false }).limit(1).maybeSingle(),
+    supabase.from('payouts').select(`
+        id, amount, payout_date, source_url, external_id,
+        platform_id, payout_source_id, verification_status
+      `).order('payout_date', { ascending: false }).limit(16),
+    supabase.from('offers').select(`
+        id, platform_id, challenge_id, title, description, discount_value,
+        discount_type, promo_code, expires_at, starts_at,
+        language, country_code, status, priority, affiliate_link_id
+      `).eq('status', true).order('priority', { ascending: true }).limit(24),
+  ])
   const [planResult, phaseResult, variantResult, rewardResult] = challengeIds.length ? await Promise.all([
     supabase.from('account_plans').select('*').in('challenge_id', challengeIds),
     supabase.from('challenge_phases').select('*').in('challenge_id', challengeIds).order('phase_number'),
@@ -181,35 +195,9 @@ export async function getHomeData(language = 'es', countryCode?: string | null) 
   const countryCodeById = new Map(rawCountries.map((country) => [String(country.id ?? ''), String(country.code ?? country.iso_code ?? country.country_code ?? '').toUpperCase()]))
   const availability = (availabilityResult.data ?? []) as Array<Record<string, unknown>>
 
-  const firstPayoutPage = await supabase
-    .from('payouts')
-    .select('amount, payout_date, platform_id, payout_source_id', {
-      count: 'exact',
-    })
-    .order('payout_date', { ascending: true })
-    .range(0, 999)
-
-  const payoutRows: PayoutRow[] = [...(firstPayoutPage.data ?? [])]
-  const payoutCount = firstPayoutPage.count ?? payoutRows.length
-
-  for (let offset = 1_000; offset < payoutCount; offset += 1_000) {
-    const page = await supabase
-      .from('payouts')
-      .select('amount, payout_date, platform_id, payout_source_id')
-      .order('payout_date', { ascending: true })
-      .range(offset, offset + 999)
-
-    payoutRows.push(...(page.data ?? []))
-  }
-
-  const latestResult = await supabase
-    .from('payouts')
-    .select(`
-      id, amount, payout_date, source_url, external_id,
-      platform_id, payout_source_id, verification_status
-    `)
-    .order('payout_date', { ascending: false })
-    .limit(16)
+  const [sourceSummaryResult, recentPayoutResult, largestPayoutResult, latestResult, offerResult] = await payoutDataPromise
+  const payoutDataError = sourceSummaryResult.error ?? recentPayoutResult.error ?? largestPayoutResult.error ?? latestResult.error ?? offerResult.error
+  if (payoutDataError) throw new Error(payoutDataError.message)
 
   const latestPayouts: HomePayout[] = (latestResult.data ?? []).map((row) => ({
     id: row.id,
@@ -221,17 +209,6 @@ export async function getHomeData(language = 'es', countryCode?: string | null) 
     sourceName: sourceMap.get(row.payout_source_id)?.name ?? null,
     verification: row.verification_status,
   }))
-
-  const offerResult = await supabase
-    .from('offers')
-    .select(`
-      id, platform_id, challenge_id, title, description, discount_value,
-      discount_type, promo_code, expires_at, starts_at,
-      language, country_code, status, priority, affiliate_link_id
-    `)
-    .eq('status', true)
-    .order('priority', { ascending: true })
-    .limit(24)
 
   const validOfferRows = (offerResult.data ?? [])
     .filter((offer) => {
@@ -275,19 +252,22 @@ export async function getHomeData(language = 'es', countryCode?: string | null) 
   }).format(now)
   const firmTotals = new Map<string, { total: number; count: number }>()
   let totalPaid = 0
+  let totalPayouts = 0
   let paidToday = 0
   let payoutsToday = 0
-  let largestPayout = 0
+  const largestPayout = Number(largestPayoutResult.data?.amount ?? 0)
 
-  for (const payout of payoutRows) {
-    const amount = Number(payout.amount ?? 0)
+  for (const summary of sourceSummaryResult.data ?? []) {
+    const amount = Number(summary.payout_amount ?? 0)
+    const count = Number(summary.payout_count ?? 0)
     totalPaid += amount
-    largestPayout = Math.max(largestPayout, amount)
-    const current = firmTotals.get(payout.platform_id) ?? { total: 0, count: 0 }
+    totalPayouts += count
+    const current = firmTotals.get(summary.platform_id) ?? { total: 0, count: 0 }
     current.total += amount
-    current.count += 1
-    firmTotals.set(payout.platform_id, current)
-
+    current.count += count
+    firmTotals.set(summary.platform_id, current)
+  }
+  for (const payout of (recentPayoutResult.data ?? []) as PayoutRow[]) {
     const payoutDay = new Intl.DateTimeFormat('en-CA', {
       timeZone: 'America/Bogota',
       year: 'numeric',
@@ -295,7 +275,7 @@ export async function getHomeData(language = 'es', countryCode?: string | null) 
       day: '2-digit',
     }).format(new Date(payout.payout_date))
     if (payoutDay === todayKey) {
-      paidToday += amount
+      paidToday += Number(payout.amount ?? 0)
       payoutsToday += 1
     }
   }
@@ -365,8 +345,8 @@ export async function getHomeData(language = 'es', countryCode?: string | null) 
     recommendationFirms,
     stats: {
       totalPaid,
-      totalPayouts: payoutRows.length,
-      averagePayout: payoutRows.length ? totalPaid / payoutRows.length : 0,
+      totalPayouts,
+      averagePayout: totalPayouts ? totalPaid / totalPayouts : 0,
       largestPayout,
       paidToday,
       payoutsToday,
@@ -375,3 +355,9 @@ export async function getHomeData(language = 'es', countryCode?: string | null) 
     },
   }
 }
+
+export const getHomeData = unstable_cache(
+  getHomeDataUncached,
+  ['public-home-data-v1'],
+  { revalidate: 60, tags: ['public-home-data'] }
+)

@@ -28,6 +28,7 @@ export function MondoTradersMetricsPanel({ platformId }: { platformId: string })
   const [snapshots, setSnapshots] = useState<Snapshot[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [renderedAt] = useState(() => Date.now())
 
   useEffect(() => {
     let cancelled = false
@@ -56,13 +57,13 @@ export function MondoTradersMetricsPanel({ platformId }: { platformId: string })
   if (loading) return <p className="text-sm text-slate-500">Cargando métricas MondoTraders…</p>
   return <div className="space-y-5">
     <div className="rounded-xl border bg-slate-50 p-4"><p className="text-sm text-slate-500">Última sincronización Mondo</p><p className="mt-1 font-semibold">{latest ? dateTime(latest) : 'Sin datos'}</p></div>
-    <div className="overflow-x-auto rounded-xl border"><table className="w-full min-w-[900px] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><Th>Periodo</Th><Th>Total pagado</Th><Th>Payouts</Th><Th>Mayor payout</Th><Th>Promedio</Th><Th>Tiempo de payout</Th><Th>Capturado</Th><Th>Estado</Th></tr></thead><tbody>{periods.map((period) => { const snapshot = byPeriod.get(period.key); return <tr key={period.key} className="border-t"><Td strong>{period.label}</Td><Td>{money(snapshot?.amount, snapshot?.currency)}</Td><Td>{count(snapshot?.payout_count)}</Td><Td>{money(snapshot?.largest_payout, snapshot?.currency)}</Td><Td>{money(snapshot?.average_payout, snapshot?.currency)}</Td><Td>{duration(snapshot?.median_time_minutes)}</Td><Td>{snapshot ? dateTime(snapshot.collected_at) : '—'}</Td><Td><Status collectedAt={snapshot?.collected_at} /></Td></tr> })}</tbody></table></div>
+    <div className="overflow-x-auto rounded-xl border"><table className="w-full min-w-[900px] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><Th>Periodo</Th><Th>Total pagado</Th><Th>Payouts</Th><Th>Mayor payout</Th><Th>Promedio</Th><Th>Tiempo de payout</Th><Th>Capturado</Th><Th>Estado</Th></tr></thead><tbody>{periods.map((period) => { const snapshot = byPeriod.get(period.key); return <tr key={period.key} className="border-t"><Td strong>{period.label}</Td><Td>{money(snapshot?.amount, snapshot?.currency)}</Td><Td>{count(snapshot?.payout_count)}</Td><Td>{money(snapshot?.largest_payout, snapshot?.currency)}</Td><Td>{money(snapshot?.average_payout, snapshot?.currency)}</Td><Td>{duration(snapshot?.median_time_minutes)}</Td><Td>{snapshot ? dateTime(snapshot.collected_at) : '—'}</Td><Td><Status collectedAt={snapshot?.collected_at} now={renderedAt} /></Td></tr> })}</tbody></table></div>
     <div className="rounded-xl border border-dashed p-4 text-sm text-slate-600"><p className="font-medium text-slate-900">Sincronización disponible desde collector local</p><code className="mt-2 block rounded-lg bg-slate-900 px-3 py-2 text-slate-100">npm run collect:mondo</code></div>
     {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
   </div>
 }
 
-function Status({ collectedAt }: { collectedAt?: string }) { if (!collectedAt) return <Badge tone="neutral">Sin datos</Badge>; return Date.now() - new Date(collectedAt).getTime() > 48 * 60 * 60 * 1000 ? <Badge tone="warning">Desactualizado</Badge> : <Badge tone="success">Actualizado</Badge> }
+function Status({ collectedAt, now }: { collectedAt?: string; now: number }) { if (!collectedAt) return <Badge tone="neutral">Sin datos</Badge>; return now - new Date(collectedAt).getTime() > 48 * 60 * 60 * 1000 ? <Badge tone="warning">Desactualizado</Badge> : <Badge tone="success">Actualizado</Badge> }
 function Badge({ children, tone }: { children: ReactNode; tone: 'neutral' | 'warning' | 'success' }) { const style = tone === 'warning' ? 'bg-amber-100 text-amber-800' : tone === 'success' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'; return <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${style}`}>{children}</span> }
 function Th({ children }: { children: ReactNode }) { return <th className="whitespace-nowrap p-3">{children}</th> }
 function Td({ children, strong = false }: { children: ReactNode; strong?: boolean }) { return <td className={`whitespace-nowrap p-3 ${strong ? 'font-semibold' : ''}`}>{children}</td> }

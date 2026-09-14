@@ -1,4 +1,3 @@
-import { getHomeData } from '@/lib/home-data'
 import { getPageContent, pageValue } from '@/lib/site-content'
 import { resolvePublicLanguage } from '@/lib/language'
 import { getPropFirmDirectory } from '@/lib/prop-firm-directory'
@@ -9,13 +8,12 @@ export const revalidate = 60
 
 export default async function PropFirmsPage({ searchParams }: { searchParams: Promise<{ lang?: string | string[] }> }) {
   const language = await resolvePublicLanguage((await searchParams).lang)
-  const [data, content, firms] = await Promise.all([
-    getHomeData(language),
+  const [content, firms] = await Promise.all([
     getPageContent('prop-firms', language),
     getPropFirmDirectory(),
   ])
 
-  return <PublicPageShell payouts={data.latestPayouts} language={language}>
+  return <PublicPageShell language={language}>
     <section className="tg-hero">
       <div className="mx-auto max-w-[1440px] px-4 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-14">
         <p className="tg-eyebrow">Directorio de Prop Firms</p>

@@ -7,7 +7,6 @@ import { getContentPage } from '@/lib/content-schema'
 import type { PublicLanguage } from '@/lib/public-language'
 import type { RecommendableFirm, RecommendationCriteria } from '@/lib/prop-firm-recommender'
 import { PlatformLogo } from './PlatformLogo'
-import { PublicPageShell } from './PublicPageShell'
 import { PropFirmFinder } from './PropFirmFinder'
 import { compactMoney, money } from './public-format'
 
@@ -40,7 +39,11 @@ export function HomePublic(props: Props) {
     .filter((section) => sectionEnabled(content, section.name) && sectionNodes[section.name])
     .sort((a, b) => Number(content[a.name]?.order ?? schema!.sections.indexOf(a) + 1) - Number(content[b.name]?.order ?? schema!.sections.indexOf(b) + 1))
 
-  return <PublicPageShell payouts={latestPayouts} language={language}>{sections.map((section) => <div key={section.name} data-home-section={section.name}>{sectionNodes[section.name]}</div>)}</PublicPageShell>
+  return <>{sections.map((section) => <div key={section.name} data-home-section={section.name}>{sectionNodes[section.name]}</div>)}</>
+}
+
+export function HomeHeroFallback({ content, language }: { content: PageContent; language: PublicLanguage }) {
+  return <section className="home-grid"><div className="mx-auto grid max-w-7xl gap-12 px-4 py-16 sm:px-6 lg:grid-cols-[1.05fr_.95fr] lg:px-8 lg:py-24"><div><Badge>{pageValue(content, 'hero', 'badge', 'Datos para operar con criterio')}</Badge><h1 className="mt-6 text-5xl font-bold leading-[.98] tracking-[-.055em] sm:text-6xl">{pageValue(content, 'hero', 'title', 'Compara antes de poner tu capital en juego.')}</h1><p className="mt-6 max-w-2xl text-lg leading-8 text-slate-400">{pageValue(content, 'hero', 'subtitle', 'Prop firms, ofertas y pagos verificados en un mismo lugar.')}</p><div className="mt-8 flex flex-wrap gap-3"><Link href={`/prop-firms?lang=${language}`} className="button-gold">{pageValue(content, 'hero', 'primary_cta', 'Explorar Prop Firms')} <ArrowRight className="size-4" /></Link><Link href={`/payouts?lang=${language}`} className="button-outline">{pageValue(content, 'hero', 'secondary_cta', 'Ver pagos verificados')}</Link></div></div><div aria-hidden="true" className="min-h-64 animate-pulse rounded-[1.75rem] border border-white/8 bg-[#111c2e]/55" /></div></section>
 }
 
 function Badge({ children }: { children: React.ReactNode }) { return <span className="inline-flex rounded-full border border-cyan-300/25 bg-cyan-300/[.07] px-3 py-2 font-mono text-[11px] uppercase tracking-[.18em] text-cyan-300">{children}</span> }

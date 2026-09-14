@@ -1,6 +1,6 @@
 'use client'
 
-import { FormEvent, useEffect, useState } from 'react'
+import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useParams, useRouter } from 'next/navigation'
 
@@ -22,7 +22,7 @@ type AffiliateLink = {
 export default function EditOfferPage() {
   const params = useParams()
   const router = useRouter()
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   const id = params.id as string
 
@@ -139,7 +139,7 @@ export default function EditOfferPage() {
     }
 
     loadData()
-  }, [id])
+  }, [id, supabase])
 
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>

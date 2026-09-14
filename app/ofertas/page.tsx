@@ -19,7 +19,7 @@ export default async function OffersPage({ searchParams }: { searchParams: Promi
   ])
 
   return (
-    <PublicPageShell payouts={data.latestPayouts} language={language}>
+    <PublicPageShell language={language}>
       <PageHero
         content={content}
         fallbackTitle="Ofertas activas para traders."

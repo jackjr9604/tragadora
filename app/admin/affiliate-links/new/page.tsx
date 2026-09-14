@@ -1,6 +1,6 @@
 'use client'
 
-import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { FormEvent, Suspense, useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 
@@ -16,6 +16,10 @@ type Challenge = {
 }
 
 export default function NewAffiliateLinkPage() {
+  return <Suspense fallback={null}><NewAffiliateLinkForm /></Suspense>
+}
+
+function NewAffiliateLinkForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = useMemo(() => createClient(), [])

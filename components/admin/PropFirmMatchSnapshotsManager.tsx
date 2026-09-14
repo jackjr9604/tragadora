@@ -1,6 +1,6 @@
 'use client'
 
-import { FormEvent, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { FormEvent, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 type PeriodKey = '24h' | '7d' | '30d' | '365d' | 'all'
@@ -45,11 +45,10 @@ export function PropFirmMatchSnapshotsManager({ platformId }: { platformId: stri
   const [form, setForm] = useState<FormState>(() => emptyForm(FALLBACK_URL))
   const [loading, setLoading] = useState(true), [saving, setSaving] = useState(false)
   const [error, setError] = useState(''), [message, setMessage] = useState('')
+  const [renderedAt] = useState(() => Date.now())
   const byPeriod = useMemo(() => new Map(snapshots.map((snapshot) => [snapshot.period_key, snapshot])), [snapshots])
 
-  useEffect(() => { void load() }, [platformId])
-
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true)
     const [metricsResult, mappingResult] = await Promise.all([
       supabase.from('platform_payout_metrics').select('id, period_key, amount, payout_count, largest_payout, average_payout, median_time_minutes, currency, source_url, collected_at, raw_data').eq('platform_id', platformId).eq('metric_type', 'payout_summary').eq('source_type', 'third_party_public').eq('source_name', 'Prop Firm Match').eq('is_current', true),
@@ -60,7 +59,11 @@ export function PropFirmMatchSnapshotsManager({ platformId }: { platformId: stri
     const mappedUrl = mappingResult.data?.external_url || FALLBACK_URL
     setSourceUrl(mappedUrl)
     setLoading(false)
-  }
+  }, [platformId])
+
+  // La carga sincroniza el componente con Supabase y actualiza el estado al resolver la petición.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { void load() }, [load])
 
   function openForm(period: PeriodKey) {
     const current = byPeriod.get(period)
@@ -123,7 +126,7 @@ export function PropFirmMatchSnapshotsManager({ platformId }: { platformId: stri
   if (loading) return <p className="text-sm text-slate-500">Cargando snapshots de Prop Firm Match…</p>
 
   return <div className="space-y-5">
-    <div className="overflow-x-auto rounded-xl border"><table className="min-w-[1050px] w-full text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><Th>Periodo</Th><Th>Total payouts</Th><Th>Cantidad</Th><Th>Mayor payout</Th><Th>Promedio</Th><Th>Mediana</Th><Th>Capturado</Th><Th>Estado</Th><Th>Acciones</Th></tr></thead><tbody>{periods.map((period) => { const snapshot = byPeriod.get(period.key); const stale = snapshot ? Date.now() - new Date(snapshot.collected_at).getTime() > 48 * 60 * 60 * 1000 : false; return <tr key={period.key} className="border-t"><Td strong>{period.label}</Td><Td>{money(snapshot?.amount, snapshot?.currency)}</Td><Td>{count(snapshot?.payout_count)}</Td><Td>{money(snapshot?.largest_payout, snapshot?.currency)}</Td><Td>{money(snapshot?.average_payout, snapshot?.currency)}</Td><Td>{duration(snapshot?.median_time_minutes)}</Td><Td>{snapshot ? relativeTime(snapshot.collected_at) : 'Sin snapshot'}</Td><Td>{!snapshot ? <Badge tone="neutral">Sin datos externos</Badge> : stale ? <Badge tone="warning">Datos PFM desactualizados</Badge> : <Badge tone="success">Actual</Badge>} {snapshot && <p className="mt-1 text-xs text-slate-400">{snapshot.raw_data?.captureMethod === 'manual' ? 'Manual' : 'Collector'}</p>}</Td><Td><button type="button" onClick={() => openForm(period.key)} className="rounded-lg bg-black px-3 py-2 text-xs font-medium text-white">{snapshot ? 'Nuevo snapshot' : 'Agregar snapshot'}</button></Td></tr> })}</tbody></table></div>
+    <div className="overflow-x-auto rounded-xl border"><table className="min-w-[1050px] w-full text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><Th>Periodo</Th><Th>Total payouts</Th><Th>Cantidad</Th><Th>Mayor payout</Th><Th>Promedio</Th><Th>Mediana</Th><Th>Capturado</Th><Th>Estado</Th><Th>Acciones</Th></tr></thead><tbody>{periods.map((period) => { const snapshot = byPeriod.get(period.key); const stale = snapshot ? renderedAt - new Date(snapshot.collected_at).getTime() > 48 * 60 * 60 * 1000 : false; return <tr key={period.key} className="border-t"><Td strong>{period.label}</Td><Td>{money(snapshot?.amount, snapshot?.currency)}</Td><Td>{count(snapshot?.payout_count)}</Td><Td>{money(snapshot?.largest_payout, snapshot?.currency)}</Td><Td>{money(snapshot?.average_payout, snapshot?.currency)}</Td><Td>{duration(snapshot?.median_time_minutes)}</Td><Td>{snapshot ? relativeTime(snapshot.collected_at, renderedAt) : 'Sin snapshot'}</Td><Td>{!snapshot ? <Badge tone="neutral">Sin datos externos</Badge> : stale ? <Badge tone="warning">Datos PFM desactualizados</Badge> : <Badge tone="success">Actual</Badge>} {snapshot && <p className="mt-1 text-xs text-slate-400">{snapshot.raw_data?.captureMethod === 'manual' ? 'Manual' : 'Collector'}</p>}</Td><Td><button type="button" onClick={() => openForm(period.key)} className="rounded-lg bg-black px-3 py-2 text-xs font-medium text-white">{snapshot ? 'Nuevo snapshot' : 'Agregar snapshot'}</button></Td></tr> })}</tbody></table></div>
     <a href={sourceUrl} target="_blank" rel="noreferrer" className="inline-flex rounded-lg border px-4 py-2 text-sm font-medium">Abrir Prop Firm Match</a>
     {selectedPeriod && <form onSubmit={save} className="rounded-xl border bg-slate-50 p-5"><h3 className="font-semibold">Nuevo snapshot · {periodLabel(selectedPeriod)}</h3><p className="mt-1 text-sm text-slate-500">Siempre se insertará una fila nueva. No se modifica físicamente el snapshot anterior.</p><div className="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-4"><Input label="Total payouts" value={form.amount} onChange={(amount) => setForm({ ...form, amount })} type="number" /><Input label="Cantidad" value={form.payoutCount} onChange={(payoutCount) => setForm({ ...form, payoutCount })} type="number" step="1" /><Input label="Mayor payout" value={form.largestPayout} onChange={(largestPayout) => setForm({ ...form, largestPayout })} type="number" /><Input label="Promedio" value={form.averagePayout} onChange={(averagePayout) => setForm({ ...form, averagePayout })} type="number" /><Input label="Mediana (minutos)" value={form.medianTimeMinutes} onChange={(medianTimeMinutes) => setForm({ ...form, medianTimeMinutes })} type="number" /><Input label="Moneda" value={form.currency} onChange={(currency) => setForm({ ...form, currency })} /><Input label="URL de fuente" value={form.sourceUrl} onChange={(url) => setForm({ ...form, sourceUrl: url })} type="url" /><Input label="Capturado" value={form.capturedAt} onChange={(capturedAt) => setForm({ ...form, capturedAt })} type="datetime-local" /></div><div className="mt-5 flex gap-3"><button disabled={saving} className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50">{saving ? 'Guardando…' : 'Insertar snapshot'}</button><button type="button" onClick={() => setSelectedPeriod(null)} className="rounded-lg border bg-white px-4 py-2 text-sm">Cancelar</button></div></form>}
     {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
@@ -146,5 +149,5 @@ function count(input: number | null | undefined) { return input === null || inpu
 function duration(input: number | null | undefined) { if (input === null || input === undefined) return '—'; if (input < 60) return `${input} min`; if (input < 1_440) return `${formatNumber(input / 60)} h`; return `${formatNumber(input / 1_440)} d` }
 function formatNumber(input: number) { return new Intl.NumberFormat('es-CO', { maximumFractionDigits: 1 }).format(input) }
 function localDateTime() { const date = new Date(); date.setMinutes(date.getMinutes() - date.getTimezoneOffset()); return date.toISOString().slice(0, 16) }
-function relativeTime(value: string) { const hours = Math.max(0, (Date.now() - new Date(value).getTime()) / 3_600_000); if (hours < 1) return 'Actualizado hace menos de 1 hora'; if (hours < 24) return `Actualizado hace ${Math.floor(hours)} h`; return `Actualizado hace ${Math.floor(hours / 24)} d` }
+function relativeTime(value: string, now: number) { const hours = Math.max(0, (now - new Date(value).getTime()) / 3_600_000); if (hours < 1) return 'Actualizado hace menos de 1 hora'; if (hours < 24) return `Actualizado hace ${Math.floor(hours)} h`; return `Actualizado hace ${Math.floor(hours / 24)} d` }
 function friendlyMigrationError(message: string) { return /platform_payout_metrics|external_platform_mappings|period_key/i.test(message) ? 'Ejecuta primero la migración 202608290001_payout_metrics_periods_and_pfm_mappings.sql en Supabase.' : message }

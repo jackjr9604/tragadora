@@ -10,6 +10,7 @@ type Period = { key: PeriodKey; label: string }
 type Mapping = { platform_id: string | null; external_name: string; external_url: string }
 type Metric = { amount: number; payoutCount: number; largestPayout: number; averagePayout: number; medianTimeMinutes: number | null; currency: string }
 type ParsedMetric = { amount: number | null; payoutCount: number | null; largestPayout: number | null; averagePayout: number | null; medianTimeMinutes: number | null }
+type CurrentSnapshot = { platform_id: string; period_key: PeriodKey; amount: number | null; payout_count: number | null; largest_payout: number | null; average_payout: number | null; median_time_minutes: number | null }
 type CatalogFirm = { external_name: string; external_slug: string | null; external_url: string | null; normalized_name: string; markets_seen: MarketKey[]; periods_seen: PeriodKey[] }
 type RowDiagnostic = {
   firm: string
@@ -45,10 +46,11 @@ async function main() {
   const startedAt = new Date().toISOString()
   const supabase = createSupabaseClient()
   const mappings = await loadMappings(supabase)
+  const currentSnapshots = catalogMode || diagnoseMode ? new Map<string, CurrentSnapshot>() : await loadCurrentSnapshots(supabase, mappings)
   const browser = await chromium.launch(isCI ? { headless: true } : { headless, channel: 'chrome' })
   const context = await browser.newContext({ locale: 'en-US' })
   const page = await context.newPage()
-  const summary = { startedAt, finishedAt: '', periodsChecked: 0, periodsSucceeded: 0, periodFailures: 0, rowsParsed: 0, mappedRowsFound: 0, notListed: 0, missingRequiredMetrics: 0, validationFailures: 0, blocked: 0, snapshotsPrepared: 0, snapshotsWouldInsert: 0, writes: 0 }
+  const summary = { startedAt, finishedAt: '', periodsChecked: 0, periodsSucceeded: 0, periodFailures: 0, rowsParsed: 0, mappedRowsFound: 0, notListed: 0, sourceRowsWithoutMapping: 0, missingRequiredMetrics: 0, validationFailures: 0, blocked: 0, snapshotsPrepared: 0, snapshotsWouldInsert: 0, writes: 0, unchanged: 0 }
   const catalog = new Map<string, CatalogFirm>()
   const diagnostics: RowDiagnostic[] = []
 
@@ -86,7 +88,7 @@ async function main() {
         summary.periodsSucceeded++
         console.log(`selector=${period.label} url=${page.url()} rows=${rows} pagination=none Cloudflare=no`)
 
-        const rowByName = await indexRowsByExactName(table)
+        const rowByName = await indexRowsByNormalizedName(table)
         if (catalogMode) {
           await collectCatalogRows(table, period.key, catalog, null)
           for (const market of markets) {
@@ -95,8 +97,12 @@ async function main() {
           }
           continue
         }
+        const mappedNames = new Set(mappings.map((mapping) => normalizeExternalName(mapping.external_name)))
+        const sourceNamesWithoutMapping = [...rowByName.keys()].filter((name) => !mappedNames.has(name))
+        summary.sourceRowsWithoutMapping += sourceNamesWithoutMapping.length
+        if (sourceNamesWithoutMapping.length) console.log(`UNMAPPED_SOURCE_ROWS · ${sourceNamesWithoutMapping.join(', ')}`)
         for (const mapping of mappings) {
-          const row = rowByName.get(mapping.external_name.trim())
+          const row = rowByName.get(normalizeExternalName(mapping.external_name))
           if (!row) { summary.notListed++; console.log(`${mapping.external_name}: NOT_LISTED_IN_PERIOD`); continue }
           if (diagnoseMode) {
             const diagnostic = await diagnoseMondoRow(row, mapping.external_name, period.key)
@@ -118,6 +124,12 @@ async function main() {
             summary.mappedRowsFound++
             summary.snapshotsPrepared++
             printMetric(mapping.external_name, metric)
+            const current = mapping.platform_id ? currentSnapshots.get(snapshotKey(mapping.platform_id, period.key)) : undefined
+            if (current && sameMetric(current, metric)) {
+              summary.unchanged++
+              console.log('  status=UNCHANGED · SKIPPED')
+              continue
+            }
             if (dryRun) { summary.snapshotsWouldInsert++; console.log('  status=VALID · WOULD_INSERT'); continue }
             await insertSnapshot(supabase, mapping, period.key, metric)
             summary.writes++
@@ -168,14 +180,17 @@ async function dismissTransientModal(page: Page) {
   if (await closeButton.count() > 0 && await closeButton.isVisible()) await closeButton.click({ force: true })
 }
 
-async function indexRowsByExactName(table: Locator) {
+async function indexRowsByNormalizedName(table: Locator) {
   const indexed = new Map<string, Locator>()
   const rows = await table.getByRole('row').all()
   for (const row of rows.slice(1)) {
     const link = row.getByRole('link').first()
     if (await link.count() === 0) continue
     const name = (await link.innerText()).trim()
-    if (name) indexed.set(name, row)
+    if (!name) continue
+    const normalizedName = normalizeExternalName(name)
+    if (indexed.has(normalizedName)) throw new Error(`COLLIDING_SOURCE_NAMES: ${name} normaliza como ${normalizedName}`)
+    indexed.set(normalizedName, row)
   }
   return indexed
 }
@@ -226,9 +241,12 @@ function printCatalog(catalog: Map<string, CatalogFirm>, mappings: Mapping[], ro
   const firmsWithMarket = firms.filter((firm) => firm.markets_seen.length > 0)
   const firmsWithoutMarket = firms.filter((firm) => firm.markets_seen.length === 0)
   const firmsWithMultipleMarkets = firms.filter((firm) => firm.markets_seen.length > 1)
-  const printableFirms = firms.map(({ normalized_name: _normalizedName, markets_seen, ...firm }) => ({
-    ...firm,
-    external_market: markets_seen.length === 0 ? null : markets_seen.length === 1 ? markets_seen[0] : markets_seen,
+  const printableFirms = firms.map((firm) => ({
+    external_name: firm.external_name,
+    external_slug: firm.external_slug,
+    external_url: firm.external_url,
+    external_market: firm.markets_seen.length === 0 ? null : firm.markets_seen.length === 1 ? firm.markets_seen[0] : firm.markets_seen,
+    periods_seen: firm.periods_seen,
   }))
   console.log('\nMONDO FIRM CATALOG')
   console.log(JSON.stringify(printableFirms, null, 2))
@@ -354,6 +372,39 @@ async function insertSnapshot(supabase: SupabaseClient | null, mapping: Mapping,
   const capturedAt = new Date().toISOString()
   const { error } = await supabase.from('platform_payout_metrics').insert({ platform_id: mapping.platform_id, metric_type: 'payout_summary', period_key: periodKey, amount: metric.amount, payout_count: metric.payoutCount, largest_payout: metric.largestPayout, average_payout: metric.averagePayout, median_time_minutes: metric.medianTimeMinutes, currency: metric.currency, source_type: 'third_party_public', source_name: SOURCE_NAME, source_url: BASE_URL, verification_level: 'blockchain_external', is_current: true, collected_at: capturedAt, raw_data: { provider: 'mondotraders', captureMethod: 'collector', methodology: 'external_blockchain_tracking', sourceUrl: BASE_URL, capturedAt } })
   if (error) throw new Error(error.message)
+}
+
+async function loadCurrentSnapshots(supabase: SupabaseClient | null, mappings: Mapping[]) {
+  const snapshots = new Map<string, CurrentSnapshot>()
+  const platformIds = mappings.flatMap((mapping) => mapping.platform_id ? [mapping.platform_id] : [])
+  if (!supabase || platformIds.length === 0) return snapshots
+  const { data, error } = await supabase
+    .from('platform_payout_metrics')
+    .select('platform_id, period_key, amount, payout_count, largest_payout, average_payout, median_time_minutes')
+    .in('platform_id', platformIds)
+    .eq('metric_type', 'payout_summary')
+    .eq('source_type', 'third_party_public')
+    .eq('source_name', SOURCE_NAME)
+    .eq('is_current', true)
+  if (error) throw new Error(`No se pudieron cargar snapshots actuales: ${error.message}`)
+  for (const row of (data ?? []) as CurrentSnapshot[]) snapshots.set(snapshotKey(row.platform_id, row.period_key), row)
+  return snapshots
+}
+
+function snapshotKey(platformId: string, periodKey: PeriodKey) {
+  return `${platformId}:${periodKey}`
+}
+
+function sameMetric(current: CurrentSnapshot, metric: Metric) {
+  return Number(current.amount) === metric.amount
+    && Number(current.payout_count) === metric.payoutCount
+    && Number(current.largest_payout) === metric.largestPayout
+    && Number(current.average_payout) === metric.averagePayout
+    && nullableNumber(current.median_time_minutes) === metric.medianTimeMinutes
+}
+
+function nullableNumber(value: number | null) {
+  return value === null ? null : Number(value)
 }
 
 function createSupabaseClient(): SupabaseClient | null { const url = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE_KEY; if (!url || !key) { if (dryRun) return null; throw new Error('SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY son obligatorias') } return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } }) }

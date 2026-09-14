@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowUpRight, CalendarDays, CandlestickChart, Check, Clock3, CreditCard, HandCoins, HelpCircle, Landmark, Monitor, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { getHomeData, type HomePlatform } from '@/lib/home-data'
+import type { HomePlatform } from '@/lib/home-data'
 import { resolvePublicLanguage } from '@/lib/language'
 import { PlatformLogo } from '@/components/public/PlatformLogo'
 import { PublicPageShell } from '@/components/public/PublicPageShell'
@@ -12,6 +12,7 @@ import { FirmProfileNavigation, type FirmSection } from './_components/FirmProfi
 import { FirmPayoutDashboard } from '@/components/public/FirmPayoutDashboard'
 import { payoutPeriod } from '@/lib/payout-periods'
 import { getPayoutFirmDetail } from '@/lib/payout-tracker'
+import { getPublicPlatformBySlug } from '@/lib/public-platform'
 
 export const revalidate = 60
 
@@ -22,9 +23,8 @@ type PageProps = {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params
-  const supabase = await createClient()
-  const { data } = await supabase.from('platforms').select('name').eq('slug', slug).maybeSingle()
-  return data ? { title: `${data.name} | Tradagora`, description: `Condiciones, reglas, cuentas y actividad de payouts de ${data.name}.` } : {}
+  const platform = await getPublicPlatformBySlug(slug)
+  return platform ? { title: `${platform.name} | Tradagora`, description: `Condiciones, reglas, cuentas y actividad de payouts de ${platform.name}.` } : {}
 }
 
 export default async function PropFirmDetailPage({ params, searchParams }: PageProps) {
@@ -35,30 +35,26 @@ export default async function PropFirmDetailPage({ params, searchParams }: PageP
   const requestedPeriod = Array.isArray(query.period) ? query.period[0] : query.period
   const payoutPeriodKey = requestedPeriod === '24h' ? '7d' : payoutPeriod(requestedPeriod, 'all')
   const supabase = await createClient()
+  const needsOverview = activeView === 'overview'
 
-  const platformResult = await supabase.from('platforms').select(`
-    id, name, slug, score, origin_country_code,
-    media:logo_media_id (file_url, alt_text)
-  `).eq('slug', slug).eq('type', 'prop_firm').eq('status', 'active').maybeSingle()
-  if (!platformResult.data) notFound()
-  const row = platformResult.data
+  const row = await getPublicPlatformBySlug(slug)
+  if (!row) notFound()
 
-  const [homeData, detailsResult, translationsResult, marketsResult, availabilityResult, countriesResult, challengesResult, offersResult, tradingPlatformsResult, transactionMethodsResult, instrumentsResult] = await Promise.all([
-    getHomeData(language),
-    supabase.from('prop_firm_details').select('*').eq('platform_id', row.id).maybeSingle(),
-    supabase.from('platform_translations').select('language, short_description').eq('platform_id', row.id).in('language', [language, 'es']),
+  const [detailsResult, translationsResult, marketsResult, availabilityResult, countriesResult, challengesResult, offersResult, tradingPlatformsResult, transactionMethodsResult, instrumentsResult, payoutDetail] = await Promise.all([
+    supabase.from('prop_firm_details').select('platform_id, profit_split_max, supports_ea, allows_news_trading, allows_weekend_holding, allows_scalping, allows_day_trading, allows_copy_trading, broker_provider, ceo_name, founded_at, consistency_rules, inactivity_days').eq('platform_id', row.id).maybeSingle(),
+    needsOverview ? supabase.from('platform_translations').select('language, short_description').eq('platform_id', row.id).in('language', [language, 'es']) : Promise.resolve({ data: [], error: null }),
     supabase.from('platform_markets').select('market').eq('platform_id', row.id),
-    supabase.from('platform_availability').select('country_code, status').eq('platform_id', row.id),
-    supabase.from('countries').select('code, name'),
-    supabase.from('challenges').select('id, name, challenge_type, phases, status').eq('platform_id', row.id).eq('status', 'active').order('name'),
-    supabase.from('offers').select('id, challenge_id, title, description, discount_value, discount_type, promo_code, status').eq('platform_id', row.id).eq('status', true).order('priority'),
-    supabase.from('platform_trading_platforms').select('catalog:trading_platform_id(name)').eq('platform_id', row.id),
-    supabase.from('platform_transaction_methods').select('supports_deposit, supports_payout, catalog:transaction_method_id(name)').eq('platform_id', row.id),
-    supabase.from('platform_instruments').select('catalog:instrument_category_id(name)').eq('platform_id', row.id),
+    needsOverview ? supabase.from('platform_availability').select('country_code, status').eq('platform_id', row.id) : Promise.resolve({ data: [], error: null }),
+    supabase.from('countries').select('code, name').eq('code', row.origin_country_code ?? ''),
+    activeView !== 'payouts' ? supabase.from('challenges').select('id, name, challenge_type, phases, status').eq('platform_id', row.id).eq('status', 'active').order('name') : Promise.resolve({ data: [], error: null }),
+    activeView !== 'payouts' ? supabase.from('offers').select('id, challenge_id, title, description, discount_value, discount_type, promo_code, status').eq('platform_id', row.id).eq('status', true).order('priority') : Promise.resolve({ data: [], error: null }),
+    needsOverview ? supabase.from('platform_trading_platforms').select('catalog:trading_platform_id(name)').eq('platform_id', row.id) : Promise.resolve({ data: [], error: null }),
+    needsOverview ? supabase.from('platform_transaction_methods').select('supports_deposit, supports_payout, catalog:transaction_method_id(name)').eq('platform_id', row.id) : Promise.resolve({ data: [], error: null }),
+    needsOverview ? supabase.from('platform_instruments').select('catalog:instrument_category_id(name)').eq('platform_id', row.id) : Promise.resolve({ data: [], error: null }),
+    activeView === 'payouts' ? getPayoutFirmDetail(slug, payoutPeriodKey) : Promise.resolve(null),
   ])
 
   const details = detailsResult.data
-  const payoutDetail = activeView === 'payouts' ? await getPayoutFirmDetail(slug, payoutPeriodKey) : null
   const translations = translationsResult.data ?? []
   const description = translations.find((item) => item.language === language)?.short_description
     ?? translations.find((item) => item.language === 'es')?.short_description
@@ -78,7 +74,7 @@ export default async function PropFirmDetailPage({ params, searchParams }: PageP
   const challenges = challengesResult.data ?? []
   const challengeIds = challenges.map((challenge) => challenge.id)
   const visibleAt = new Date().toISOString()
-  const [plansResult, phasesResult, variantsResult, rewardOptionsResult] = challengeIds.length ? await Promise.all([
+  const [plansResult, phasesResult, variantsResult, rewardOptionsResult] = needsOverview && challengeIds.length ? await Promise.all([
     supabase.from('account_plans').select('*').in('challenge_id', challengeIds).order('account_size'),
     supabase.from('challenge_phases').select('*').in('challenge_id', challengeIds).order('phase_number'),
     supabase.from('challenge_variants').select('*').in('challenge_id', challengeIds).eq('status', true).order('name'),
@@ -126,7 +122,7 @@ export default async function PropFirmDetailPage({ params, searchParams }: PageP
     ...(restrictedCountries.length ? [{ id: 'restricciones', label: 'Restricciones' }] : []),
   ]
 
-  return <PublicPageShell payouts={homeData.latestPayouts} language={language}>
+  return <PublicPageShell language={language}>
     <section id="firm-hero" className="tradagora-pattern border-b border-white/8">
       <div className="mx-auto max-w-[1440px] px-4 pt-8 sm:px-6 sm:pt-10 lg:px-8">
       <div className="grid gap-7 overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-[#152238] to-[#0d1728] p-5 shadow-[0_24px_70px_rgba(0,0,0,.18)] sm:p-7 lg:grid-cols-[1fr_auto] lg:items-center">

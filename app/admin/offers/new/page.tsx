@@ -1,6 +1,6 @@
 'use client'
 
-import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { FormEvent, Suspense, useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 
@@ -15,6 +15,10 @@ type Challenge = {
 }
 
 export default function NewOfferPage() {
+  return <Suspense fallback={null}><NewOfferForm /></Suspense>
+}
+
+function NewOfferForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = useMemo(() => createClient(), [])

@@ -1,4 +1,5 @@
 import 'server-only'
+import { unstable_cache } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { payoutPeriodSince, type PayoutPeriodKey } from '@/lib/payout-periods'
 import type { HomePayout, HomePlatform } from '@/lib/home-data'
@@ -33,7 +34,7 @@ export type PayoutPolicy = { challenge: string; option: string; frequency: strin
 export type PayoutContext = { country: string | null; foundedAt: string | null; profitSplit: number | null; payoutMethods: string[]; policies: PayoutPolicy[] }
 export type AwaitedPayoutDetail = NonNullable<Awaited<ReturnType<typeof getPayoutFirmDetail>>>
 
-export async function getPayoutTrackerSummaries(period: PayoutPeriodKey) {
+async function getPayoutTrackerSummariesUncached(period: PayoutPeriodKey) {
   const supabase = createAdminClient()
   const { data, error } = await supabase.from('platform_payout_period_summary').select('*').eq('period_key', period)
   if (error) throw new Error(migrationError(error.message))
@@ -51,7 +52,13 @@ export async function getPayoutTrackerSummaries(period: PayoutPeriodKey) {
   return rows.map((row) => toSummary(row, platformMap.get(row.platform_id), markets.get(row.platform_id) ?? []))
 }
 
-export async function getPayoutFirmDetail(slug: string, period: PayoutPeriodKey) {
+export const getPayoutTrackerSummaries = unstable_cache(
+  getPayoutTrackerSummariesUncached,
+  ['public-payout-summaries-v1'],
+  { revalidate: 60, tags: ['public-payouts'] }
+)
+
+async function getPayoutFirmDetailUncached(slug: string, period: PayoutPeriodKey) {
   const supabase = createAdminClient()
   const summaryResult = await supabase.from('platform_payout_period_summary').select('*').eq('slug', slug).eq('period_key', period).maybeSingle()
   if (summaryResult.error) throw new Error(migrationError(summaryResult.error.message))
@@ -65,24 +72,17 @@ export async function getPayoutFirmDetail(slug: string, period: PayoutPeriodKey)
     trendQuery = trendQuery.gte('payout_day', trendSince ?? since)
     payoutsQuery = payoutsQuery.gte('payout_date', since)
   }
-  const [platformResult, marketsResult, metricsResult, sourcesResult, sourceStatsResult, payoutsResult, trendResult, detailsResult, countriesResult, methodsResult, challengesResult] = await Promise.all([
+  const [platformResult, marketsResult, payoutsResult, trendResult, detailsResult, countriesResult, methodsResult, challengesResult] = await Promise.all([
     supabase.from('platforms').select('id, name, slug, website_url, logo_url, origin_country_code, media:logo_media_id(file_url, alt_text)').eq('id', platformId).single(),
     supabase.from('platform_markets').select('market').eq('platform_id', platformId),
-    supabase.from('platform_payout_metrics').select('*').eq('platform_id', platformId).eq('period_key', period).eq('metric_type', 'payout_summary').eq('source_type', 'third_party_public').eq('source_name', 'MondoTraders').eq('verification_level', 'blockchain_external').eq('is_current', true).order('updated_at', { ascending: false }),
-    supabase.from('payout_sources').select('id, name, source_type, source_url, config, status, last_sync_at, last_success_at, last_error').eq('platform_id', platformId).order('name'),
-    supabase.from('payout_source_summary').select('*').eq('platform_id', platformId), payoutsQuery, trendQuery,
-    supabase.from('prop_firm_details').select('*').eq('platform_id', platformId).maybeSingle(),
+    payoutsQuery, trendQuery,
+    supabase.from('prop_firm_details').select('founded_at, profit_split_max').eq('platform_id', platformId).maybeSingle(),
     supabase.from('countries').select('code, name'),
     supabase.from('platform_transaction_methods').select('supports_payout, method:transaction_method_id(name)').eq('platform_id', platformId).eq('supports_payout', true),
     supabase.from('challenges').select('id, name').eq('platform_id', platformId).eq('status', 'active'),
   ])
-  const failure = [platformResult, marketsResult, metricsResult, sourcesResult, sourceStatsResult, payoutsResult, trendResult, detailsResult, countriesResult, methodsResult, challengesResult].find((result) => result.error)
+  const failure = [platformResult, marketsResult, payoutsResult, trendResult, detailsResult, countriesResult, methodsResult, challengesResult].find((result) => result.error)
   if (failure?.error) throw new Error(migrationError(failure.error.message))
-  const statsMap = new Map((sourceStatsResult.data ?? []).map((item) => [item.payout_source_id, item]))
-  const sources: PayoutSourceDetail[] = (sourcesResult.data ?? []).map((source) => {
-    const stats = statsMap.get(source.id)
-    return { ...source, payoutCount: Number(stats?.payout_count ?? 0), payoutAmount: Number(stats?.payout_amount ?? 0), firstPayoutAt: stats?.first_payout_at ?? null, lastPayoutAt: stats?.last_payout_at ?? null }
-  })
   const platform = platformResult.data
   if (!platform) return null
   const challengeRows = challengesResult.data ?? []
@@ -102,13 +102,18 @@ export async function getPayoutFirmDetail(slug: string, period: PayoutPeriodKey)
   return {
     summary: toSummary(summaryResult.data, platform, (marketsResult.data ?? []).map((item) => item.market)),
     websiteUrl: platform.website_url,
-    metrics: (metricsResult.data ?? []).map((metric) => ({ ...metric, amount: numeric(metric.amount), payout_count: numeric(metric.payout_count), largest_payout: numeric(metric.largest_payout), average_payout: numeric(metric.average_payout), median_payout: numeric(metric.median_payout), median_time_minutes: numeric(metric.median_time_minutes) })) as PayoutMetric[],
-    sources, payouts: payoutsResult.data ?? [], context,
+    payouts: payoutsResult.data ?? [], context,
     trend: (trendResult.data ?? []).map((item) => ({ day: item.payout_day, count: Number(item.payout_count), amount: Number(item.payout_amount) })),
   }
 }
 
-export async function getLatestPayoutTicker(limit = 16): Promise<HomePayout[]> {
+export const getPayoutFirmDetail = unstable_cache(
+  getPayoutFirmDetailUncached,
+  ['public-payout-detail-v1'],
+  { revalidate: 60, tags: ['public-payouts'] }
+)
+
+async function getLatestPayoutTickerUncached(limit = 16): Promise<HomePayout[]> {
   const supabase = createAdminClient()
   const payoutResult = await supabase.from('payouts').select('id, amount, payout_date, source_url, external_id, platform_id, payout_source_id, verification_status').order('payout_date', { ascending: false }).limit(limit)
   if (payoutResult.error) return []
@@ -129,6 +134,12 @@ export async function getLatestPayoutTicker(limit = 16): Promise<HomePayout[]> {
   const sources = new Map((sourceResult.data ?? []).map((source) => [source.id, source.name]))
   return rows.map((row) => ({ id: row.id, amount: Number(row.amount), payoutDate: row.payout_date, sourceUrl: row.source_url, externalId: row.external_id, platform: platforms.get(row.platform_id) ?? null, sourceName: row.payout_source_id ? sources.get(row.payout_source_id) ?? null : null, verification: row.verification_status }))
 }
+
+export const getLatestPayoutTicker = unstable_cache(
+  getLatestPayoutTickerUncached,
+  ['public-payout-ticker-v1'],
+  { revalidate: 30, tags: ['public-payouts'] }
+)
 
 function toSummary(row: Record<string, unknown>, platform: Record<string, unknown> | undefined, markets: string[]): PayoutFirmSummary {
   const media = first(platform?.media as Array<{ file_url: string; alt_text: string | null }> | undefined)

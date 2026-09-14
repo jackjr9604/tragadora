@@ -29,5 +29,5 @@ function marketLabel(value: string) { return ({ cfd: 'CFD', futures: 'Futures', 
 function FirmLogo({ firm }: { firm: DirectoryFirm }) {
   // Las imágenes son administradas por Supabase y pueden usar hosts dinámicos.
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src={firm.logoUrl ?? ''} alt={firm.logoAlt || firm.name} className="size-11 shrink-0 rounded-xl border border-white/10 bg-white object-contain p-1" />
+  return <img src={firm.logoUrl ?? ''} alt={firm.logoAlt || firm.name} width={44} height={44} loading="lazy" decoding="async" className="size-11 shrink-0 rounded-xl border border-white/10 bg-white object-contain p-1" />
 }

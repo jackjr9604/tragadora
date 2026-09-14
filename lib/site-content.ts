@@ -1,6 +1,7 @@
 import 'server-only'
 
-import { createClient } from '@/lib/supabase/server'
+import { unstable_cache } from 'next/cache'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { visibleBrandText, type PublicLanguageOption } from '@/lib/public-language'
 
 export type SiteLanguage = string
@@ -8,10 +9,10 @@ export type SiteContent = Record<string, string>
 export type PageSectionContent = Record<string, string | boolean | number>
 export type PageContent = Record<string, PageSectionContent>
 
-export async function getSiteContent(
+async function getSiteContentUncached(
   language: SiteLanguage = 'es'
 ): Promise<SiteContent> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const { data } = await supabase
     .from('site_content')
     .select('key, value, language')
@@ -38,8 +39,14 @@ export async function getSiteContent(
   return content
 }
 
-export async function getActivePublicLanguages(): Promise<PublicLanguageOption[]> {
-  const supabase = await createClient()
+export const getSiteContent = unstable_cache(
+  getSiteContentUncached,
+  ['public-site-content-v1'],
+  { revalidate: 300, tags: ['public-site-content'] }
+)
+
+async function getActivePublicLanguagesUncached(): Promise<PublicLanguageOption[]> {
+  const supabase = createAdminClient()
   const { data, error } = await supabase
     .from('languages')
     .select('code, name, native_name, is_default')
@@ -62,6 +69,12 @@ export async function getActivePublicLanguages(): Promise<PublicLanguageOption[]
     isDefault: language.is_default,
   }))
 }
+
+export const getActivePublicLanguages = unstable_cache(
+  getActivePublicLanguagesUncached,
+  ['public-languages-v1'],
+  { revalidate: 300, tags: ['public-languages'] }
+)
 
 export function contentValue(
   content: SiteContent,

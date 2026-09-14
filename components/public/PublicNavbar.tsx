@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { Menu, Search, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { usePathname, useSearchParams } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { BrandMark } from './BrandMark'
 import { languageUrl, persistPublicLanguage, type PublicLanguage, type PublicLanguageOption } from '@/lib/public-language'
 
@@ -16,6 +16,7 @@ const navCopy = {
 
 export function PublicNavbar({ language = 'es', languages }: { language?: PublicLanguage; languages: PublicLanguageOption[] }) {
   const [open, setOpen] = useState(false)
+  const router = useRouter()
   const pathname = usePathname()
   const languageParam = useSearchParams().get('lang')
   const activeLanguage = languages.some((item) => item.code === languageParam)
@@ -54,7 +55,7 @@ export function PublicNavbar({ language = 'es', languages }: { language?: Public
               className="tg-filter h-10 w-48 rounded-xl pl-9 pr-3 text-sm placeholder:text-slate-600"
             />
           </label>
-          <select aria-label="Idioma" value={activeLanguage} onChange={(event) => { const next = event.target.value as PublicLanguage; persistPublicLanguage(next); window.location.href = languageUrl(window.location.href, next) }} className="tg-filter h-10 rounded-xl px-3 text-sm font-semibold">
+          <select aria-label="Idioma" value={activeLanguage} onChange={(event) => { const next = event.target.value as PublicLanguage; persistPublicLanguage(next); router.replace(languageUrl(window.location.href, next)) }} className="tg-filter h-10 rounded-xl px-3 text-sm font-semibold">
             {languages.map((item) => <option key={item.code} value={item.code}>{item.code.toUpperCase()}</option>)}
           </select>
           <Link href="/payouts" className="tg-button-secondary px-4 py-2.5 text-sm">
@@ -73,7 +74,7 @@ export function PublicNavbar({ language = 'es', languages }: { language?: Public
       {open && (
         <nav className="border-t border-amber-300/10 bg-[#07111e]/98 px-4 py-4 md:hidden" aria-label="Navegación móvil">
           <div className="mx-auto grid max-w-7xl gap-1">
-            <select aria-label="Idioma" value={activeLanguage} onChange={(event) => { const next = event.target.value as PublicLanguage; persistPublicLanguage(next); window.location.href = languageUrl(window.location.href, next) }} className="tg-filter mb-2 h-10 rounded-xl px-3 text-sm font-semibold">
+            <select aria-label="Idioma" value={activeLanguage} onChange={(event) => { const next = event.target.value as PublicLanguage; persistPublicLanguage(next); router.replace(languageUrl(window.location.href, next)); setOpen(false) }} className="tg-filter mb-2 h-10 rounded-xl px-3 text-sm font-semibold">
               {languages.map((item) => <option key={item.code} value={item.code}>{item.nativeName}</option>)}
             </select>
             {links.map(([label, href]) => (
