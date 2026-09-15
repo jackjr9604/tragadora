@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { normalizedLanguage } from '@/lib/public-language'
 
 type AffiliateLink = {
@@ -16,7 +16,7 @@ export async function GET(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const countryCode = request.headers.get('x-vercel-ip-country')?.toUpperCase() ?? null
   const knownCountry = countryCode?.trim() || null
   const language = normalizedLanguage(request.nextUrl.searchParams.get('lang') ?? undefined)
@@ -86,7 +86,9 @@ export async function GET(
   const affiliateLink = exactLink ?? eligibleLinks[0]
 
   if (!affiliateLink) {
-    return new NextResponse(`No hay enlace de afiliado activo para ${platform.name}`, { status: 404 })
+    const profileUrl = new URL(`/prop-firms/${slug}`, request.url)
+    if (language) profileUrl.searchParams.set('lang', language)
+    return NextResponse.redirect(profileUrl)
   }
 
   await supabase.from('affiliate_clicks').insert({

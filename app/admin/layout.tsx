@@ -1,7 +1,7 @@
 import Link from 'next/link'
 
 const links = [
-  ['Dashboard', '/admin'], ['Prop Firms', '/admin/platforms'], ['Challenges', '/admin/challenges'],
+  ['Dashboard', '/admin'], ['Home', '/admin/home'], ['Prop Firms', '/admin/platforms'], ['Challenges', '/admin/challenges'],
   ['Investigación', '/admin/platforms/research'], ['Pagos', '/admin/payouts'], ['Ofertas', '/admin/offers'],
   ['Afiliados', '/admin/affiliate-links'], ['Contenido', '/admin/content'], ['Multimedia', '/admin/media'],
 ] as const

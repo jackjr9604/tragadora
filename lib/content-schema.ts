@@ -54,6 +54,7 @@ export const contentPages: ContentPageSchema[] = [
     sections: [
       standardHero('Compara antes de poner tu capital en juego.', 'Prop firms, ofertas y pagos verificados en un mismo lugar.'),
       previewSection('payouts_preview', 'Resumen de payouts', 'Vista breve de actividad verificada.', 'Payout tracker', 'Pagos reales. Evidencia rastreable.', 'Una lectura rápida de la actividad registrada.', 'Ver Payout Tracker'),
+      previewSection('payout_rankings', 'Rankings de payouts', 'Rankings automáticos basados en snapshots agregados.', 'Datos agregados', 'Rankings de payouts reportados', 'Métricas agregadas por firma y período.'),
       previewSection('featured_firms', 'Prop Firms destacadas', 'Preview del directorio de firmas.', 'Directorio', 'Prop Firms destacadas', 'Firmas con datos disponibles para comparar.', 'Ver todas las firmas'),
       previewSection('featured_offers', 'Ofertas destacadas', 'Preview de promociones vigentes.', 'Ofertas vigentes', 'Beneficios activos ahora.', 'Promociones configuradas y dentro de su vigencia.', 'Ver todas las ofertas'),
       previewSection('methodology', 'Metodología', 'Explicación sobre la trazabilidad.', 'Metodología', 'La confianza necesita trazabilidad.', 'Separamos datos observados, información declarada y enlaces comerciales.'),

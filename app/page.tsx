@@ -33,5 +33,5 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
 
 async function HomeData({ content, language, initialCriteria }: { content: Awaited<ReturnType<typeof getPageContent>>; language: Awaited<ReturnType<typeof resolvePublicLanguage>>; initialCriteria: Partial<RecommendationCriteria> }) {
   const data = await getHomeData(language)
-  return <HomePublic content={content} language={language} latestPayouts={data.latestPayouts} featuredPlatforms={data.featuredPlatforms} offers={data.offers} recommendationFirms={data.recommendationFirms} countries={data.countries} initialCriteria={initialCriteria} stats={data.stats} />
+  return <HomePublic content={content} language={language} latestPayouts={data.latestPayouts} featuredPlatforms={data.featuredPlatforms} offers={data.offers} recommendationFirms={data.recommendationFirms} countries={data.countries} initialCriteria={initialCriteria} rankings={data.rankings} stats={data.stats} />
 }

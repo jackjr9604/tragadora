@@ -3,7 +3,7 @@ import 'server-only'
 import { unstable_cache } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { visibleBrandText } from '@/lib/public-language'
-import { classifyPayoutVerification, type RecommendableFirm } from '@/lib/prop-firm-recommender'
+import { classifyPayoutVerification, payoutSpeedOption, type PayoutSpeedOption, type RecommendableFirm } from '@/lib/prop-firm-recommender'
 import { conservativeMaxDrawdown, resolveChallenge, type AccountPlan, type ChallengePhase, type ChallengeRewardOption, type ChallengeVariant, type ChallengeVariantPhase } from '@/lib/challenge-resolver'
 
 export type HomePlatform = {
@@ -22,6 +22,9 @@ export type HomePlatform = {
   allowsDayTrading: boolean | null
   allowsCopyTrading: boolean | null
   markets: string[]
+  featuredBadge?: string | null
+  featuredCtaLabel?: string | null
+  hasAffiliateLink?: boolean
 }
 
 export type HomeOffer = {
@@ -56,9 +59,13 @@ export type FirmPayoutStat = {
 
 export type PublicCountry = { code: string; name: string }
 
+export type HomeRankingEntry = { platform: HomePlatform; amount: number; payoutCount: number }
+export type HomeRankings = { thirtyDays: HomeRankingEntry[]; allTime: HomeRankingEntry[] }
+
 type PayoutRow = {
   amount: number | string | null
   payout_date: string
+  platform_id: string
 }
 
 function first<T>(value: T[] | T | null | undefined): T | null {
@@ -69,7 +76,7 @@ async function getHomeDataUncached(language = 'es', countryCode?: string | null)
   const supabase = createAdminClient()
   const now = new Date()
 
-  const [platformResult, detailResult, translationResult, sourceResult, challengeResult, availabilityResult, countryResult, marketResult] =
+  const [platformResult, detailResult, translationResult, sourceResult, challengeResult, availabilityResult, countryResult, marketResult, featuredResult, affiliateResult, rankingResult] =
     await Promise.all([
       supabase
         .from('platforms')
@@ -99,6 +106,16 @@ async function getHomeDataUncached(language = 'es', countryCode?: string | null)
       supabase.from('platform_availability').select('*'),
       supabase.from('countries').select('*'),
       supabase.from('platform_markets').select('platform_id, market'),
+      supabase.from('home_featured_platforms').select('platform_id, sort_order, badge, description, cta_label, active, starts_at, ends_at').eq('active', true).order('sort_order'),
+      supabase.from('affiliate_links').select('platform_id').eq('status', true),
+      supabase.from('platform_payout_metrics')
+        .select('platform_id, period_key, amount, payout_count, largest_payout, average_payout')
+        .eq('source_name', 'MondoTraders')
+        .eq('source_type', 'third_party_public')
+        .eq('verification_level', 'blockchain_external')
+        .eq('metric_type', 'payout_summary')
+        .eq('is_current', true)
+        .in('period_key', ['30d', 'all']),
     ])
 
   const details = new Map(
@@ -110,6 +127,7 @@ async function getHomeDataUncached(language = 'es', countryCode?: string | null)
     if (!current || item.language === language) translations.set(item.platform_id, item)
   }
   const marketsByPlatform = new Map<string, string[]>()
+  const affiliatePlatformIds = new Set((affiliateResult.data ?? []).map((item) => item.platform_id))
   for (const item of marketResult.data ?? []) {
     const current = marketsByPlatform.get(item.platform_id) ?? []
     current.push(item.market)
@@ -141,9 +159,11 @@ async function getHomeDataUncached(language = 'es', countryCode?: string | null)
       allowsDayTrading: detail?.allows_day_trading ?? null,
       allowsCopyTrading: detail?.allows_copy_trading ?? null,
       markets: marketsByPlatform.get(row.id) ?? [],
+      hasAffiliateLink: affiliatePlatformIds.has(row.id),
     }
   })
   const platformMap = new Map(platforms.map((platform) => [platform.id, platform]))
+  const rankings = buildHomeRankings(rankingResult.data ?? [], platformMap)
   const sources = sourceResult.data ?? []
   const sourceMap = new Map(sources.map((source) => [source.id, source]))
   const challenges = challengeResult.data ?? []
@@ -152,7 +172,7 @@ async function getHomeDataUncached(language = 'es', countryCode?: string | null)
   const recentWindowStart = new Date(now.getTime() - 36 * 60 * 60 * 1_000).toISOString()
   const payoutDataPromise = Promise.all([
     supabase.from('payout_source_summary').select('platform_id, payout_count, payout_amount'),
-    supabase.from('payouts').select('amount, payout_date').gte('payout_date', recentWindowStart),
+    supabase.from('payouts').select('amount, payout_date, platform_id').gte('payout_date', recentWindowStart),
     supabase.from('payouts').select('amount').order('amount', { ascending: false }).limit(1).maybeSingle(),
     supabase.from('payouts').select(`
         id, amount, payout_date, source_url, external_id,
@@ -255,6 +275,7 @@ async function getHomeDataUncached(language = 'es', countryCode?: string | null)
   let totalPayouts = 0
   let paidToday = 0
   let payoutsToday = 0
+  const firmsActiveToday = new Set<string>()
   const largestPayout = Number(largestPayoutResult.data?.amount ?? 0)
 
   for (const summary of sourceSummaryResult.data ?? []) {
@@ -262,6 +283,7 @@ async function getHomeDataUncached(language = 'es', countryCode?: string | null)
     const count = Number(summary.payout_count ?? 0)
     totalPaid += amount
     totalPayouts += count
+    if (count <= 0) continue
     const current = firmTotals.get(summary.platform_id) ?? { total: 0, count: 0 }
     current.total += amount
     current.count += count
@@ -277,6 +299,7 @@ async function getHomeDataUncached(language = 'es', countryCode?: string | null)
     if (payoutDay === todayKey) {
       paidToday += Number(payout.amount ?? 0)
       payoutsToday += 1
+      firmsActiveToday.add(payout.platform_id)
     }
   }
 
@@ -289,14 +312,12 @@ async function getHomeDataUncached(language = 'es', countryCode?: string | null)
     .slice(0, 5)
 
   const newestPayout = latestPayouts[0] ?? null
-  const featuredPlatforms = platforms
-    .filter((platform) => firmTotals.has(platform.id))
-    .sort((a, b) => {
-      const payoutDifference =
-        (firmTotals.get(b.id)?.total ?? 0) - (firmTotals.get(a.id)?.total ?? 0)
-      return payoutDifference || (b.score ?? 0) - (a.score ?? 0)
-    })
-    .slice(0, 6)
+  const featuredPlatforms = (featuredResult.data ?? []).flatMap((featured) => {
+    const platform = platformMap.get(featured.platform_id)
+    const started = !featured.starts_at || new Date(featured.starts_at) <= now
+    const current = !featured.ends_at || new Date(featured.ends_at) > now
+    return platform && started && current ? [{ ...platform, description: featured.description || platform.description, featuredBadge: featured.badge, featuredCtaLabel: featured.cta_label }] : []
+  })
 
   const recommendationFirms: RecommendableFirm[] = platforms.map((platform) => {
     const platformChallenges = challenges.filter((challenge) => challenge.platform_id === platform.id)
@@ -310,6 +331,8 @@ async function getHomeDataUncached(language = 'es', countryCode?: string | null)
         // Resumen conservador: el menor max drawdown no nulo es la fase más restrictiva.
         maxDrawdown: conservativeMaxDrawdown(plan.effectivePhases),
         challengeType: challenge.challenge_type,
+        challengeName: challenge.name,
+        payoutOption: bestPayoutOption(plan.rewardOptions, plan.effectivePayoutFrequency),
       }))
     })
     const platformAvailability = availability.filter((item) => String(item.platform_id ?? '') === platform.id)
@@ -320,6 +343,11 @@ async function getHomeDataUncached(language = 'es', countryCode?: string | null)
       return enabled && (direct || related) ? [direct || related] : []
     })
     const verification = classifyPayoutVerification(sources.filter((source) => source.platform_id === platform.id))
+    const restrictedCountryCodes = platformAvailability.flatMap((item) => {
+      const direct = String(item.country_code ?? item.code ?? '').toUpperCase()
+      const related = countryCodeById.get(String(item.country_id ?? '')) ?? ''
+      return item.status === 'restricted' && (direct || related) ? [direct || related] : []
+    })
     const activeOffer = offers.find((offer) => offer.platform.id === platform.id) ?? null
     return {
       id: platform.id, name: platform.name, slug: platform.slug, score: platform.score,
@@ -328,7 +356,8 @@ async function getHomeDataUncached(language = 'es', countryCode?: string | null)
       allowsScalping: platform.allowsScalping, allowsDayTrading: platform.allowsDayTrading,
       allowsCopyTrading: platform.allowsCopyTrading, markets: platform.markets,
       verification: verification.level, verificationLabel: verification.label,
-      availableCountryCodes, availabilityKnown: platformAvailability.length > 0,
+      availableCountryCodes, restrictedCountryCodes, availabilityKnown: platformAvailability.length > 0,
+      hasAffiliateLink: Boolean(platform.hasAffiliateLink),
       plans: platformChallenges.length ? plans : [],
       activeOffer: activeOffer ? { title: activeOffer.title, value: activeOffer.discountValue, type: activeOffer.discountType } : null,
     }
@@ -343,17 +372,51 @@ async function getHomeDataUncached(language = 'es', countryCode?: string | null)
     sources,
     countries,
     recommendationFirms,
+    rankings,
     stats: {
-      totalPaid,
-      totalPayouts,
-      averagePayout: totalPayouts ? totalPaid / totalPayouts : 0,
-      largestPayout,
-      paidToday,
-      payoutsToday,
-      firmsTracked: firmTotals.size,
+      totalPaid: (sourceSummaryResult.data ?? []).length ? totalPaid : null,
+      totalPayouts: (sourceSummaryResult.data ?? []).length ? totalPayouts : null,
+      averagePayout: totalPayouts ? totalPaid / totalPayouts : null,
+      largestPayout: largestPayoutResult.data ? largestPayout : null,
+      paidToday: payoutsToday > 0 ? paidToday : null,
+      payoutsToday: payoutsToday > 0 ? payoutsToday : null,
+      firmsActiveToday: payoutsToday > 0 ? firmsActiveToday.size : null,
+      firmsTracked: firmTotals.size || null,
+      recentUpdatedAt: latestPayouts[0]?.payoutDate ?? null,
       newestPayout,
     },
   }
+}
+
+function bestPayoutOption(options: ChallengeRewardOption[], legacyFrequency: string | null): PayoutSpeedOption | null {
+  const candidates = options.flatMap((option) => {
+    const parsed = payoutSpeedOption(
+      option.payout_frequency,
+      option.minimum_payout_days === null ? null : Number(option.minimum_payout_days),
+      option.name
+    )
+    return parsed ? [parsed] : []
+  })
+  const legacy = payoutSpeedOption(legacyFrequency, null, null)
+  if (legacy) candidates.push(legacy)
+  const order = { very_fast: 0, fast: 1, normal: 2, slow: 3 }
+  return candidates.sort((a, b) => order[a.speed] - order[b.speed] || (a.days ?? Infinity) - (b.days ?? Infinity))[0] ?? null
+}
+
+function buildHomeRankings(rows: Array<Record<string, unknown>>, platforms: Map<string, HomePlatform>): HomeRankings {
+  const valid = rows.flatMap((row) => {
+    const platform = platforms.get(String(row.platform_id))
+    const amount = row.amount === null ? null : Number(row.amount)
+    const payoutCount = row.payout_count === null ? null : Number(row.payout_count)
+    const complete = amount !== null && payoutCount !== null && row.largest_payout !== null && row.average_payout !== null
+    return platform && complete && Number.isFinite(amount) && Number.isFinite(payoutCount)
+      ? [{ platform, amount, payoutCount, period: String(row.period_key) }]
+      : []
+  })
+  const period = (key: '30d' | 'all') => valid
+    .filter((row) => row.period === key)
+    .map(({ platform, amount, payoutCount }) => ({ platform, amount, payoutCount }))
+  return { thirtyDays: period('30d'), allTime: period('all') }
 }
 
 export const getHomeData = unstable_cache(
