@@ -2,7 +2,7 @@ import 'server-only'
 import { unstable_cache } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-export type DirectoryFirm = { id: string; name: string; slug: string; country: string | null; foundedAt: string | null; isNew: boolean; markets: string[]; profitSplit: number | null; logoUrl: string | null; logoAlt: string | null; popularity: number }
+export type DirectoryFirm = { id: string; name: string; slug: string; country: string | null; countryCode: string | null; foundedAt: string | null; isNew: boolean; markets: string[]; profitSplit: number | null; logoUrl: string | null; logoAlt: string | null; popularity: number }
 
 async function getPropFirmDirectoryUncached(): Promise<DirectoryFirm[]> {
   const supabase = createAdminClient()
@@ -27,7 +27,7 @@ async function getPropFirmDirectoryUncached(): Promise<DirectoryFirm[]> {
   const marketsMap = new Map<string, string[]>(); for (const item of markets.data ?? []) marketsMap.set(item.platform_id, [...(marketsMap.get(item.platform_id) ?? []), item.market])
   const platformByLink = new Map((links.data ?? []).map((item) => [item.id, item.platform_id]))
   const popularity = new Map<string, number>(); for (const click of clickRows) { const id = platformByLink.get(click.affiliate_link_id); if (id) popularity.set(id, (popularity.get(id) ?? 0) + 1) }
-  return (platforms.data ?? []).map((row) => { const detail = detailMap.get(row.id); const media = first(row.media); return { id: row.id, name: row.name, slug: row.slug, country: row.origin_country_code ? countryMap.get(row.origin_country_code) ?? row.origin_country_code : null, foundedAt: detail?.founded_at ?? null, isNew: Boolean(detail?.is_new), markets: marketsMap.get(row.id) ?? [], profitSplit: numberOrNull(detail?.profit_split_max), logoUrl: media?.file_url ?? row.logo_url ?? null, logoAlt: media?.alt_text ?? null, popularity: popularity.get(row.id) ?? 0 } })
+  return (platforms.data ?? []).map((row) => { const detail = detailMap.get(row.id); const media = first(row.media); return { id: row.id, name: row.name, slug: row.slug, country: row.origin_country_code ? countryMap.get(row.origin_country_code) ?? row.origin_country_code : null, countryCode: row.origin_country_code ?? null, foundedAt: detail?.founded_at ?? null, isNew: Boolean(detail?.is_new), markets: marketsMap.get(row.id) ?? [], profitSplit: numberOrNull(detail?.profit_split_max), logoUrl: media?.file_url ?? row.logo_url ?? null, logoAlt: media?.alt_text ?? null, popularity: popularity.get(row.id) ?? 0 } })
 }
 export const getPropFirmDirectory = unstable_cache(
   getPropFirmDirectoryUncached,

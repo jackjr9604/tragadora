@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { AdminAction } from '@/components/admin/AdminPermissionsProvider'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { resolveChallenge, type AccountPlan, type ChallengePhase, type ChallengeRewardOption, type ChallengeVariant, type ChallengeVariantPhase, type EffectivePhase } from '@/lib/challenge-resolver'
@@ -59,12 +60,12 @@ export default async function ChallengePage({
   return (
     <main className="min-h-screen bg-slate-100 p-4 sm:p-8">
       <div className="mx-auto max-w-6xl">
-        <div className="mb-8 flex flex-wrap items-start justify-between gap-4"><div><p className="text-sm text-slate-500">{challenge.platforms?.name}</p><h1 className="text-3xl font-bold">{challenge.name}</h1><p className="mt-1 text-slate-500">{challenge.phases ?? (resolved.basePhases.length || '—')} fases · {challenge.status ?? 'estado pendiente'}</p></div><Link href={`/admin/challenges/${id}/plans/new`} className="rounded-lg bg-black px-5 py-3 text-white">+ Nueva cuenta</Link></div>
+        <div className="mb-8 flex flex-wrap items-start justify-between gap-4"><div><p className="text-sm text-slate-500">{challenge.platforms?.name}</p><h1 className="text-3xl font-bold">{challenge.name}</h1><p className="mt-1 text-slate-500">{challenge.phases ?? (resolved.basePhases.length || '—')} fases · {challenge.status ?? 'estado pendiente'}</p></div><AdminAction permission="challenges.create"><Link href={`/admin/challenges/${id}/plans/new`} className="rounded-lg bg-black px-5 py-3 text-white">+ Nueva cuenta</Link></AdminAction></div>
 
         <div className="grid gap-6">
           <section className="rounded-xl bg-white p-5 shadow sm:p-6"><h2 className="text-xl font-bold">Fases de evaluación</h2><p className="mt-1 text-sm text-slate-500">La fuente principal para target, pérdidas y días mínimos.</p>{resolved.hasNormalizedPhases ? <MainPhaseTable phases={resolved.basePhases} /> : <p className="mt-5 rounded-lg bg-amber-50 p-4 text-sm text-amber-800">No hay fases normalizadas. Este challenge todavía usa reglas legacy por cuenta.</p>}</section>
 
-          <section className="rounded-xl bg-white p-5 shadow sm:p-6"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-bold">Planes y cuentas</h2><p className="mt-1 text-sm text-slate-500">Tamaño, precio, moneda y variante cuando aplica.</p></div><Link href={`/admin/challenges/${id}/plans/new`} className="rounded-lg border px-4 py-2 text-sm font-medium">Agregar cuenta</Link></div><MainPlansTable plans={plans} variantName={variantName} /></section>
+          <section className="rounded-xl bg-white p-5 shadow sm:p-6"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-bold">Planes y cuentas</h2><p className="mt-1 text-sm text-slate-500">Tamaño, precio, moneda y variante cuando aplica.</p></div><AdminAction permission="challenges.create"><Link href={`/admin/challenges/${id}/plans/new`} className="rounded-lg border px-4 py-2 text-sm font-medium">Agregar cuenta</Link></AdminAction></div><MainPlansTable plans={plans} variantName={variantName} /></section>
 
           <section className="rounded-xl bg-white p-5 shadow sm:p-6"><h2 className="text-xl font-bold">Reward principal</h2><p className="mt-1 text-sm text-slate-500">Profit split, frecuencia y espera mínima visibles públicamente.</p><RewardScope title="General" options={resolved.generalRewardOptions} />{resolved.variants.filter((variant) => variant.rewardOptionsSource === 'specific').map((variant) => <RewardScope key={variant.id} title={variant.name} options={variant.rewardOptions} />)}{!resolved.generalRewardOptions.length && !resolved.variants.some((variant) => variant.rewardOptionsSource === 'specific') && <p className="mt-4 rounded-lg bg-slate-50 p-4 text-sm text-slate-500">No hay rewards normalizados visibles.</p>}</section>
 

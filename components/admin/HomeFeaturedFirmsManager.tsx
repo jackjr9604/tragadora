@@ -3,6 +3,8 @@
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { SearchInput } from '@/components/shared/SearchInput'
+import { useAdminPermission } from '@/components/admin/AdminPermissionsProvider'
 
 type Platform = { id: string; name: string; status: string }
 type FeaturedRow = {
@@ -21,19 +23,25 @@ type Props = { platforms: Platform[]; initialRows: FeaturedRow[]; loadError: str
 const controlClass = 'mt-1 w-full rounded-lg border p-2 text-sm text-black'
 
 export function HomeFeaturedFirmsManager({ platforms, initialRows, loadError }: Props) {
+  const canCreate = useAdminPermission('home.create')
+  const canUpdate = useAdminPermission('home.update')
+  const canDelete = useAdminPermission('home.delete')
   const supabase = useMemo(() => createClient(), [])
   const [rows, setRows] = useState(initialRows)
   const [platformId, setPlatformId] = useState('')
+  const [search, setSearch] = useState('')
   const [message, setMessage] = useState('')
   const [error, setError] = useState(loadError ?? '')
   const names = new Map(platforms.map((platform) => [platform.id, platform.name]))
   const available = platforms.filter((platform) => !rows.some((row) => row.platform_id === platform.id))
+  const matchingAvailable = available.filter((platform) => platform.id === platformId || platform.name.toLocaleLowerCase('es').includes(search.trim().toLocaleLowerCase('es')))
 
   function change(id: string, values: Partial<FeaturedRow>) {
     setRows((current) => current.map((row) => row.id === id ? { ...row, ...values } : row))
   }
 
   async function add() {
+    if (!canCreate) return
     if (!platformId) return
     setError('')
     const { data, error: insertError } = await supabase
@@ -48,6 +56,7 @@ export function HomeFeaturedFirmsManager({ platforms, initialRows, loadError }: 
   }
 
   async function save(row: FeaturedRow) {
+    if (!canUpdate) return
     setError('')
     setMessage('')
     const { error: updateError } = await supabase.from('home_featured_platforms').update({
@@ -64,6 +73,7 @@ export function HomeFeaturedFirmsManager({ platforms, initialRows, loadError }: 
   }
 
   async function remove(row: FeaturedRow) {
+    if (!canDelete) return
     if (!window.confirm(`¿Quitar ${names.get(row.platform_id) ?? 'esta firma'} de destacadas?`)) return
     const { error: deleteError } = await supabase.from('home_featured_platforms').delete().eq('id', row.id)
     if (deleteError) return setError(deleteError.message)
@@ -79,13 +89,14 @@ export function HomeFeaturedFirmsManager({ platforms, initialRows, loadError }: 
         </div>
         <section className="mt-8 rounded-xl bg-white p-6 shadow">
           <h2 className="text-xl font-semibold">Firmas destacadas</h2>
-          <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+          <div className="mt-4 max-w-md"><SearchInput value={search} onChange={setSearch} placeholder="Buscar firma para destacar..." /></div>
+          {canCreate && <div className="mt-5 flex flex-col gap-3 sm:flex-row">
             <select value={platformId} onChange={(event) => setPlatformId(event.target.value)} className="min-w-0 flex-1 rounded-lg border p-3">
               <option value="">Selecciona una Prop Firm</option>
-              {available.map((platform) => <option key={platform.id} value={platform.id}>{platform.name}{platform.status !== 'active' ? ' (inactiva)' : ''}</option>)}
+              {matchingAvailable.map((platform) => <option key={platform.id} value={platform.id}>{platform.name}{platform.status !== 'active' ? ' (inactiva)' : ''}</option>)}
             </select>
             <button type="button" onClick={() => void add()} disabled={!platformId} className="rounded-lg bg-black px-5 py-3 text-white disabled:opacity-40">+ Agregar firma destacada</button>
-          </div>
+          </div>}
           <div className="mt-6 space-y-3">
             {rows.map((row, index) => (
               <article key={row.id} className="grid gap-3 rounded-lg border p-4 lg:grid-cols-6">
@@ -94,7 +105,7 @@ export function HomeFeaturedFirmsManager({ platforms, initialRows, loadError }: 
                 <Field label="Orden"><input type="number" min="1" value={row.sort_order} onChange={(event) => change(row.id, { sort_order: Number(event.target.value) })} className={controlClass} /></Field>
                 <Field label="Badge"><input value={row.badge ?? ''} onChange={(event) => change(row.id, { badge: event.target.value })} className={controlClass} /></Field>
                 <Field label="CTA"><input value={row.cta_label ?? ''} onChange={(event) => change(row.id, { cta_label: event.target.value })} className={controlClass} /></Field>
-                <div className="flex items-end gap-2"><button type="button" onClick={() => void save(row)} className="rounded-lg bg-black px-3 py-2 text-sm text-white">Guardar</button><button type="button" onClick={() => void remove(row)} className="rounded-lg border px-3 py-2 text-sm text-red-600">Quitar</button></div>
+                <div className="flex items-end gap-2">{canUpdate && <button type="button" onClick={() => void save(row)} className="rounded-lg bg-black px-3 py-2 text-sm text-white">Guardar</button>}{canDelete && <button type="button" onClick={() => void remove(row)} className="rounded-lg border px-3 py-2 text-sm text-red-600">Quitar</button>}</div>
                 <label className="text-xs text-slate-500 lg:col-span-3">Descripción editorial<textarea rows={3} maxLength={240} value={row.description ?? ''} onChange={(event) => change(row.id, { description: event.target.value })} placeholder="Opcional; si queda vacía se usa la descripción pública de la firma." className={`${controlClass} resize-y`} /><span className="mt-1 block text-right">{row.description?.length ?? 0}/240</span></label>
                 <Field label="Visible desde"><input type="datetime-local" value={toLocalInput(row.starts_at)} onChange={(event) => change(row.id, { starts_at: fromLocalInput(event.target.value) })} className={controlClass} /></Field>
                 <Field label="Visible hasta"><input type="datetime-local" value={toLocalInput(row.ends_at)} onChange={(event) => change(row.id, { ends_at: fromLocalInput(event.target.value) })} className={controlClass} /></Field>

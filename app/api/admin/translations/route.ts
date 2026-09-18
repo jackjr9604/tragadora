@@ -13,6 +13,8 @@ export async function GET(request: Request) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+  const { data: allowed } = await supabase.rpc('has_admin_permission', { permission_key: 'content.view' })
+  if (allowed !== true) return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 })
 
   const url = new URL(request.url)
   const sourceLanguage = url.searchParams.get('source')?.toLowerCase()
@@ -30,6 +32,8 @@ export async function POST(request: Request) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+  const { data: allowed } = await supabase.rpc('has_admin_permission', { permission_key: 'content.update' })
+  if (allowed !== true) return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 })
 
   try {
     const validation = validateBody(await request.json() as TranslationBody)

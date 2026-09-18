@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useAdminPermission } from '@/components/admin/AdminPermissionsProvider'
 
 export default function ToggleOfferStatus({
   id,
@@ -10,12 +11,14 @@ export default function ToggleOfferStatus({
   id: string
   status: boolean
 }) {
+  const canUpdate = useAdminPermission('offers.update')
   const supabase = createClient()
 
   const [active, setActive] = useState(status)
   const [loading, setLoading] = useState(false)
 
   async function toggleStatus() {
+    if (!canUpdate) return
     setLoading(true)
 
     const newStatus = !active
@@ -37,7 +40,7 @@ export default function ToggleOfferStatus({
   return (
     <button
       onClick={toggleStatus}
-      disabled={loading}
+      disabled={loading || !canUpdate}
       className={`rounded-full px-3 py-1 text-xs font-medium ${
         active
           ? 'bg-green-100 text-green-700'
