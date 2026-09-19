@@ -1,3 +1,5 @@
+import { resolveAvailability, type AvailabilityRule, type AvailabilityStatus } from './platform-availability'
+
 export type ComparisonPhase = {
   phaseNumber: number
   profitTarget: number | null
@@ -36,12 +38,14 @@ export type ComparisonFirm = {
   tradingPlatforms: string[]
   instruments: string[]
   payoutMethods: string[]
-  restrictions: string[]
+  availabilityRules: AvailabilityRule[]
   rules: { ea: boolean | null; news: boolean | null; weekend: boolean | null; copy: boolean | null; scalping: boolean | null }
   plans: ComparisonPlan[]
   evidence: { count: number; amount: number; lastAt: string | null } | null
   offer: string | null
 }
+
+export type { AvailabilityStatus } from './platform-availability'
 
 export type ComparisonInsight = {
   type: 'match' | 'difference' | 'review'
@@ -113,8 +117,8 @@ export function valuesDiffer(values: unknown[]): boolean {
   return new Set(values.map((value) => JSON.stringify(value ?? null))).size > 1
 }
 
-export function countryAvailability(firm: ComparisonFirm, countryCode: string): 'restricted' | 'unknown' {
-  return firm.restrictions.includes(countryCode.toUpperCase()) ? 'restricted' : 'unknown'
+export function countryAvailability(firm: Pick<ComparisonFirm, 'id' | 'availabilityRules'>, countryCode: string, market: string | null = null): AvailabilityStatus {
+  return resolveAvailability(firm.availabilityRules, firm.id, countryCode, market).status
 }
 
 export function evaluateComparisonPreferences(

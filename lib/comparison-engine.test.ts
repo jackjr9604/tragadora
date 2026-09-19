@@ -8,7 +8,7 @@ const plan = (id: string, size: number | null, steps: number | null, price: numb
 })
 const firm = (id: string, plans: ComparisonPlan[], markets = ['cfd']): ComparisonFirm => ({
   id, slug: id, name: id, logoUrl: null, countryCode: null, markets, tradingPlatforms: [], instruments: [], payoutMethods: [],
-  restrictions: [], rules: { ea: null, news: null, weekend: null, copy: null, scalping: null }, plans, evidence: null, offer: null,
+  availabilityRules: [], rules: { ea: null, news: null, weekend: null, copy: null, scalping: null }, plans, evidence: null, offer: null,
 })
 
 test('empareja tamaño y fases; soporta tercera firma', () => {
@@ -62,9 +62,11 @@ test('prioridades producen insights trazables; ausencia de payout no se trata co
 
 test('restricción geográfica explícita no infiere disponibilidad del resto', () => {
   const item = firm('A', [])
-  item.restrictions = ['CO']
+  item.availabilityRules.push({ platformId: 'A', countryCode: 'CO', market: null, status: 'restricted', restrictionBasis: 'residence' })
   assert.equal(countryAvailability(item, 'co'), 'restricted')
   assert.equal(countryAvailability(item, 'US'), 'unknown')
+  item.availabilityRules.push({ platformId: 'A', countryCode: 'US', market: null, status: 'available', restrictionBasis: 'residence' })
+  assert.equal(countryAvailability(item, 'us'), 'available')
 })
 
 test('preferencias: dato ausente no cuenta como false y precio cero real sí es evaluable', () => {

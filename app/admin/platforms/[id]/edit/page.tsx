@@ -1,6 +1,6 @@
 'use client'
 
-import { FormEvent, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { FormEvent, useEffect, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -8,10 +8,10 @@ import { PayoutMetricsManager } from '@/components/admin/PayoutMetricsManager'
 import { PropFirmMatchSnapshotsManager } from '@/components/admin/PropFirmMatchSnapshotsManager'
 import { MondoTradersMetricsPanel } from '@/components/admin/MondoTradersMetricsPanel'
 import { MediaPicker } from '@/components/admin/MediaPicker'
+import { PlatformAvailabilityEditor } from './PlatformAvailabilityEditor'
 
 type NullableBoolean = boolean | null
 type Market = 'cfd' | 'futures' | 'crypto' | 'options'
-type AvailabilityStatus = 'available' | 'restricted' | 'unknown'
 type Media = { id: string; file_name: string; file_url: string; alt_text: string | null }
 type Country = { code: string; name: string }
 type PayoutSource = { id: string; name: string; source_type: string; status: boolean; config: Record<string, unknown> | null }
@@ -47,17 +47,11 @@ export default function EditPlatformPage() {
   const [tradingPlatforms, setTradingPlatforms] = useState<CatalogItem[]>([]), [selectedTradingPlatforms, setSelectedTradingPlatforms] = useState<string[]>([]), [initialTradingPlatforms, setInitialTradingPlatforms] = useState<string[]>([])
   const [transactionMethods, setTransactionMethods] = useState<CatalogItem[]>([]), [selectedMethods, setSelectedMethods] = useState<Record<string, MethodSelection>>({})
   const [instrumentCategories, setInstrumentCategories] = useState<CatalogItem[]>([]), [selectedInstruments, setSelectedInstruments] = useState<string[]>([]), [initialInstruments, setInitialInstruments] = useState<string[]>([])
-  const [availability, setAvailability] = useState<Record<string, AvailabilityStatus>>({}), [initialAvailabilityCodes, setInitialAvailabilityCodes] = useState<string[]>([])
-  const [countrySearch, setCountrySearch] = useState(''), [payoutSources, setPayoutSources] = useState<PayoutSource[]>([])
+  const [payoutSources, setPayoutSources] = useState<PayoutSource[]>([])
   const [challenges, setChallenges] = useState<Challenge[]>([]), [offers, setOffers] = useState<Offer[]>([])
   const [affiliateLinkCount, setAffiliateLinkCount] = useState(0)
   const [payoutSummary, setPayoutSummary] = useState({ count: 0, total: 0, latest: '' })
   const [loading, setLoading] = useState(true), [saving, setSaving] = useState(false), [error, setError] = useState('')
-
-  const visibleCountries = useMemo(() => {
-    const search = countrySearch.trim().toLocaleLowerCase('es')
-    return search ? countries.filter((country) => `${country.name} ${country.code}`.toLocaleLowerCase('es').includes(search)) : countries
-  }, [countries, countrySearch])
 
   useEffect(() => {
     async function load() {
@@ -72,7 +66,6 @@ export default function EditPlatformPage() {
         supabase.from('platform_translations').select('short_description').eq('platform_id', id).eq('language', 'es').maybeSingle(),
         supabase.from('media').select('id, file_name, file_url, alt_text').order('created_at', { ascending: false }),
         supabase.from('countries').select('code, name').order('name'),
-        supabase.from('platform_availability').select('country_code, status').eq('platform_id', id),
         supabase.from('platform_markets').select('market').eq('platform_id', id),
         supabase.from('payout_sources').select('id, name, source_type, status, config').eq('platform_id', id),
         supabase.from('payouts').select('amount, payout_date', { count: 'exact' }).eq('platform_id', id).order('payout_date', { ascending: false }).range(0, 999),
@@ -87,7 +80,7 @@ export default function EditPlatformPage() {
         supabase.from('instrument_categories').select('id, name, status').order('name'),
         supabase.from('platform_instruments').select('instrument_category_id').eq('platform_id', id),
       ])
-      const [detailsResult, translationResult, mediaResult, countriesResult, availabilityResult, marketsResult, sourcesResult, payoutsResult, challengesResult, plansResult, offersResult, linksResult, tradingPlatformsResult, platformTradingResult, transactionMethodsResult, platformMethodsResult, instrumentsResult, platformInstrumentsResult] = results
+      const [detailsResult, translationResult, mediaResult, countriesResult, marketsResult, sourcesResult, payoutsResult, challengesResult, plansResult, offersResult, linksResult, tradingPlatformsResult, platformTradingResult, transactionMethodsResult, platformMethodsResult, instrumentsResult, platformInstrumentsResult] = results
       const details = detailsResult.data
       if (details) {
         setProfitSplitMin(details.profit_split_min?.toString() ?? ''); setProfitSplitMax(details.profit_split_max?.toString() ?? '')
@@ -98,13 +91,6 @@ export default function EditPlatformPage() {
         setIsNew(Boolean(details.is_new))
       }
       setDescription(translationResult.data?.short_description ?? ''); setMedia(mediaResult.data ?? []); setCountries(countriesResult.data ?? [])
-      const availabilityEntries = Object.fromEntries(
-        (availabilityResult.data ?? []).map((item) => [
-          item.country_code,
-          item.status as AvailabilityStatus,
-        ])
-      )
-      setAvailability(availabilityEntries); setInitialAvailabilityCodes(Object.keys(availabilityEntries))
       const selectedMarkets = (marketsResult.data ?? []).map((item) => item.market as Market)
       setMarkets(selectedMarkets); setInitialMarkets(selectedMarkets); setPayoutSources((sourcesResult.data ?? []) as PayoutSource[])
       const planCounts = new Map<string, number>(); for (const plan of plansResult.data ?? []) planCounts.set(plan.challenge_id, (planCounts.get(plan.challenge_id) ?? 0) + 1)
@@ -144,19 +130,6 @@ export default function EditPlatformPage() {
       ? await supabase.from('platform_transaction_methods').delete().eq('platform_id', id).not('transaction_method_id', 'in', `(${selectedMethodIds.join(',')})`)
       : await supabase.from('platform_transaction_methods').delete().eq('platform_id', id)
     if (methodDelete.error) return void fail(methodDelete.error.message)
-    const availabilityCodes = Object.keys(availability)
-    const removedCountries = initialAvailabilityCodes.filter((code) => !availabilityCodes.includes(code))
-    if (removedCountries.length) {
-      const removeResult = await supabase.from('platform_availability').delete().eq('platform_id', id).in('country_code', removedCountries)
-      if (removeResult.error) return void fail(removeResult.error.message)
-    }
-    if (availabilityCodes.length) {
-      const availabilityResult = await supabase.from('platform_availability').upsert(
-        availabilityCodes.map((countryCode) => ({ platform_id: id, country_code: countryCode, status: availability[countryCode] })),
-        { onConflict: 'platform_id,country_code' }
-      )
-      if (availabilityResult.error) return void fail(availabilityResult.error.message)
-    }
     router.push('/admin/platforms'); router.refresh()
   }
 
@@ -216,9 +189,6 @@ export default function EditPlatformPage() {
       <Section title="Resumen económico legacy" description="Resumen editorial conservado; las condiciones normalizadas viven en challenges y rewards." />
       <div className="grid gap-5 sm:grid-cols-2"><Field label="Profit Split mínimo %"><input type="number" step="0.01" value={profitSplitMin} onChange={(e) => setProfitSplitMin(e.target.value)} className={INPUT} /></Field><Field label="Profit Split máximo %"><input type="number" step="0.01" value={profitSplitMax} onChange={(e) => setProfitSplitMax(e.target.value)} className={INPUT} /></Field></div>
 
-      <Section title="Disponibilidad geográfica" description="Global equivale a ausencia de filas en platform_availability." />
-      <div className="grid gap-3 sm:grid-cols-2"><Choice active={!Object.keys(availability).length} label="Global" onChange={() => setAvailability({})} /><Choice active={Object.keys(availability).length > 0} label="Países específicos" onChange={() => setAvailability(countries[0] ? { [countries[0].code]: 'unknown' } : {})} /></div>
-      {!!Object.keys(availability).length && <div className="space-y-4"><input type="search" value={countrySearch} onChange={(e) => setCountrySearch(e.target.value)} placeholder="Buscar país o código…" className={INPUT} /><div className="grid max-h-96 gap-3 overflow-y-auto rounded-xl border p-3 lg:grid-cols-2">{visibleCountries.map((country) => { const selected = country.code in availability; return <div key={country.code} className="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center"><label className="flex flex-1 items-center gap-3"><input type="checkbox" checked={selected} onChange={(e) => setAvailability((current) => { const next = { ...current }; if (e.target.checked) next[country.code] = 'unknown'; else delete next[country.code]; return next })} />{country.name}</label>{selected && <select value={availability[country.code]} onChange={(e) => setAvailability((current) => ({ ...current, [country.code]: e.target.value as AvailabilityStatus }))} className="rounded-lg border p-2 text-sm"><option value="available">Disponible</option><option value="restricted">Restringido / No disponible</option><option value="unknown">Desconocido</option></select>}</div>})}</div><Hint>{Object.keys(availability).length} países configurados.</Hint></div>}
 
       <Section title="Payouts y verificación" description="Información de solo lectura; no modifica la ingesta." />
       <div className="grid gap-4 sm:grid-cols-3"><Summary label="Total payouts" value={payoutSummary.count.toLocaleString('es-CO')} /><Summary label="Total rastreado" value={new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(payoutSummary.total)} /><Summary label="Último payout" value={payoutSummary.latest ? new Date(payoutSummary.latest).toLocaleDateString('es-CO') : '—'} /></div>
@@ -231,6 +201,7 @@ export default function EditPlatformPage() {
       {error && <div className="rounded-lg bg-red-50 p-4 text-sm text-red-600">{error}</div>}
       <div className="flex flex-col justify-between gap-3 border-t pt-6 sm:flex-row"><button type="button" onClick={removePlatform} className="rounded-lg border border-red-300 px-5 py-3 text-red-600">Eliminar</button><div className="flex gap-3"><button type="button" onClick={() => router.push('/admin/platforms')} className={SECONDARY_BUTTON}>Cancelar</button><button type="submit" disabled={saving} className={`${BUTTON} disabled:opacity-50`}>{saving ? 'Guardando...' : 'Guardar cambios'}</button></div></div>
     </form>
+    <PlatformAvailabilityEditor platformId={id} />
     <details className="mt-8 rounded-xl bg-white p-6 shadow"><summary className="cursor-pointer text-xl font-semibold">MondoTraders · Métricas externas</summary><p className="mt-2 mb-6 text-sm text-slate-500">Referencia externa por periodo. Estos agregados nunca se suman con los payouts verificados por Tradagora.</p><MondoTradersMetricsPanel platformId={id} /></details>
     <details className="mt-8 rounded-xl bg-white p-6 shadow"><summary className="cursor-pointer text-xl font-semibold">Prop Firm Match · Payout Tracker</summary><p className="mt-2 mb-6 text-sm text-slate-500">Fallback administrativo por periodo. Cada guardado crea un snapshot nuevo y conserva el anterior como histórico.</p><PropFirmMatchSnapshotsManager platformId={id} /></details>
     <details className="mt-8 rounded-xl bg-white p-6 shadow"><summary className="cursor-pointer text-xl font-semibold">Payout metrics</summary><p className="mt-2 mb-6 text-sm text-slate-500">Agregados oficiales o externos. No se insertan como payouts individuales y siempre conservan su fuente.</p><PayoutMetricsManager platformId={id} /></details>
@@ -242,7 +213,6 @@ function Field({ label, children }: { label: string; children: ReactNode }) { re
 function Hint({ children }: { children: ReactNode }) { return <p className="mt-1 text-sm text-slate-500">{children}</p> }
 function NullableSelect({ label, value, onChange }: { label: string; value: NullableBoolean; onChange: (value: NullableBoolean) => void }) { return <Field label={label}><select value={value === null ? 'unknown' : String(value)} onChange={(e) => onChange(e.target.value === 'unknown' ? null : e.target.value === 'true')} className={INPUT}><option value="unknown">Desconocido</option><option value="true">Sí</option><option value="false">No</option></select></Field> }
 function Summary({ label, value }: { label: string; value: string }) { return <div className="rounded-xl border bg-slate-50 p-5"><p className="text-sm text-slate-500">{label}</p><p className="mt-2 text-xl font-bold">{value}</p></div> }
-function Choice({ active, label, onChange }: { active: boolean; label: string; onChange: () => void }) { return <label className={`rounded-lg border p-4 ${active ? 'border-black bg-slate-100' : ''}`}><input type="radio" name="availability" checked={active} onChange={onChange} className="mr-3" />{label}</label> }
 function CatalogChecklist({ items, selected, onToggle }: { items: CatalogItem[]; selected: string[]; onToggle: (id: string) => void }) { return <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{items.map((item) => <label key={item.id} className="flex items-center gap-3 rounded-lg border p-4"><input type="checkbox" checked={selected.includes(item.id)} onChange={() => onToggle(item.id)} /><span>{item.name}{!item.status && <span className="ml-2 text-xs text-slate-400">Inactivo</span>}</span></label>)}{!items.length && <Hint>El catálogo estará disponible después de ejecutar la migración.</Hint>}</div> }
 function numberOrNull(value: string) { return value.trim() ? Number(value) : null }
 function nonNegativeIntegerOrNull(value: string) { return value.trim() ? Number(value) : null }

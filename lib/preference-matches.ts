@@ -1,4 +1,5 @@
 import type { ComparisonPlan, Priority } from './comparison-engine'
+import { resolveAvailability, type AvailabilityRule } from './platform-availability'
 
 export type MatchFirm = {
   id: string
@@ -6,12 +7,14 @@ export type MatchFirm = {
   name: string
   logoUrl: string | null
   markets: string[]
+  availabilityRules: AvailabilityRule[]
   tradingPlatforms: string[]
   rules: { ea: boolean | null; news: boolean | null; weekend: boolean | null }
   plans: ComparisonPlan[]
 }
 
 export type MatchPreferences = {
+  country: string
   market: string
   size: number | null
   budget: number | null
@@ -21,8 +24,8 @@ export type MatchPreferences = {
 }
 
 export type MatchResult = {
-  firm: Omit<MatchFirm, 'plans'>
-  plan: ComparisonPlan
+  firm: Pick<MatchFirm, 'id' | 'slug' | 'name' | 'logoUrl'>
+  plan: Pick<ComparisonPlan, 'id' | 'challengeName' | 'variantName' | 'size' | 'price' | 'currency'>
   matched: number
   evaluable: number
   reasons: string[]
@@ -31,16 +34,29 @@ export type MatchResult = {
   requirementUnknowns: number
   exactSize: boolean
   knownRelevant: number
+  drawdownCompleteness: number
+  countryRestricted: boolean
 }
 
+type CandidateMatch = Omit<MatchResult, 'plan'> & { plan: ComparisonPlan }
+
 /** Catalog search is deliberately separate from findComparablePlans: each candidate is firm + specific plan. */
-export function findMatchesForPreferences(firms: MatchFirm[], preferences: MatchPreferences, limit = 9): { results: MatchResult[]; hasExactRequirements: boolean } {
-  const candidates: MatchResult[] = firms.flatMap((firm) => firm.plans.map((plan) => {
+export function findMatchesForPreferences(firms: MatchFirm[], preferences: MatchPreferences, limit = 9): { results: MatchResult[]; hasExactRequirements: boolean; eligibleFirmCount: number; excludedByCountryCount: number } {
+  const candidates: CandidateMatch[] = firms.flatMap((firm) => firm.plans.map((plan) => {
     const reasons: string[] = []
     const cautions: string[] = []
     let requirementMisses = 0
     let requirementUnknowns = 0
     let knownRelevant = 0
+    const market = preferences.market || (firm.markets.length === 1 ? firm.markets[0] : null)
+    const countryResolution = resolveAvailability(firm.availabilityRules, firm.id, preferences.country, market)
+    const countryRestricted = Boolean(preferences.country && countryResolution.status === 'restricted')
+    if (preferences.country) {
+      if (countryResolution.status === 'available') reasons.push(`Disponibilidad de residencia registrada para ${preferences.country.toUpperCase()}.`)
+      else if (countryRestricted) cautions.push(`Restricción de residencia explícita para ${preferences.country.toUpperCase()}; no se recomienda esta firma para ese país.`)
+      else if (countryResolution.warning) cautions.push(countryResolution.warning)
+      else cautions.push(`Sin dato verificado de disponibilidad para ${preferences.country.toUpperCase()}.`)
+    }
     if (preferences.market) {
       if (!firm.markets.length) { requirementUnknowns++; cautions.push('Mercado sin dato confirmado.') }
       else if (firm.markets.includes(preferences.market)) { reasons.push(`Opera ${preferences.market.toUpperCase()}.`); knownRelevant++ }
@@ -48,7 +64,7 @@ export function findMatchesForPreferences(firms: MatchFirm[], preferences: Match
     }
     const exactSize = preferences.size === null || plan.size === preferences.size
     if (preferences.size !== null) {
-      if (plan.size === null) { requirementUnknowns++; cautions.push('Tamaño de cuenta sin dato.') }
+      if (plan.size === null) { cautions.push('Tamaño de cuenta sin dato.') }
       else if (exactSize) { reasons.push(`Plan de ${formatSize(plan.size)}, exactamente el tamaño solicitado.`); knownRelevant++ }
       else cautions.push(`El plan más cercano disponible aquí es ${formatSize(plan.size)}, no ${formatSize(preferences.size)}.`)
     }
@@ -68,9 +84,8 @@ export function findMatchesForPreferences(firms: MatchFirm[], preferences: Match
         else cautions.push(`La opción mostrada registra un mínimo de ${plan.payoutDays} días, superior a 7.`)
       }
     }
-    if (preferences.priorities.includes('platform')) {
-      if (!preferences.platform) cautions.push('No seleccionaste una plataforma concreta para evaluar esta prioridad.')
-      else if (!firm.tradingPlatforms.length) cautions.push(`Sin dato de compatibilidad con ${preferences.platform}.`)
+    if (preferences.platform) {
+      if (!firm.tradingPlatforms.length) cautions.push(`Sin dato de compatibilidad con ${preferences.platform}.`)
       else { evaluable++; knownRelevant++; if (firm.tradingPlatforms.some((name) => name.toLowerCase() === preferences.platform.toLowerCase())) { matched++; reasons.push(`${preferences.platform} figura entre sus plataformas registradas.`) } else cautions.push(`${preferences.platform} no figura entre sus plataformas registradas.`) }
     }
     for (const style of preferences.styles) {
@@ -79,20 +94,27 @@ export function findMatchesForPreferences(firms: MatchFirm[], preferences: Match
       if (value === null) cautions.push(`Sin dato suficiente sobre ${label}.`)
       else { evaluable++; knownRelevant++; if (value) { matched++; reasons.push(`${label} figura como permitido para la firma.`) } else cautions.push(`${label} figura como no permitido para la firma.`) }
     }
+    let drawdownCompleteness = 0
     if (preferences.priorities.includes('drawdown')) {
       const known = plan.phases.filter((phase) => phase.maxDrawdown !== null || phase.dailyDrawdown !== null)
+      drawdownCompleteness = plan.phases.some((phase) => phase.maxDrawdown !== null && phase.dailyDrawdown !== null && phase.drawdownType !== null && phase.drawdownBasis !== null) ? 2 : known.length ? 1 : 0
       const detail = known.map((phase) => `F${phase.phaseNumber}: daily ${phase.dailyDrawdown ?? 'sin dato'}%, max ${phase.maxDrawdown ?? 'sin dato'}%, ${phase.drawdownType ?? 'tipo sin dato'} / ${phase.drawdownBasis ?? 'base sin dato'}`).join('; ')
-      cautions.push(detail ? `Drawdown para revisar: ${detail}. No se cuenta como coincidencia sin una base de comparación segura.` : 'Drawdown sin datos estructurados suficientes; no se cuenta como coincidencia.')
+      if (detail) reasons.push(`Drawdown documentado para revisar: ${detail}.`)
+      cautions.push(detail ? 'No declaramos un drawdown mejor sin comparar la metodología de cálculo.' : 'Drawdown sin datos estructurados suficientes; no se cuenta como coincidencia.')
     }
     if (preferences.priorities.includes('rules')) cautions.push('La simplicidad de reglas no tiene un indicador estructurado seguro; no se cuenta como coincidencia.')
     return {
-      firm: { id: firm.id, slug: firm.slug, name: firm.name, logoUrl: firm.logoUrl, markets: firm.markets, tradingPlatforms: firm.tradingPlatforms, rules: firm.rules },
-      plan, matched, evaluable, reasons, cautions, requirementMisses, requirementUnknowns, exactSize, knownRelevant,
+      firm: { id: firm.id, slug: firm.slug, name: firm.name, logoUrl: firm.logoUrl },
+      plan, matched, evaluable, reasons, cautions, requirementMisses, requirementUnknowns, exactSize, knownRelevant, drawdownCompleteness, countryRestricted,
     }
   }))
-  if (!candidates.length) return { results: [], hasExactRequirements: false }
-  const exactCandidates = candidates.filter((item) => item.requirementMisses === 0 && item.requirementUnknowns === 0 && item.exactSize)
-  const comparisonPool = exactCandidates.length ? exactCandidates : candidates
+  if (!candidates.length) return { results: [], hasExactRequirements: false, eligibleFirmCount: 0, excludedByCountryCount: 0 }
+  const excludedByCountryCount = new Set(candidates.filter((item) => item.countryRestricted).map((item) => item.firm.id)).size
+  const countrySafe = candidates.filter((item) => !item.countryRestricted)
+  const eligible = countrySafe.filter((item) => item.requirementMisses === 0 && item.requirementUnknowns === 0)
+  const exactCandidates = eligible.filter((item) => item.exactSize)
+  const searchPool = eligible.length ? eligible : countrySafe
+  const comparisonPool = exactCandidates.length ? exactCandidates : searchPool
   for (const candidate of candidates) {
     if (preferences.priorities.includes('price')) {
       const peers = comparisonPool.filter((item) => item.plan.price !== null && item.plan.currency !== null && item.plan.currency === candidate.plan.currency && (preferences.size === null || item.plan.size === candidate.plan.size))
@@ -116,18 +138,29 @@ export function findMatchesForPreferences(firms: MatchFirm[], preferences: Match
     }
   }
   // Elegir el plan más explicable de cada firma; nunca llenar la shortlist con variantes de una sola firma.
-  candidates.sort((a, b) =>
+  searchPool.sort((a, b) =>
     a.requirementMisses - b.requirementMisses || a.requirementUnknowns - b.requirementUnknowns || Number(b.exactSize) - Number(a.exactSize) ||
-    b.matched - a.matched || b.evaluable - a.evaluable || b.knownRelevant - a.knownRelevant ||
-    (preferences.size === null ? 0 : sizeDistance(a.plan.size, preferences.size) - sizeDistance(b.plan.size, preferences.size)) ||
+    sizeTier(a.plan.size, preferences.size) - sizeTier(b.plan.size, preferences.size) ||
+    b.matched - a.matched || b.evaluable - a.evaluable || b.drawdownCompleteness - a.drawdownCompleteness ||
+    (preferences.priorities.includes('payout') ? (a.plan.payoutDays ?? Infinity) - (b.plan.payoutDays ?? Infinity) : 0) ||
     (preferences.priorities.includes('price') && a.plan.currency === b.plan.currency ? (a.plan.price ?? Infinity) - (b.plan.price ?? Infinity) : 0) ||
+    (preferences.priorities.includes('split') ? (b.plan.split ?? -Infinity) - (a.plan.split ?? -Infinity) : 0) ||
+    b.knownRelevant - a.knownRelevant ||
+    (preferences.size === null ? 0 : sizeDistance(a.plan.size, preferences.size) - sizeDistance(b.plan.size, preferences.size)) ||
     a.firm.slug.localeCompare(b.firm.slug) || a.plan.id.localeCompare(b.plan.id)
   )
   const seen = new Set<string>()
-  const results = candidates.filter((item) => { if (seen.has(item.firm.id)) return false; seen.add(item.firm.id); return true }).slice(0, limit)
-  return { results, hasExactRequirements: exactCandidates.length > 0 }
+  const results: MatchResult[] = searchPool
+    .filter((item) => { if (seen.has(item.firm.id)) return false; seen.add(item.firm.id); return true })
+    .slice(0, limit)
+    .map(({ plan, ...item }) => ({ ...item, plan: {
+      id: plan.id, challengeName: plan.challengeName, variantName: plan.variantName,
+      size: plan.size, price: plan.price, currency: plan.currency,
+    } }))
+  return { results, hasExactRequirements: exactCandidates.length > 0, eligibleFirmCount: new Set(eligible.map((item) => item.firm.id)).size, excludedByCountryCount }
 }
 
 function sizeDistance(value: number | null, preferred: number) { return value === null ? Infinity : Math.abs(value - preferred) }
+function sizeTier(value: number | null, preferred: number | null) { return preferred === null ? 0 : value === preferred ? 0 : value === null ? 3 : Math.abs(value - preferred) <= preferred * 0.5 ? 1 : 2 }
 function formatNumber(value: number) { return new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(value) }
 function formatSize(value: number | null) { return value === null ? 'Sin dato' : `$${formatNumber(value)}` }
