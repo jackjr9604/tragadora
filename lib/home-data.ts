@@ -335,7 +335,11 @@ async function getHomeDataUncached(language = 'es', countryCode?: string | null)
         payoutOption: bestPayoutOption(plan.rewardOptions, plan.effectivePayoutFrequency),
       }))
     })
-    const platformAvailability = availability.filter((item) => String(item.platform_id ?? '') === platform.id)
+    const platformAvailability = availability.filter(
+  (item) =>
+    String(item.platform_id ?? '') === platform.id &&
+    item.market == null
+)
     const availableCountryCodes = platformAvailability.flatMap((item) => {
       const direct = String(item.country_code ?? item.code ?? '').toUpperCase()
       const related = countryCodeById.get(String(item.country_id ?? '')) ?? ''

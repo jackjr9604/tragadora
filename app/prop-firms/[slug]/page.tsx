@@ -45,7 +45,12 @@ export default async function PropFirmDetailPage({ params, searchParams }: PageP
     supabase.from('prop_firm_details').select('platform_id, profit_split_max, supports_ea, allows_news_trading, allows_weekend_holding, allows_scalping, allows_day_trading, allows_copy_trading, broker_provider, ceo_name, founded_at, consistency_rules, inactivity_days').eq('platform_id', row.id).maybeSingle(),
     needsOverview ? supabase.from('platform_translations').select('language, short_description').eq('platform_id', row.id).in('language', [language, 'es']) : Promise.resolve({ data: [], error: null }),
     supabase.from('platform_markets').select('market').eq('platform_id', row.id),
-    needsOverview ? supabase.from('platform_availability').select('country_code, status').eq('platform_id', row.id) : Promise.resolve({ data: [], error: null }),
+    needsOverview
+  ? supabase
+      .from('platform_availability')
+      .select('country_code, status, market')
+      .eq('platform_id', row.id)
+  : Promise.resolve({ data: [], error: null }),
     supabase.from('countries').select('code, name').eq('code', row.origin_country_code ?? ''),
     activeView !== 'payouts' ? supabase.from('challenges').select('id, name, challenge_type, phases, status').eq('platform_id', row.id).eq('status', 'active').order('name') : Promise.resolve({ data: [], error: null }),
     activeView !== 'payouts' ? supabase.from('offers').select('id, challenge_id, title, description, discount_value, discount_type, promo_code, status').eq('platform_id', row.id).eq('status', true).order('priority') : Promise.resolve({ data: [], error: null }),
@@ -71,7 +76,11 @@ export default async function PropFirmDetailPage({ params, searchParams }: PageP
   }
   const countryMap = new Map((countriesResult.data ?? []).map((country) => [country.code, country.name]))
   const availability = availabilityResult.data ?? []
-  const restrictedCountries = availability.filter((item) => item.status === 'restricted')
+  const restrictedCountries = availability.filter(
+  (item) =>
+    item.status === 'restricted' &&
+    item.market == null
+)
   const challenges = challengesResult.data ?? []
   const challengeIds = challenges.map((challenge) => challenge.id)
   const visibleAt = new Date().toISOString()
