@@ -59,8 +59,8 @@ export async function getComparisonData(slugs: string[], countryCode = '', selec
   const marketFilter = ['cfd', 'futures', 'crypto', 'options'].includes(selectedMarket) ? selectedMarket : ''
   const availabilityQuery = countryCode
     ? db.from('platform_availability')
-        .select('platform_id, country_code, market, status, restriction_basis, source_url, verified_at, rule_summary')
-        .eq('country_code', countryCode)
+        .select('platform_id, country_code, market, status, restriction_basis, source_url, verified_at, rule_summary, restriction_list_complete')
+        .or(`country_code.eq.${countryCode},restriction_list_complete.eq.true`)
         .or(marketFilter ? `market.is.null,market.eq.${marketFilter}` : 'market.is.null,market.not.is.null')
     : Promise.resolve({ data: [], error: null })
   const [platformResult, marketResult, firstAvailabilityResult] = await Promise.all([
@@ -69,7 +69,7 @@ export async function getComparisonData(slugs: string[], countryCode = '', selec
     availabilityQuery,
   ])
   // Permite revisar la UI local antes de aplicar la migración remota; legacy solo tiene unknown.
-  const availabilityResult = firstAvailabilityResult.error && /market|restriction_basis|source_url|verified_at|rule_summary/i.test(firstAvailabilityResult.error.message)
+  const availabilityResult = firstAvailabilityResult.error && /market|restriction_basis|source_url|verified_at|rule_summary|restriction_list_complete/i.test(firstAvailabilityResult.error.message)
     ? await db.from('platform_availability').select('platform_id, country_code, status').eq('country_code', countryCode)
     : firstAvailabilityResult
   if (platformResult.error || marketResult.error || availabilityResult.error) throw new Error(platformResult.error?.message ?? marketResult.error?.message ?? availabilityResult.error?.message)
@@ -79,11 +79,12 @@ export async function getComparisonData(slugs: string[], countryCode = '', selec
   for (const row of availabilityResult.data ?? []) {
     const status = row.status as AvailabilityStatus
     if (!['available', 'restricted', 'unknown'].includes(status)) continue
-    const extended = row as typeof row & { market?: string | null; restriction_basis?: string; source_url?: string | null; verified_at?: string | null; rule_summary?: string | null }
+    const extended = row as typeof row & { market?: string | null; restriction_basis?: string; source_url?: string | null; verified_at?: string | null; rule_summary?: string | null; restriction_list_complete?: boolean }
     const item = availabilityMap.get(row.platform_id) ?? []
     item.push({ platformId: row.platform_id, countryCode: row.country_code, market: extended.market ?? null,
       status, restrictionBasis: (extended.restriction_basis ?? 'unspecified') as RestrictionBasis,
-      sourceUrl: extended.source_url ?? null, verifiedAt: extended.verified_at ?? null, ruleSummary: extended.rule_summary ?? null })
+      sourceUrl: extended.source_url ?? null, verifiedAt: extended.verified_at ?? null, ruleSummary: extended.rule_summary ?? null,
+      restrictionListComplete: extended.restriction_list_complete ?? false })
     availabilityMap.set(row.platform_id, item)
   }
   const platforms = platformResult.data ?? []

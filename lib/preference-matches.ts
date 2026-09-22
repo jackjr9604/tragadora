@@ -52,8 +52,8 @@ export function findMatchesForPreferences(firms: MatchFirm[], preferences: Match
     const countryResolution = resolveAvailability(firm.availabilityRules, firm.id, preferences.country, market)
     const countryRestricted = Boolean(preferences.country && countryResolution.status === 'restricted')
     if (preferences.country) {
-      if (countryResolution.status === 'available') reasons.push(`Disponibilidad de residencia registrada para ${preferences.country.toUpperCase()}.`)
-      else if (countryRestricted) cautions.push(`Restricción de residencia explícita para ${preferences.country.toUpperCase()}; no se recomienda esta firma para ese país.`)
+      if (countryResolution.status === 'available') reasons.push(`Disponible en ${preferences.country.toUpperCase()} según las restricciones publicadas por la firma.`)
+      else if (countryRestricted) cautions.push(`No disponible en ${preferences.country.toUpperCase()} según una restricción oficial aplicable.`)
       else if (countryResolution.warning) cautions.push(countryResolution.warning)
       else cautions.push(`Sin dato verificado de disponibilidad para ${preferences.country.toUpperCase()}.`)
     }

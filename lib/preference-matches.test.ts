@@ -121,7 +121,7 @@ test('restricción geográfica explícita excluye; disponible y sin dato mantien
   const unknown = firm('unknown')
   const result = findMatchesForPreferences([restricted, unknown, available], { ...preferences, country: 'CO' })
   assert.deepEqual(result.results.map((item) => item.firm.slug), ['available', 'unknown'])
-  assert.match(result.results[0].reasons.join(' '), /Disponibilidad de residencia registrada/)
+  assert.match(result.results[0].reasons.join(' '), /restricciones publicadas/)
   assert.match(result.results[1].cautions.join(' '), /Sin dato verificado/)
   assert.equal(result.results[1].requirementMisses, 0)
   assert.equal(result.results[1].requirementUnknowns, 0)
@@ -133,13 +133,12 @@ test('si todas las firmas están restringidas para el país, no aparece una coin
   assert.deepEqual(findMatchesForPreferences([only], { ...preferences, country: 'CO' }).results, [])
 })
 
-test('nacionalidad y ubicación no excluyen al indicar solo residencia', () => {
+test('toda restricción oficial aplicable excluye sin exponer el criterio interno', () => {
   for (const basis of ['nationality', 'physical_location', 'unspecified'] as const) {
     const candidate = firm(basis)
     candidate.availabilityRules.push({ platformId: basis, countryCode: 'CO', market: null, status: 'restricted', restrictionBasis: basis })
     const result = findMatchesForPreferences([candidate], { ...preferences, country: 'CO' })
-    assert.equal(result.results.length, 1)
-    assert.equal(result.excludedByCountryCount, 0)
-    assert.match(result.results[0].cautions.join(' '), /regla|ubicación|nacionalidad/)
+    assert.equal(result.results.length, 0)
+    assert.equal(result.excludedByCountryCount, 1)
   }
 })
