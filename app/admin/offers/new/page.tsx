@@ -3,6 +3,7 @@
 import { FormEvent, Suspense, useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { OfferPresentationFields, type OfferPresentation } from '@/components/admin/OfferPresentationFields'
 
 type Platform = {
   id: string
@@ -37,6 +38,13 @@ function NewOfferForm() {
     useState('percentage')
 
   const [promoCode, setPromoCode] = useState('')
+  const [presentation, setPresentation] = useState<OfferPresentation>({
+    includesFreeAccount: false,
+    freeAccountLabel: '',
+    isFeatured: false,
+    hotBadge: '',
+    shortHighlight: '',
+  })
 
   const [countryCode, setCountryCode] = useState('')
   const [language, setLanguage] = useState('es')
@@ -98,6 +106,11 @@ function NewOfferForm() {
         discount_value: Number(discountValue),
         discount_type: discountType,
         promo_code: promoCode || null,
+        includes_free_account: presentation.includesFreeAccount,
+        free_account_label: presentation.includesFreeAccount ? presentation.freeAccountLabel.trim() || null : null,
+        is_featured: presentation.isFeatured,
+        hot_badge: presentation.hotBadge.trim() || null,
+        short_highlight: presentation.shortHighlight.trim() || null,
         country_code: countryCode
           ? countryCode.toUpperCase()
           : null,
@@ -239,6 +252,7 @@ function NewOfferForm() {
 
               <input
                 type="number"
+                min="0"
                 step="0.01"
                 value={discountValue}
                 onChange={(e) =>
@@ -289,6 +303,8 @@ function NewOfferForm() {
               className="w-full rounded-lg border p-3 uppercase"
             />
           </div>
+
+          <OfferPresentationFields value={presentation} onChange={setPresentation} />
 
           {/* PAIS + IDIOMA */}
 

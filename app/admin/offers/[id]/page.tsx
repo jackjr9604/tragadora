@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useParams, useRouter } from 'next/navigation'
+import { OfferPresentationFields, type OfferPresentation } from '@/components/admin/OfferPresentationFields'
 
 type Platform = {
   id: string
@@ -39,6 +40,13 @@ export default function EditOfferPage() {
   const [discountValue, setDiscountValue] = useState('')
   const [discountType, setDiscountType] = useState('percentage')
   const [promoCode, setPromoCode] = useState('')
+  const [presentation, setPresentation] = useState<OfferPresentation>({
+    includesFreeAccount: false,
+    freeAccountLabel: '',
+    isFeatured: false,
+    hotBadge: '',
+    shortHighlight: '',
+  })
   const [countryCode, setCountryCode] = useState('')
   const [language, setLanguage] = useState('es')
   const [startsAt, setStartsAt] = useState('')
@@ -100,6 +108,13 @@ export default function EditOfferPage() {
         offer.discount_type ?? 'percentage'
       )
       setPromoCode(offer.promo_code ?? '')
+      setPresentation({
+        includesFreeAccount: offer.includes_free_account ?? false,
+        freeAccountLabel: offer.free_account_label ?? '',
+        isFeatured: offer.is_featured ?? false,
+        hotBadge: offer.hot_badge ?? '',
+        shortHighlight: offer.short_highlight ?? '',
+      })
       setCountryCode(offer.country_code ?? '')
       setLanguage(offer.language ?? 'es')
 
@@ -164,6 +179,11 @@ export default function EditOfferPage() {
         discount_type: discountType,
 
         promo_code: promoCode || null,
+        includes_free_account: presentation.includesFreeAccount,
+        free_account_label: presentation.includesFreeAccount ? presentation.freeAccountLabel.trim() || null : null,
+        is_featured: presentation.isFeatured,
+        hot_badge: presentation.hotBadge.trim() || null,
+        short_highlight: presentation.shortHighlight.trim() || null,
 
         country_code: countryCode
           ? countryCode.toUpperCase()
@@ -356,6 +376,7 @@ export default function EditOfferPage() {
 
               <input
                 type="number"
+                min="0"
                 step="0.01"
                 value={discountValue}
                 onChange={(e) =>
@@ -402,6 +423,8 @@ export default function EditOfferPage() {
               className="w-full rounded-lg border p-3 uppercase"
             />
           </div>
+
+          <OfferPresentationFields value={presentation} onChange={setPresentation} />
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
