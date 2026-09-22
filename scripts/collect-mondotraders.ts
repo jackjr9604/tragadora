@@ -1,6 +1,7 @@
 import { loadEnvConfig } from '@next/env'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { chromium, type Locator, type Page } from 'playwright'
+import { assertMondoHeaders, mondoRunIsFatal, SourceRowInconsistencyError, validateMondoMetric } from './mondo-validation'
 
 loadEnvConfig(process.cwd())
 
@@ -50,7 +51,7 @@ async function main() {
   const browser = await chromium.launch(isCI ? { headless: true } : { headless, channel: 'chrome' })
   const context = await browser.newContext({ locale: 'en-US' })
   const page = await context.newPage()
-  const summary = { startedAt, finishedAt: '', periodsChecked: 0, periodsSucceeded: 0, periodFailures: 0, rowsParsed: 0, mappedRowsFound: 0, notListed: 0, sourceRowsWithoutMapping: 0, missingRequiredMetrics: 0, validationFailures: 0, blocked: 0, snapshotsPrepared: 0, snapshotsWouldInsert: 0, writes: 0, unchanged: 0 }
+  const summary = { startedAt, finishedAt: '', periodsChecked: 0, periodsSucceeded: 0, periodFailures: 0, rowsParsed: 0, mappedRowsFound: 0, notListed: 0, sourceRowsWithoutMapping: 0, missingRequiredMetrics: 0, validationFailures: 0, sourceValidationWarnings: 0, blocked: 0, snapshotsPrepared: 0, snapshotsWouldInsert: 0, writes: 0, unchanged: 0 }
   const catalog = new Map<string, CatalogFirm>()
   const diagnostics: RowDiagnostic[] = []
 
@@ -82,6 +83,7 @@ async function main() {
         }
         const table = page.getByRole('table')
         await table.waitFor({ state: 'visible', timeout: 15_000 })
+        await assertTableHeaders(table)
         if (catalogMode) await selectMarket(page, 'All')
         const rows = Math.max(0, (await table.getByRole('row').count()) - 1)
         summary.rowsParsed += rows
@@ -111,16 +113,38 @@ async function main() {
               diagnostics.push(diagnostic)
               printMissingRequiredMetrics(mapping.external_name, period.key, diagnostic.missing_metrics)
             } else if (diagnostic.failed_rules.length) {
-              summary.validationFailures++
               diagnostics.push(diagnostic)
-              console.log(`${mapping.external_name}: ROW_VALIDATION_FAILED · ${diagnostic.failed_rules.join('; ')}`)
+              if (diagnostic.failed_rules.every((rule) => rule.startsWith('abs(average - amount/count)'))) {
+                summary.sourceValidationWarnings++
+                const amount = diagnostic.parsed.amount!
+                const count = diagnostic.parsed.count!
+                console.warn(`${mapping.external_name}: SOURCE_ROW_INCONSISTENCY · period=${period.key} · average=${diagnostic.parsed.average} · amount/count=${(amount / count).toFixed(2)} · snapshot=SKIPPED`)
+              } else {
+                summary.validationFailures++
+                console.log(`${mapping.external_name}: ROW_VALIDATION_FAILED · ${diagnostic.failed_rules.join('; ')}`)
+              }
             } else {
               summary.mappedRowsFound++
             }
             continue
           }
+          let metric: Metric
           try {
-            const metric = await parseMondoRow(row)
+            metric = await parseMondoRow(row)
+          } catch (error) {
+            if (error instanceof MissingRequiredMetricsError) {
+              summary.missingRequiredMetrics++
+              printMissingRequiredMetrics(mapping.external_name, period.key, error.missingMetrics)
+            } else if (error instanceof SourceRowInconsistencyError) {
+              summary.sourceValidationWarnings++
+              console.warn(`${mapping.external_name}: SOURCE_ROW_INCONSISTENCY · period=${period.key} · average=${error.average} · amount/count=${error.calculatedAverage.toFixed(2)} · snapshot=SKIPPED`)
+            } else {
+              summary.validationFailures++
+              console.log(`${mapping.external_name}: ROW_VALIDATION_FAILED · ${errorMessage(error)}`)
+            }
+            continue
+          }
+          {
             summary.mappedRowsFound++
             summary.snapshotsPrepared++
             printMetric(mapping.external_name, metric)
@@ -134,14 +158,6 @@ async function main() {
             await insertSnapshot(supabase, mapping, period.key, metric)
             summary.writes++
             console.log('  status=INSERTED')
-          } catch (error) {
-            if (error instanceof MissingRequiredMetricsError) {
-              summary.missingRequiredMetrics++
-              printMissingRequiredMetrics(mapping.external_name, period.key, error.missingMetrics)
-            } else {
-              summary.validationFailures++
-              console.log(`${mapping.external_name}: ROW_VALIDATION_FAILED · ${errorMessage(error)}`)
-            }
           }
         }
       } catch (error) {
@@ -164,7 +180,14 @@ async function main() {
     console.log('\nROW VALIDATION FAILURES')
     console.log(JSON.stringify(diagnostics, null, 2))
   }
-  if (summary.periodFailures || summary.blocked || (!diagnoseMode && summary.validationFailures) || (!catalogMode && !diagnoseMode && summary.snapshotsPrepared === 0)) process.exitCode = 1
+  if (!catalogMode && !diagnoseMode && mondoRunIsFatal(summary)) process.exitCode = 1
+  if (summary.periodFailures || summary.blocked || (!diagnoseMode && summary.validationFailures)) process.exitCode = 1
+}
+
+async function assertTableHeaders(table: Locator) {
+  const firstRow = table.getByRole('row').first()
+  const headers = await firstRow.getByRole('columnheader').allTextContents()
+  assertMondoHeaders(headers)
 }
 
 async function waitForSelectedPeriod(page: Page, period: Period) {
@@ -290,9 +313,7 @@ async function parseMondoRow(row: Locator): Promise<Metric> {
   if (amount === null || payoutCount === null || largestPayout === null || averagePayout === null) {
     throw new MissingRequiredMetricsError(missingMetrics)
   }
-  if (amount <= 0 || payoutCount <= 0 || largestPayout < 0 || averagePayout <= 0) throw new Error('métricas fuera de rango')
-  const calculatedAverage = amount / payoutCount
-  if (Math.abs(averagePayout - calculatedAverage) > Math.max(1, calculatedAverage * 0.005)) throw new Error(`promedio ${averagePayout} vs ${calculatedAverage.toFixed(2)}`)
+  validateMondoMetric({ amount, payoutCount, largestPayout, averagePayout })
   return { amount, payoutCount, largestPayout, averagePayout, medianTimeMinutes, currency: 'USD' }
 }
 
