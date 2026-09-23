@@ -74,7 +74,7 @@ export default function EditOfferPage() {
         supabase
           .from('platforms')
           .select('id, name')
-          .eq('type', 'prop_firm')
+          .in('type', ['prop_firm', 'broker'])
           .order('name'),
 
         supabase
@@ -259,7 +259,7 @@ export default function EditOfferPage() {
         >
           <div>
             <label className="mb-2 block text-sm font-medium">
-              Prop Firm
+              Plataforma
             </label>
 
             <select
@@ -271,7 +271,7 @@ export default function EditOfferPage() {
               required
             >
               <option value="">
-                Selecciona una Prop Firm
+                Selecciona una plataforma
               </option>
 
               {platforms.map((platform) => (

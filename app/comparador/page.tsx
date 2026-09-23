@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import { unstable_cache } from 'next/cache'
 import { PublicPageShell } from '@/components/public/PublicPageShell'
 import { resolvePublicLanguage } from '@/lib/language'
@@ -6,6 +7,7 @@ import { getComparisonCountries, getComparisonData, getComparisonFilterOptions, 
 import { findMatchesForPreferences } from '@/lib/preference-matches'
 import type { Priority } from '@/lib/comparison-engine'
 import { Comparator } from './Comparator'
+import { GlobalOffersStrip } from '@/components/public/offers/GlobalOffersStrip'
 
 export const metadata: Metadata = {
   title: 'Comparador de Prop Firms | Tradagora',
@@ -45,7 +47,7 @@ export default async function ComparatorPage({ searchParams }: { searchParams: P
     market: single(query.market) ?? '', size: nonnegative(single(query.size)), budget: nonnegative(single(query.budget)),
     platform: single(query.platform) ?? '', priorities, styles,
   }) : { results: [], hasExactRequirements: false, eligibleFirmCount: 0, excludedByCountryCount: 0 }
-  return <PublicPageShell language={language}><Comparator key={`${personal}:${showMatches}:${single(query.market)}:${single(query.size)}:${single(query.budget)}:${single(query.platform)}:${country}:${priorities.join(',')}:${styles.join(',')}`} {...data} countries={countries} initial={{
+  return <PublicPageShell language={language}><Suspense fallback={null}><GlobalOffersStrip language={language} /></Suspense><Comparator key={`${personal}:${showMatches}:${single(query.market)}:${single(query.size)}:${single(query.budget)}:${single(query.platform)}:${country}:${priorities.join(',')}:${styles.join(',')}`} {...data} countries={countries} initial={{
     plans: (single(query.plans) ?? '').split(','), size: single(query.size) ?? '', priorities, styles,
     market: single(query.market) ?? '', budget: single(query.budget) ?? '', platform: single(query.platform) ?? '', country, mode: personal ? 'personal' : 'firms', showMatches, differences: single(query.differences) === '1',
   }} filterOptions={filterOptions} matching={matching} /></PublicPageShell>

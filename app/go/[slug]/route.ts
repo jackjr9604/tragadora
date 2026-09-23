@@ -23,7 +23,7 @@ export async function GET(
 
   const { data: platform, error: platformError } = await supabase
     .from('platforms')
-    .select('id, name')
+    .select('id, name, type')
     .eq('slug', slug)
     .single()
 
@@ -86,7 +86,7 @@ export async function GET(
   const affiliateLink = exactLink ?? eligibleLinks[0]
 
   if (!affiliateLink) {
-    const profileUrl = new URL(`/prop-firms/${slug}`, request.url)
+    const profileUrl = new URL(platform.type === 'broker' ? `/brokers/${slug}` : `/prop-firms/${slug}`, request.url)
     if (language) profileUrl.searchParams.set('lang', language)
     return NextResponse.redirect(profileUrl)
   }

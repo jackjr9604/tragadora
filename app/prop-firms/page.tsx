@@ -1,8 +1,10 @@
+import { Suspense } from 'react'
 import { getPageContent, pageValue } from '@/lib/site-content'
 import { resolvePublicLanguage } from '@/lib/language'
 import { getPropFirmDirectory } from '@/lib/prop-firm-directory'
 import { PropFirmDirectory } from '@/components/public/PropFirmDirectory'
 import { PublicPageShell } from '@/components/public/PublicPageShell'
+import { GlobalOffersStrip } from '@/components/public/offers/GlobalOffersStrip'
 
 export const revalidate = 60
 
@@ -21,6 +23,7 @@ export default async function PropFirmsPage({ searchParams }: { searchParams: Pr
         <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400 sm:text-base">{pageValue(content, 'hero', 'subtitle', 'Busca, filtra y compara firmas antes de elegir.')}</p>
       </div>
     </section>
+    <Suspense fallback={null}><GlobalOffersStrip language={language} /></Suspense>
     <section id="directorio" className="mx-auto w-full max-w-[1440px] px-4 py-7 sm:px-6 lg:px-8 lg:py-9">
       <PropFirmDirectory firms={firms} language={language} />
     </section>

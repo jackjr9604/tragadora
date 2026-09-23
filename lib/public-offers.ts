@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { unstable_cache } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export type PublicOffer = {
@@ -34,6 +35,20 @@ const baseFields = `
   status, priority, created_at
 `
 const presentationFields = ', includes_free_account, free_account_label, is_featured, hot_badge, short_highlight'
+const presentationFieldNames = [
+  'includes_free_account',
+  'free_account_label',
+  'is_featured',
+  'hot_badge',
+  'short_highlight',
+] as const
+
+type QueryFailure = {
+  code?: string
+  message?: string
+  details?: string
+  hint?: string
+}
 
 type OfferRow = {
   id: string
@@ -60,22 +75,58 @@ function first<T>(value: T | T[] | null): T | null {
   return Array.isArray(value) ? value[0] ?? null : value
 }
 
-export async function getPublicOffers(language: string, countryCode: string | null): Promise<PublicOffer[]> {
+function failureMessage(error: unknown) {
+  if (error instanceof Error) return error.message
+  if (typeof error === 'object' && error !== null && 'message' in error) {
+    return String(error.message)
+  }
+  return String(error)
+}
+
+function isPresentationSchemaMismatch(error: QueryFailure) {
+  const description = [error.message, error.details, error.hint].filter(Boolean).join(' ')
+  const isMissingDatabaseField = error.code === '42703' || error.code === 'PGRST204'
+  return isMissingDatabaseField && presentationFieldNames.some((field) => description.includes(field))
+}
+
+function publicOffersQueryError(phase: string, error: unknown) {
+  const message = failureMessage(error)
+  const kind = /fetch failed|network|timeout|econn|enotfound|socket/i.test(message)
+    ? 'NETWORK_OR_INFRA'
+    : 'QUERY'
+  return new Error(`PUBLIC_OFFERS_QUERY_FAILED phase=${phase} kind=${kind} message=${message}`)
+}
+
+async function queryPublicOffers(language: string, countryCode: string | null): Promise<PublicOffer[]> {
   const db = createAdminClient()
   const now = new Date()
-  const extendedResult = await db.from('offers').select(`${baseFields}${presentationFields}`).eq('status', true)
-    .order('priority', { ascending: true }).order('discount_value', { ascending: false }).order('created_at', { ascending: false }).limit(100)
+  let extendedResult
+  try {
+    extendedResult = await db.from('offers').select(`${baseFields}${presentationFields}`).eq('status', true)
+      .order('priority', { ascending: true }).order('is_featured', { ascending: false })
+      .order('expires_at', { ascending: true, nullsFirst: false }).order('discount_value', { ascending: false })
+      .order('created_at', { ascending: false }).limit(100)
+  } catch (error) {
+    throw publicOffersQueryError('new_schema', error)
+  }
 
-  const presentationUnavailable = extendedResult.error && /includes_free_account|free_account_label|is_featured|hot_badge|short_highlight|schema cache/i.test(extendedResult.error.message)
+  const presentationUnavailable = extendedResult.error && isPresentationSchemaMismatch(extendedResult.error)
   let rowsData: OfferRow[] | null = extendedResult.data as OfferRow[] | null
   let queryError = extendedResult.error
   if (presentationUnavailable) {
-    const legacyResult = await db.from('offers').select(baseFields).eq('status', true)
-      .order('priority', { ascending: true }).order('discount_value', { ascending: false }).order('created_at', { ascending: false }).limit(100)
+    let legacyResult
+    try {
+      legacyResult = await db.from('offers').select(baseFields).eq('status', true)
+        .order('priority', { ascending: true }).order('discount_value', { ascending: false }).order('created_at', { ascending: false }).limit(100)
+    } catch (error) {
+      throw publicOffersQueryError('legacy', error)
+    }
     rowsData = legacyResult.data as OfferRow[] | null
     queryError = legacyResult.error
   }
-  if (queryError) throw new Error(queryError.message)
+  if (queryError) {
+    throw publicOffersQueryError(presentationUnavailable ? 'legacy' : 'new_schema', queryError)
+  }
 
   const rows = (rowsData ?? []).filter((offer) => {
     const started = !offer.starts_at || new Date(offer.starts_at) <= now
@@ -89,13 +140,21 @@ export async function getPublicOffers(language: string, countryCode: string | nu
   const challengeIds = [...new Set(rows.flatMap((row) => row.challenge_id ? [row.challenge_id] : []))]
   if (!platformIds.length) return []
 
-  const [platforms, markets, challenges] = await Promise.all([
-    db.from('platforms').select('id, name, slug, logo_url, media:logo_media_id(file_url, alt_text)').in('id', platformIds).eq('status', 'active'),
-    db.from('platform_markets').select('platform_id, market').in('platform_id', platformIds),
-    challengeIds.length ? db.from('challenges').select('id, name').in('id', challengeIds) : Promise.resolve({ data: [], error: null }),
-  ])
-  const error = platforms.error ?? markets.error ?? challenges.error
-  if (error) throw new Error(error.message)
+  let platforms
+  let markets
+  let challenges
+  try {
+    [platforms, markets, challenges] = await Promise.all([
+      db.from('platforms').select('id, name, slug, logo_url, media:logo_media_id(file_url, alt_text)').in('id', platformIds).eq('status', 'active'),
+      db.from('platform_markets').select('platform_id, market').in('platform_id', platformIds),
+      challengeIds.length ? db.from('challenges').select('id, name').in('id', challengeIds) : Promise.resolve({ data: [], error: null }),
+    ])
+  } catch (error) {
+    throw publicOffersQueryError('related_data', error)
+  }
+  if (platforms.error) throw publicOffersQueryError('platforms', platforms.error)
+  if (markets.error) throw publicOffersQueryError('platform_markets', markets.error)
+  if (challenges.error) throw publicOffersQueryError('challenges', challenges.error)
   const marketMap = new Map<string, string[]>()
   for (const row of markets.data ?? []) marketMap.set(row.platform_id, [...(marketMap.get(row.platform_id) ?? []), row.market])
   const challengeMap = new Map((challenges.data ?? []).map((row) => [row.id, row.name]))
@@ -131,4 +190,18 @@ export async function getPublicOffers(language: string, countryCode: string | nu
       platform,
     }]
   })
+}
+
+const getCachedPublicOffers = unstable_cache(
+  queryPublicOffers,
+  ['active-public-offers-v2'],
+  { revalidate: 60 }
+)
+
+export function getPublicOffers(language: string, countryCode: string | null) {
+  return getCachedPublicOffers(language, countryCode?.trim().toUpperCase() || null)
+}
+
+export async function getFeaturedPublicOffers(language: string, countryCode: string | null) {
+  return (await getPublicOffers(language, countryCode)).filter((offer) => offer.isFeatured)
 }

@@ -43,7 +43,7 @@ function NewAffiliateLinkForm() {
       const { data } = await supabase
         .from('platforms')
         .select('id, name')
-        .eq('type', 'prop_firm')
+        .in('type', ['prop_firm', 'broker'])
         .order('name')
 
       setPlatforms(data ?? [])
@@ -121,7 +121,7 @@ function NewAffiliateLinkForm() {
         >
           <div>
             <label className="mb-2 block text-sm font-medium">
-              Prop Firm
+              Plataforma
             </label>
 
             <select
@@ -134,7 +134,7 @@ function NewAffiliateLinkForm() {
               required
             >
               <option value="">
-                Selecciona una Prop Firm
+                Selecciona una plataforma
               </option>
 
               {platforms.map((platform) => (

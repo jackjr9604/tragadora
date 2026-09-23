@@ -60,7 +60,7 @@ function NewOfferForm() {
       const { data } = await supabase
         .from('platforms')
         .select('id, name')
-        .eq('type', 'prop_firm')
+        .in('type', ['prop_firm', 'broker'])
         .order('name')
 
       setPlatforms(data ?? [])
@@ -142,7 +142,7 @@ function NewOfferForm() {
         </h1>
 
         <p className="mb-8 text-slate-500">
-          Crea una promoción para una Prop Firm.
+          Crea una promoción para una Prop Firm o broker.
         </p>
 
         <form
@@ -153,7 +153,7 @@ function NewOfferForm() {
 
           <div>
             <label className="mb-2 block text-sm font-medium">
-              Prop Firm
+              Plataforma
             </label>
 
             <select
@@ -166,7 +166,7 @@ function NewOfferForm() {
               required
             >
               <option value="">
-                Selecciona una Prop Firm
+                Selecciona una plataforma
               </option>
 
               {platforms.map((platform) => (

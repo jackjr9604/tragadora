@@ -1,10 +1,12 @@
 import { Suspense } from 'react'
+import { headers } from 'next/headers'
 import { HomeHeroFallback, HomePublic } from '@/components/public/HomePublic'
 import { PublicPageShell } from '@/components/public/PublicPageShell'
 import { getHomeData } from '@/lib/home-data'
 import { getPageContent } from '@/lib/site-content'
 import { resolvePublicLanguage } from '@/lib/language'
 import type { RecommendationCriteria } from '@/lib/prop-firm-recommender'
+import { getPublicOffers } from '@/lib/public-offers'
 
 export const revalidate = 60
 
@@ -32,6 +34,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
 }
 
 async function HomeData({ content, language, initialCriteria }: { content: Awaited<ReturnType<typeof getPageContent>>; language: Awaited<ReturnType<typeof resolvePublicLanguage>>; initialCriteria: Partial<RecommendationCriteria> }) {
-  const data = await getHomeData(language)
-  return <HomePublic content={content} language={language} latestPayouts={data.latestPayouts} featuredPlatforms={data.featuredPlatforms} offers={data.offers} recommendationFirms={data.recommendationFirms} countries={data.countries} initialCriteria={initialCriteria} rankings={data.rankings} stats={data.stats} />
+  const countryCode = (await headers()).get('x-vercel-ip-country')
+  const [data, publicOffers] = await Promise.all([getHomeData(language), getPublicOffers(language, countryCode)])
+  return <HomePublic content={content} language={language} latestPayouts={data.latestPayouts} featuredPlatforms={data.featuredPlatforms} offers={data.offers} publicOffers={publicOffers} recommendationFirms={data.recommendationFirms} countries={data.countries} initialCriteria={initialCriteria} rankings={data.rankings} stats={data.stats} />
 }

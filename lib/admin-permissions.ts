@@ -9,6 +9,7 @@ export const ADMIN_MODULES = [
   { key: 'affiliate_links', label: 'Afiliados', href: '/admin/affiliate-links', actions: ['view', 'create', 'update', 'delete'] },
   { key: 'content', label: 'Contenido', href: '/admin/content', actions: ['view', 'create', 'update', 'delete'] },
   { key: 'media', label: 'Multimedia', href: '/admin/media', actions: ['view', 'create', 'update', 'delete'] },
+  { key: 'tools', label: 'Herramientas', href: '/admin/tools', actions: ['view', 'create', 'update', 'delete'] },
   { key: 'users', label: 'Usuarios', href: '/admin/users', actions: ['view', 'manage_roles', 'manage_permissions'] },
 ] as const
 
@@ -25,6 +26,9 @@ export function permissionForAdminPath(pathname: string): PermissionKey {
   const path = pathname.replace(/\/$/, '') || '/admin'
   if (path === '/admin') return 'dashboard.view'
   if (path.startsWith('/admin/users')) return 'users.view'
+  if (path === '/admin/brokers/new') return 'platforms.create'
+  if (/^\/admin\/brokers\/[^/]+\/edit$/.test(path)) return 'platforms.update'
+  if (path.startsWith('/admin/brokers')) return 'platforms.view'
   if (path.startsWith('/admin/platforms/research')) return 'platform_research.view'
   if (path === '/admin/platforms/new') return 'platforms.create'
   if (/^\/admin\/platforms\/[^/]+\/edit$/.test(path)) return 'platforms.update'
@@ -41,5 +45,8 @@ export function permissionForAdminPath(pathname: string): PermissionKey {
   if (path.startsWith('/admin/affiliate-links')) return 'affiliate_links.view'
   if (path.startsWith('/admin/content')) return 'content.view'
   if (path.startsWith('/admin/media')) return 'media.view'
+  if (path === '/admin/tools/new') return 'tools.create'
+  if (/^\/admin\/tools\/[^/]+\/edit$/.test(path)) return 'tools.update'
+  if (path.startsWith('/admin/tools')) return 'tools.view'
   return 'dashboard.view'
 }
