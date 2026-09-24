@@ -74,7 +74,7 @@ export default function EditOfferPage() {
         supabase
           .from('platforms')
           .select('id, name')
-          .in('type', ['prop_firm', 'broker'])
+          .in('type', ['prop_firm', 'broker', 'exchange'])
           .order('name'),
 
         supabase

@@ -86,7 +86,8 @@ export async function GET(
   const affiliateLink = exactLink ?? eligibleLinks[0]
 
   if (!affiliateLink) {
-    const profileUrl = new URL(platform.type === 'broker' ? `/brokers/${slug}` : `/prop-firms/${slug}`, request.url)
+    const profilePath = platform.type === 'broker' ? `/brokers/${slug}` : platform.type === 'exchange' ? `/exchanges/${slug}` : `/prop-firms/${slug}`
+    const profileUrl = new URL(profilePath, request.url)
     if (language) profileUrl.searchParams.set('lang', language)
     return NextResponse.redirect(profileUrl)
   }

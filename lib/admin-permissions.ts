@@ -10,6 +10,9 @@ export const ADMIN_MODULES = [
   { key: 'content', label: 'Contenido', href: '/admin/content', actions: ['view', 'create', 'update', 'delete'] },
   { key: 'media', label: 'Multimedia', href: '/admin/media', actions: ['view', 'create', 'update', 'delete'] },
   { key: 'tools', label: 'Herramientas', href: '/admin/tools', actions: ['view', 'create', 'update', 'delete'] },
+  { key: 'communities', label: 'Comunidades', href: '/admin/communities', actions: ['view', 'create', 'update', 'delete'] },
+  { key: 'blog', label: 'Blog', href: '/admin/blog', actions: ['view', 'create', 'update', 'delete'] },
+  { key: 'giveaways', label: 'Giveaways', href: '/admin/giveaways', actions: ['view', 'create', 'update', 'delete'] },
   { key: 'users', label: 'Usuarios', href: '/admin/users', actions: ['view', 'manage_roles', 'manage_permissions'] },
 ] as const
 
@@ -48,5 +51,17 @@ export function permissionForAdminPath(pathname: string): PermissionKey {
   if (path === '/admin/tools/new') return 'tools.create'
   if (/^\/admin\/tools\/[^/]+\/edit$/.test(path)) return 'tools.update'
   if (path.startsWith('/admin/tools')) return 'tools.view'
+  if (path === '/admin/communities/new') return 'communities.create'
+  if (/^\/admin\/communities\/[^/]+\/edit$/.test(path)) return 'communities.update'
+  if (path.startsWith('/admin/communities')) return 'communities.view'
+  if (path === '/admin/exchanges/new') return 'platforms.create'
+  if (/^\/admin\/exchanges\/[^/]+\/edit$/.test(path)) return 'platforms.update'
+  if (path.startsWith('/admin/exchanges')) return 'platforms.view'
+  if (path === '/admin/blog/new') return 'blog.create'
+  if (/^\/admin\/blog\/[^/]+\/edit$/.test(path)) return 'blog.update'
+  if (path.startsWith('/admin/blog')) return 'blog.view'
+  if (path === '/admin/giveaways/new') return 'giveaways.create'
+  if (/^\/admin\/giveaways\/[^/]+\/edit$/.test(path)) return 'giveaways.update'
+  if (path.startsWith('/admin/giveaways')) return 'giveaways.view'
   return 'dashboard.view'
 }

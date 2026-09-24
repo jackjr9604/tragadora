@@ -11,7 +11,7 @@ export default async function OffersPage({ searchParams }: { searchParams: Promi
   const params = await searchParams, q = params.q ?? '', filter = params.offers ?? '', sort = params.sort ?? 'name', page = positiveInt(params.page)
   const allOffers = await supabase.from('offers').select('platform_id, status'); if (allOffers.error) throw new Error(allOffers.error.message)
   const allIds = new Set((allOffers.data ?? []).map((row) => row.platform_id)), activeIds = new Set((allOffers.data ?? []).filter((row) => row.status).map((row) => row.platform_id))
-  let firmsQuery = supabase.from('platforms').select('id, name, logo_url, media:logo_media_id(file_url, alt_text)', { count: 'exact' }).in('type', ['prop_firm', 'broker'])
+  let firmsQuery = supabase.from('platforms').select('id, name, logo_url, media:logo_media_id(file_url, alt_text)', { count: 'exact' }).in('type', ['prop_firm', 'broker', 'exchange'])
   if (q) firmsQuery = firmsQuery.ilike('name', `%${q}%`); const ids = filter === 'active' ? activeIds : filter === 'with' ? allIds : null
   if (ids) firmsQuery = ids.size ? firmsQuery.in('id', [...ids]) : firmsQuery.in('id', ['00000000-0000-0000-0000-000000000000']); if (filter === 'without' && allIds.size) firmsQuery = firmsQuery.not('id', 'in', `(${[...allIds].join(',')})`)
   firmsQuery = firmsQuery.order('name', { ascending: sort !== 'za' }); const result = await firmsQuery.range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1); if (result.error) throw new Error(result.error.message)

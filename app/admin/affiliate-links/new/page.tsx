@@ -43,7 +43,7 @@ function NewAffiliateLinkForm() {
       const { data } = await supabase
         .from('platforms')
         .select('id, name')
-        .in('type', ['prop_firm', 'broker'])
+        .in('type', ['prop_firm', 'broker', 'exchange'])
         .order('name')
 
       setPlatforms(data ?? [])

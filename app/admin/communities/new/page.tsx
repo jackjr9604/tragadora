@@ -1,0 +1,1 @@
+import{CommunityForm}from'@/components/admin/DiscoveryForms';export default function Page(){return <main className="min-h-screen bg-slate-100 p-4 sm:p-8"><div className="mx-auto max-w-4xl"><h1 className="mb-8 text-3xl font-bold">Nueva comunidad</h1><CommunityForm/></div></main>}

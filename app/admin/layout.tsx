@@ -8,7 +8,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (!access.userId) redirect('/login')
   const links = availableAdminLinks(access)
   const navigationLinks = links.flatMap((link) => link.href === '/admin/platforms'
-    ? [link, { label: 'Brokers', href: '/admin/brokers' }]
+    ? [link, { label: 'Brokers', href: '/admin/brokers' }, { label: 'Exchanges', href: '/admin/exchanges' }]
     : [link])
   if (!links.length) redirect('/')
 
@@ -20,4 +20,4 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 }
 
 function AdminBrand({ compact = false }: { compact?: boolean }) { return <div className={compact ? '' : 'mb-8'}><p className={`${compact ? 'text-lg' : 'text-2xl'} font-bold`}>Tradagora</p><p className="text-xs text-slate-500">Administración</p></div> }
-function AdminLinks({ links }: { links: Array<{ label: string; href: string }> }) { const navigationLinks = links.flatMap((link) => link.href === '/admin/platforms' ? [link, { label: 'Brokers', href: '/admin/brokers' }] : [link]); return <nav className="space-y-1" aria-label="Administración">{navigationLinks.map(({ label, href }) => <Link key={href} href={href} className="block rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-black">{label}</Link>)}</nav> }
+function AdminLinks({ links }: { links: Array<{ label: string; href: string }> }) { const navigationLinks = links.flatMap((link) => link.href === '/admin/platforms' ? [link, { label: 'Brokers', href: '/admin/brokers' }, { label: 'Exchanges', href: '/admin/exchanges' }] : [link]); return <nav className="space-y-1" aria-label="Administración">{navigationLinks.map(({ label, href }) => <Link key={href} href={href} className="block rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 hover:text-black">{label}</Link>)}</nav> }

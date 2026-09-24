@@ -1,20 +1,22 @@
 'use client'
 
 import Link from 'next/link'
-import { Menu, Search, X } from 'lucide-react'
+import { Menu, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { BrandMark } from './BrandMark'
 import { languageUrl, persistPublicLanguage, type PublicLanguage, type PublicLanguageOption } from '@/lib/public-language'
+import type { PublicSearchItem } from '@/lib/public-search'
+import { PublicGlobalSearch } from './PublicGlobalSearch'
 
 const paths = ['/payouts', '/prop-firms', '/comparador', '/ofertas', '/brokers', '/herramientas', '/comunidades', '/exchanges', '/blog', '/giveaway'] as const
 const navCopy = {
-  es: { links: ['Payouts', 'Prop Firms', 'Comparador', 'Ofertas', 'Brokers', 'Herramientas', 'Comunidades', 'Exchanges', 'Blog', 'Giveaway'], search: 'Buscar firma o bróker', methodology: 'Metodología', explore: 'Explorar firmas' },
-  en: { links: ['Payouts', 'Prop Firms', 'Compare', 'Offers', 'Brokers', 'Tools', 'Communities', 'Exchanges', 'Blog', 'Giveaway'], search: 'Search firm or broker', methodology: 'Methodology', explore: 'Explore firms' },
-  pt: { links: ['Payouts', 'Prop Firms', 'Comparador', 'Ofertas', 'Brokers', 'Ferramentas', 'Comunidades', 'Exchanges', 'Blog', 'Giveaway'], search: 'Buscar firma ou corretora', methodology: 'Metodologia', explore: 'Explorar firmas' },
+  es: { links: ['Payouts', 'Prop Firms', 'Comparador', 'Ofertas', 'Brokers', 'Herramientas', 'Comunidades', 'Exchanges', 'Blog', 'Giveaway'], methodology: 'Metodología', explore: 'Explorar firmas' },
+  en: { links: ['Payouts', 'Prop Firms', 'Compare', 'Offers', 'Brokers', 'Tools', 'Communities', 'Exchanges', 'Blog', 'Giveaway'], methodology: 'Methodology', explore: 'Explore firms' },
+  pt: { links: ['Payouts', 'Prop Firms', 'Comparador', 'Ofertas', 'Brokers', 'Ferramentas', 'Comunidades', 'Exchanges', 'Blog', 'Giveaway'], methodology: 'Metodologia', explore: 'Explorar firmas' },
 } as const
 
-export function PublicNavbar({ language = 'es', languages }: { language?: PublicLanguage; languages: PublicLanguageOption[] }) {
+export function PublicNavbar({ language = 'es', languages, searchItems }: { language?: PublicLanguage; languages: PublicLanguageOption[]; searchItems: PublicSearchItem[] }) {
   const [open, setOpen] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
@@ -46,15 +48,7 @@ export function PublicNavbar({ language = 'es', languages }: { language?: Public
         </nav>
 
         <div className="ml-auto hidden items-center gap-2 md:flex">
-          <label className="relative hidden xl:block">
-            <span className="sr-only">Buscar</span>
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500" />
-            <input
-              type="search"
-              placeholder={text.search}
-              className="tg-filter h-10 w-48 rounded-xl pl-9 pr-3 text-sm placeholder:text-slate-600"
-            />
-          </label>
+          <PublicGlobalSearch items={searchItems} language={activeLanguage} />
           <select aria-label="Idioma" value={activeLanguage} onChange={(event) => { const next = event.target.value as PublicLanguage; persistPublicLanguage(next); router.replace(languageUrl(window.location.href, next)) }} className="tg-filter h-10 rounded-xl px-3 text-sm font-semibold">
             {languages.map((item) => <option key={item.code} value={item.code}>{item.code.toUpperCase()}</option>)}
           </select>

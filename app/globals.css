@@ -142,6 +142,7 @@ html {
 
 /* Identidad pública Tradagora: profundidad navy y una única trama diagonal. */
 .tradagora-shell {
+  --tg-public-nav-height: 4.5rem;
   --tg-gold-1: #c89424;
   --tg-gold-2: #f0c454;
   --tg-gold-3: #ffdc7b;
@@ -230,6 +231,30 @@ html {
 .tg-empty {
   border: 1px dashed rgba(240, 196, 84, .34);
   background: radial-gradient(circle at 50% 0%, rgba(200,148,36,.09), transparent 55%), rgba(9, 21, 34, .72);
+}
+
+.tg-data-header {
+  position: sticky;
+  top: var(--tg-public-nav-height);
+  z-index: 40;
+  isolation: isolate;
+  border: 1px solid rgba(132, 158, 190, .14);
+  border-radius: .75rem;
+  background: rgba(7, 17, 30, .94);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .24), inset 0 -1px rgba(240, 196, 84, .08);
+  backdrop-filter: blur(14px);
+}
+
+.tg-data-viewport { overflow: visible; }
+
+.tg-data-grid > :not(.absolute) { min-width: 0; }
+.tg-data-grid > :not(.absolute) + :not(.absolute) {
+  border-left: 1px solid rgba(132, 158, 190, .1);
+  padding-left: 1rem;
+}
+
+@media (max-width: 1023px) {
+  .tg-data-header { position: static; }
 }
 
 /* Compatibility layer for existing public modules while they share one visual system. */
