@@ -73,44 +73,40 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-100">
-      <div className="w-full max-w-md rounded-xl bg-white p-8 shadow">
-        <h1 className="mb-2 text-2xl font-bold">
-          Tradagora
-        </h1>
-
-        <p className="mb-6 text-sm text-slate-500">
-          Panel de administración
-        </p>
+    <main className="admin-login flex min-h-screen items-center justify-center p-4">
+      <div className="admin-login-card">
+        <div className="mb-7 flex items-center gap-3 border-b border-slate-100 pb-6"><span className="admin-login-mark">T</span><div><p className="text-xl font-bold tracking-tight text-slate-950">Tradagora</p><p className="text-xs font-semibold uppercase tracking-[.16em] text-amber-700">Administración</p></div></div>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-950">Bienvenido</h1>
+        <p className="mt-2 mb-6 text-sm leading-6 text-slate-500">Ingresa con tu cuenta autorizada para administrar el contenido y los catálogos.</p>
 
         <form onSubmit={handleLogin} className="space-y-4">
-          <input
+          <label className="block"><span className="mb-2 block">Correo electrónico</span><input
             type="email"
-            placeholder="Correo electrónico"
+            autoComplete="email"
+            placeholder="nombre@dominio.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg border p-3"
             required
-          />
+          /></label>
 
-          <input
+          <label className="block"><span className="mb-2 block">Contraseña</span><input
             type="password"
-            placeholder="Contraseña"
+            autoComplete="current-password"
+            placeholder="Tu contraseña"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg border p-3"
             required
-          />
+          /></label>
 
           {error && (
-            <p className="text-sm text-red-600" role="alert">
+            <p className="rounded-lg border border-red-100 bg-red-50 p-3 text-sm text-red-700" role="alert">
               {error}
             </p>
           )}
 
           {recoveryMessage && (
             <p
-              className="text-sm text-green-700"
+              className="rounded-lg border border-emerald-100 bg-emerald-50 p-3 text-sm text-emerald-700"
               role="status"
             >
               {recoveryMessage}
@@ -120,7 +116,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-black p-3 text-white"
+            className="admin-login-primary"
           >
             {loading ? 'Ingresando...' : 'Iniciar sesión'}
           </button>
@@ -129,7 +125,7 @@ export default function LoginPage() {
             type="button"
             onClick={handlePasswordRecovery}
             disabled={loading || recoveryLoading}
-            className="w-full text-sm font-medium text-slate-600 underline disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-lg py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {recoveryLoading
               ? 'Enviando enlace...'
