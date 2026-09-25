@@ -13,6 +13,7 @@ export const ADMIN_MODULES = [
   { key: 'communities', label: 'Comunidades', href: '/admin/communities', actions: ['view', 'create', 'update', 'delete'] },
   { key: 'blog', label: 'Blog', href: '/admin/blog', actions: ['view', 'create', 'update', 'delete'] },
   { key: 'giveaways', label: 'Giveaways', href: '/admin/giveaways', actions: ['view', 'create', 'update', 'delete'] },
+  { key: 'docs', label: 'Documentación', href: '/admin/docs', actions: ['view', 'create', 'update', 'delete'] },
   { key: 'users', label: 'Usuarios', href: '/admin/users', actions: ['view', 'manage_roles', 'manage_permissions'] },
 ] as const
 
@@ -63,5 +64,8 @@ export function permissionForAdminPath(pathname: string): PermissionKey {
   if (path === '/admin/giveaways/new') return 'giveaways.create'
   if (/^\/admin\/giveaways\/[^/]+\/edit$/.test(path)) return 'giveaways.update'
   if (path.startsWith('/admin/giveaways')) return 'giveaways.view'
+  if (path === '/admin/docs/new') return 'docs.create'
+  if (/^\/admin\/docs\/[^/]+\/edit$/.test(path)) return 'docs.update'
+  if (path.startsWith('/admin/docs')) return 'docs.view'
   return 'dashboard.view'
 }

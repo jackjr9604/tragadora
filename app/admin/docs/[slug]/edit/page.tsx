@@ -1,0 +1,4 @@
+import { notFound } from 'next/navigation'
+import { DocumentationForm, type DocumentationValue } from '@/components/admin/DocumentationForm'
+import { createClient } from '@/lib/supabase/server'
+export default async function EditDocumentationArticle({params}:{params:Promise<{slug:string}>}){const{slug}=await params,db=await createClient(),result=await db.from('documentation_articles').select('*').eq('slug',slug).maybeSingle();if(result.error)throw new Error(result.error.message);if(!result.data)notFound();const row=result.data;const initial:DocumentationValue={id:row.id,slug:row.slug,title:row.title,excerpt:row.excerpt??'',section:row.section,subsection:row.subsection??'',audience:row.audience,body:row.body_markdown,sortOrder:String(row.sort_order),status:row.status};return <main className="min-h-screen p-4 sm:p-8"><div className="mx-auto max-w-6xl"><h1 className="mb-7 text-3xl font-bold">Editar documentación</h1><DocumentationForm initial={initial}/></div></main>}
