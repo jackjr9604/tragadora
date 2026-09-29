@@ -40,6 +40,22 @@ type FormState = {
   verification: string
   historyPage: string
   historyComplete: boolean
+  collectorEnabled: boolean
+  collectorCurrency: string
+  collectorSourceName: string
+  collectorWaitSelector: string
+  collectorAll: boolean
+  collector30d: boolean
+  amountSelector: string
+  payoutCountSelector: string
+  largestSelector: string
+  averageSelector: string
+  processingTimeSelector: string
+  recentRewardsSelector: string
+  allTriggerSelector: string
+  allActiveSelector: string
+  days30TriggerSelector: string
+  days30ActiveSelector: string
 }
 
 function configString(
@@ -63,6 +79,10 @@ export default function PayoutSourceForm({
   const supabaseRef = useRef(createClient())
   const isEditing = Boolean(source)
   const initialConfig = source?.config ?? {}
+  const initialCollector = objectValue(initialConfig.collector)
+  const initialPeriods = Array.isArray(initialCollector.periods) ? initialCollector.periods.map((period) => objectValue(period).periodKey) : []
+  const initialMetrics = objectValue(initialCollector.metrics)
+  const periodConfig = (key: string) => objectValue((Array.isArray(initialCollector.periods) ? initialCollector.periods : []).find((period) => objectValue(period).periodKey === key))
   const [form, setForm] = useState<FormState>({
     platformId: source?.platformId ?? platforms[0]?.id ?? '',
     name: source?.name ?? '',
@@ -84,6 +104,22 @@ export default function PayoutSourceForm({
     historyComplete: Boolean(
       initialConfig.history_complete
     ),
+    collectorEnabled: Boolean(initialCollector.enabled),
+    collectorCurrency: String(initialCollector.currency ?? 'USD'),
+    collectorSourceName: String(initialCollector.sourceName ?? source?.name ?? ''),
+    collectorWaitSelector: String(initialCollector.waitForSelector ?? ''),
+    collectorAll: initialPeriods.includes('all'),
+    collector30d: initialPeriods.includes('30d'),
+    amountSelector: String(objectValue(initialMetrics.amount).selector ?? ''),
+    payoutCountSelector: String(objectValue(initialMetrics.payoutCount).selector ?? ''),
+    largestSelector: String(objectValue(initialMetrics.largestPayout).selector ?? ''),
+    averageSelector: String(objectValue(initialMetrics.averagePayout).selector ?? ''),
+    processingTimeSelector: String(objectValue(initialCollector.averageProcessingTime).selector ?? ''),
+    recentRewardsSelector: String(objectValue(initialCollector.recentRewards).rowSelector ?? ''),
+    allTriggerSelector: String(periodConfig('all').triggerSelector ?? ''),
+    allActiveSelector: String(periodConfig('all').activeSelector ?? ''),
+    days30TriggerSelector: String(periodConfig('30d').triggerSelector ?? ''),
+    days30ActiveSelector: String(periodConfig('30d').activeSelector ?? ''),
   })
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -100,8 +136,34 @@ export default function PayoutSourceForm({
   }
 
   function buildConfig() {
+    if (form.sourceType === 'public_page') {
+      const periods = []
+      if (form.collectorAll) periods.push({ periodKey: 'all', label: 'All time', triggerSelector: form.allTriggerSelector.trim(), activeSelector: form.allActiveSelector.trim() })
+      if (form.collector30d) periods.push({ periodKey: '30d', label: 'Last 30 days', triggerSelector: form.days30TriggerSelector.trim(), activeSelector: form.days30ActiveSelector.trim() })
+      return {
+        ...initialConfig,
+        collector: {
+          enabled: form.collectorEnabled,
+          kind: 'official_page',
+          version: 1,
+          currency: form.collectorCurrency.trim().toUpperCase(),
+          sourceName: form.collectorSourceName.trim(),
+          waitForSelector: form.collectorWaitSelector.trim(),
+          periods,
+          metrics: {
+            amount: { selector: form.amountSelector.trim(), parser: 'currency', required: true },
+            ...(form.payoutCountSelector.trim() ? { payoutCount: { selector: form.payoutCountSelector.trim(), parser: 'integer', required: false } } : {}),
+            ...(form.largestSelector.trim() ? { largestPayout: { selector: form.largestSelector.trim(), parser: 'currency', required: false } } : {}),
+            ...(form.averageSelector.trim() ? { averagePayout: { selector: form.averageSelector.trim(), parser: 'currency', required: false } } : {}),
+          },
+          ...(form.processingTimeSelector.trim() ? { averageProcessingTime: { selector: form.processingTimeSelector.trim(), parser: 'hours', required: false } } : {}),
+          ...(form.recentRewardsSelector.trim() ? { recentRewards: { rowSelector: form.recentRewardsSelector.trim(), columns: { date: 0, market: 1, accountBalance: 2, reward: 3 }, limit: 20 } } : {}),
+        },
+      }
+    }
+
     if (form.sourceType !== 'blockchain') {
-      return {}
+      return initialConfig
     }
 
     const config: Record<
@@ -182,6 +244,23 @@ export default function PayoutSourceForm({
         setError(
           'Debes configurar un Chain ID válido antes de activar esta fuente.'
         )
+        return
+      }
+    }
+
+    if (form.sourceType === 'public_page' && form.collectorEnabled) {
+      const urlError = validatePublicCollectorUrl(form.sourceUrl)
+      if (urlError) { setError(urlError); return }
+      if (!form.collectorSourceName.trim() || !form.collectorWaitSelector.trim() || !form.amountSelector.trim()) {
+        setError('Completa el nombre de fuente, la condición de carga y el selector del total antes de activar el collector.')
+        return
+      }
+      if (!form.collectorAll && !form.collector30d) {
+        setError('Selecciona al menos un periodo para el collector.')
+        return
+      }
+      if ((form.collectorAll && (!form.allTriggerSelector.trim() || !form.allActiveSelector.trim())) || (form.collector30d && (!form.days30TriggerSelector.trim() || !form.days30ActiveSelector.trim()))) {
+        setError('Completa los selectores de activación y confirmación para cada periodo habilitado.')
         return
       }
     }
@@ -472,6 +551,18 @@ export default function PayoutSourceForm({
         </fieldset>
       )}
 
+      {form.sourceType === 'public_page' && (
+        <fieldset className="space-y-5 rounded-xl border bg-slate-50 p-6">
+          <div><legend className="text-lg font-semibold">Collector de página oficial</legend><p className="mt-1 text-sm text-slate-500">Configuración declarativa: solo selectores y parsers permitidos, nunca código ejecutable.</p></div>
+          <label className="flex items-center gap-3"><input type="checkbox" checked={form.collectorEnabled} onChange={(event) => updateField('collectorEnabled', event.target.checked)} /> Activar collector</label>
+          <div className="grid gap-5 sm:grid-cols-2"><TextField label="Nombre público de la fuente" value={form.collectorSourceName} onChange={(value) => updateField('collectorSourceName', value)} required={form.collectorEnabled} /><TextField label="Moneda" value={form.collectorCurrency} onChange={(value) => updateField('collectorCurrency', value)} required={form.collectorEnabled} /></div>
+          <TextField label="Selector de carga" value={form.collectorWaitSelector} onChange={(value) => updateField('collectorWaitSelector', value)} required={form.collectorEnabled} />
+          <div><p className="mb-2 text-sm font-medium">Periodos publicados</p><div className="flex flex-wrap gap-4"><label className="flex items-center gap-2"><input type="checkbox" checked={form.collectorAll} onChange={(event) => updateField('collectorAll', event.target.checked)} /> Todo el tiempo</label><label className="flex items-center gap-2"><input type="checkbox" checked={form.collector30d} onChange={(event) => updateField('collector30d', event.target.checked)} /> 30 días</label></div></div>
+          <div className="grid gap-5 sm:grid-cols-2"><TextField label="Selector · Total pagado" value={form.amountSelector} onChange={(value) => updateField('amountSelector', value)} required={form.collectorEnabled} /><TextField label="Selector · Cantidad de payouts" value={form.payoutCountSelector} onChange={(value) => updateField('payoutCountSelector', value)} /><TextField label="Selector · Mayor payout" value={form.largestSelector} onChange={(value) => updateField('largestSelector', value)} /><TextField label="Selector · Payout promedio" value={form.averageSelector} onChange={(value) => updateField('averageSelector', value)} /></div>
+          <details className="rounded-lg border bg-white p-4"><summary className="cursor-pointer font-medium">Configuración avanzada</summary><div className="mt-4 grid gap-5 sm:grid-cols-2"><TextField label="Todo el tiempo · botón" value={form.allTriggerSelector} onChange={(value) => updateField('allTriggerSelector', value)} /><TextField label="Todo el tiempo · estado activo" value={form.allActiveSelector} onChange={(value) => updateField('allActiveSelector', value)} /><TextField label="30 días · botón" value={form.days30TriggerSelector} onChange={(value) => updateField('days30TriggerSelector', value)} /><TextField label="30 días · estado activo" value={form.days30ActiveSelector} onChange={(value) => updateField('days30ActiveSelector', value)} /><TextField label="Selector · Tiempo promedio (horas)" value={form.processingTimeSelector} onChange={(value) => updateField('processingTimeSelector', value)} /><TextField label="Filas · Rewards recientes" value={form.recentRewardsSelector} onChange={(value) => updateField('recentRewardsSelector', value)} /></div><p className="mt-3 text-xs text-slate-500">Los rewards recientes se conservan en raw_data; nunca se insertan como payouts individuales.</p></details>
+        </fieldset>
+      )}
+
       {error && (
         <div
           className="rounded-lg bg-red-50 p-4 text-sm text-red-700"
@@ -519,6 +610,17 @@ export default function PayoutSourceForm({
       </div>
     </form>
   )
+}
+
+function objectValue(value: unknown): Record<string, unknown> { return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {} }
+function validatePublicCollectorUrl(value: string) {
+  try {
+    const url = new URL(value)
+    const host = url.hostname.toLowerCase()
+    if (url.protocol !== 'https:') return 'La URL del collector debe usar HTTPS.'
+    if (host === 'localhost' || host === '127.0.0.1' || host === '::1' || host.endsWith('.local')) return 'La URL del collector no puede apuntar a una red local.'
+    return ''
+  } catch { return 'Configura una URL pública válida para el collector.' }
 }
 
 function TextField({

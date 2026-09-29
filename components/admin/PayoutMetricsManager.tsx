@@ -50,4 +50,4 @@ function value(input: number | null) { return input === null ? '' : String(input
 function localDateTime(value = new Date().toISOString()) { const date = new Date(value); date.setMinutes(date.getMinutes() - date.getTimezoneOffset()); return date.toISOString().slice(0, 16) }
 function formatMoney(value: number) { return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 1 }).format(value) }
 function friendlyMigrationError(message: string) { return /platform_payout_metrics/i.test(message) ? 'Ejecuta primero la migración del Payout Tracker en Supabase.' : message }
-function editableMetrics(metrics: Metric[]) { return metrics.filter((metric) => !(metric.metric_type === 'payout_summary' && ['Prop Firm Match', 'MondoTraders'].includes(metric.source_name ?? ''))) }
+function editableMetrics(metrics: Metric[]) { return metrics.filter((metric) => !(metric.metric_type === 'payout_summary' && metric.source_name === 'MondoTraders')) }

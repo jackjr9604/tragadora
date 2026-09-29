@@ -214,7 +214,7 @@ Una Prop Firm es una plataforma de tipo `prop_firm`. Se crea desde [Prop Firms](
 - Challenges y cuentas.
 - Opciones avanzadas: score, Day Trading, textos de política, resumen legacy, payouts, ofertas y afiliados.
 - Disponibilidad geográfica.
-- MondoTraders, Prop Firm Match y Payout metrics.
+- MondoTraders, páginas oficiales y Payout metrics.
 Consulta los manuales enlazados de esta misma sección para cada control.
 ## Acciones
 **Guardar cambios** actualiza `platforms`, `prop_firm_details`, la traducción española y sincroniza relaciones. **Cancelar** vuelve al listado. **Gestionar** abre el módulo relacionado. **Eliminar** pide confirmación y ejecuta el borrado de la plataforma.
@@ -601,12 +601,16 @@ $md$,244,'published'),
 ## Matching
 Residence restricted puede excluir. Nationality, physical_location y unspecified advierten, pero no excluyen automáticamente.
 $md$,245,'published'),
-('prop-firm-payout-panels','Prop Firms: Mondo, PFM y Payout Metrics','Qué representan los tres paneles externos/administrativos.','Manual de administración','Prop Firms','admin',$md$
+('prop-firm-payout-panels','Prop Firms: fuentes y Payout Metrics','Qué representan las fuentes verificadas, oficiales y externas.','Manual de administración','Prop Firms','admin',$md$
 ## Payouts y verificación
 El resumen de solo lectura muestra Total payouts, Total rastreado y Último payout desde evidencias asociadas. Las fuentes listan nombre, tipo, verificación y estado; **Ver monitoreo** abre el monitor y **Gestionar fuentes** administra configuración técnica.
 ## MondoTraders · Métricas externas
 La tabla muestra períodos y métricas externas capturadas: total, cantidad, mayor, promedio, tiempo de payout, fecha de captura y estado cuando el componente dispone de ellos. Son snapshots externos; nunca se suman a payouts verificados por Tradagora. Filas incompletas se omiten por el collector.
-## Prop Firm Match · Payout Tracker
+## Collector de página oficial
+
+Una fuente `public_page` puede incluir un collector declarativo. Solo se permiten URL HTTPS, selectores CSS y parsers controlados; nunca JavaScript almacenado. Los snapshots se guardan como `official_firm` + `firm_reported`, separados de los payouts verificados por Tradagora.
+
+Ejecuta `npm run collect:official -- --platform=slug --dry-run --headless` antes de habilitar escritura. Una métrica requerida ausente cancela el snapshot; una opcional queda `NULL`. Los rewards recientes se conservan únicamente en `raw_data`.
 Permite agregar un snapshot por período con Total payouts, Cantidad, Mayor payout, Promedio, Mediana/tiempo cuando el formulario lo expone, Moneda, URL y fecha de captura. **Nuevo snapshot** conserva el anterior como histórico y hace current al nuevo de la misma firma, fuente y período.
 ## Payout Metrics
 | Control | Significado |

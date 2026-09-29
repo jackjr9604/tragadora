@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { PayoutMetricsManager } from '@/components/admin/PayoutMetricsManager'
-import { PropFirmMatchSnapshotsManager } from '@/components/admin/PropFirmMatchSnapshotsManager'
 import { MondoTradersMetricsPanel } from '@/components/admin/MondoTradersMetricsPanel'
 import { MediaPicker } from '@/components/admin/MediaPicker'
 import { PlatformAvailabilityEditor } from './PlatformAvailabilityEditor'
@@ -203,7 +202,6 @@ export default function EditPlatformPage() {
     </form>
     <PlatformAvailabilityEditor platformId={id} />
     <details className="mt-8 rounded-xl bg-white p-6 shadow"><summary className="cursor-pointer text-xl font-semibold">MondoTraders · Métricas externas</summary><p className="mt-2 mb-6 text-sm text-slate-500">Referencia externa por periodo. Estos agregados nunca se suman con los payouts verificados por Tradagora.</p><MondoTradersMetricsPanel platformId={id} /></details>
-    <details className="mt-8 rounded-xl bg-white p-6 shadow"><summary className="cursor-pointer text-xl font-semibold">Prop Firm Match · Payout Tracker</summary><p className="mt-2 mb-6 text-sm text-slate-500">Fallback administrativo por periodo. Cada guardado crea un snapshot nuevo y conserva el anterior como histórico.</p><PropFirmMatchSnapshotsManager platformId={id} /></details>
     <details className="mt-8 rounded-xl bg-white p-6 shadow"><summary className="cursor-pointer text-xl font-semibold">Payout metrics</summary><p className="mt-2 mb-6 text-sm text-slate-500">Agregados oficiales o externos. No se insertan como payouts individuales y siempre conservan su fuente.</p><PayoutMetricsManager platformId={id} /></details>
   </div></main>
 }
