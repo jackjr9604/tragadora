@@ -1,0 +1,34 @@
+TRADAGORA — PACK DEL LOGO APROBADO
+
+Este paquete se creó EXCLUSIVAMENTE a partir de la imagen que suministraste en este mensaje.
+No se rediseñó el isotipo, no se cambió la palabra Tradagora y no se regeneró el logo con IA.
+
+CARPETAS
+01_original
+  Archivo JPG original 1536x864, sin cambios.
+
+02_web
+  Exportaciones 1920x1080, 2560x1440 y 3840x2160 en JPG y PNG.
+  Recomendación: 1920x1080 para hero normal; 2560/3840 para pantallas grandes.
+
+03_social
+  Open Graph 1200x630
+  X/LinkedIn 1200x628
+  YouTube 1280x720
+  Facebook 1640x924
+  Perfil 1080x1080
+
+04_print
+  Exportaciones PNG de 3072, 4608 y 6144 px de ancho.
+
+05_wallpaper
+  Fondos 1080p, 1440p y 4K.
+
+IMPORTANTE SOBRE SVG Y PNG TRANSPARENTE
+La imagen entregada es un JPG terminado: fondo, gráfico, isotipo, texto y efectos están
+fusionados en los mismos píxeles. Convertir automáticamente este JPG a SVG no crea un
+vector real, y eliminar el fondo automáticamente puede dañar bordes, sombras y degradados.
+Por fidelidad al logo aprobado, este pack no incluye un SVG falso.
+
+Para obtener un SVG auténtico y un PNG transparente del logo aislado hay que reconstruir
+manualmente la geometría del isotipo y la tipografía, o disponer del archivo fuente original.

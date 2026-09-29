@@ -4,6 +4,7 @@ import { availableAdminLinks, getCurrentAdminPermissions } from '@/lib/admin-per
 import { AdminPermissionsProvider } from '@/components/admin/AdminPermissionsProvider'
 import { AdminShellNavigation } from '@/components/admin/AdminShellNavigation'
 import { AdminUserMenu } from '@/components/admin/AdminUserMenu'
+import { TradagoraBrand } from '@/components/shared/TradagoraBrand'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const access = await getCurrentAdminPermissions()
@@ -21,4 +22,4 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   </div>
 }
 
-function AdminBrand({ compact = false }: { compact?: boolean }) { return <div className={compact ? 'admin-brand compact' : 'admin-brand'}><span className="admin-brand-mark">T</span><span><strong>Tradagora</strong><small>Administración</small></span></div> }
+function AdminBrand({ compact = false }: { compact?: boolean }) { return <div className={compact ? 'admin-brand compact' : 'admin-brand'}><Link href="/admin" aria-label="Tradagora, administración"><TradagoraBrand variant={compact ? 'icon' : 'dark'} priority sizes={compact ? '44px' : '168px'} className={compact ? 'w-11' : 'w-[168px]'} /></Link>{!compact && <span className="sr-only">Administración</span>}</div> }

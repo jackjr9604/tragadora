@@ -1,12 +1,12 @@
-import { Landmark } from 'lucide-react'
+import { TradagoraBrand } from '@/components/shared/TradagoraBrand'
 
-export function BrandMark({ compact = false }: { compact?: boolean }) {
-  return (
-    <span className="inline-flex items-center gap-2.5 font-semibold text-white">
-      <span className="flex size-9 items-center justify-center rounded-xl bg-[#f7c64b] text-[#0a1220] shadow-[0_0_28px_rgba(247,198,75,.24)]">
-        <Landmark className="size-5" aria-hidden="true" />
-      </span>
-      {!compact && <span className="text-lg tracking-tight">Tradagora</span>}
-    </span>
-  )
+export function BrandMark({ compact = false, responsive = false }: { compact?: boolean; responsive?: boolean }) {
+  return <span className="inline-flex items-center">
+    <TradagoraBrand
+      variant={compact ? 'icon' : 'light'}
+      priority
+      sizes={compact ? '44px' : responsive ? '(max-width: 639px) 132px, (max-width: 1023px) 154px, 172px' : '176px'}
+      className={compact ? 'w-11' : responsive ? 'w-[132px] sm:w-[154px] lg:w-[172px]' : 'w-44'}
+    />
+  </span>
 }

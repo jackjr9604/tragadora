@@ -35,8 +35,8 @@ export function PublicNavbar({ language = 'es', languages, searchItems }: { lang
   return (
     <header className="sticky top-0 z-50 border-b border-amber-300/15 bg-[#060d18]/94 shadow-[0_10px_35px_rgba(0,0,0,.22)] backdrop-blur-xl">
       <div className="mx-auto flex h-18 max-w-7xl items-center gap-7 px-4 sm:px-6 lg:px-8">
-        <Link href="/" aria-label="Tradagora, inicio">
-          <BrandMark />
+        <Link href="/" aria-label="Tradagora, inicio" className="shrink-0">
+          <BrandMark responsive />
         </Link>
 
         <nav className="hidden flex-1 items-center gap-6 lg:flex" aria-label="Principal">

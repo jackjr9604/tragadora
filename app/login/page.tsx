@@ -3,6 +3,7 @@
 import { FormEvent, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { TradagoraBrand } from '@/components/shared/TradagoraBrand'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -75,7 +76,7 @@ export default function LoginPage() {
   return (
     <main className="admin-login flex min-h-screen items-center justify-center p-4">
       <div className="admin-login-card">
-        <div className="mb-7 flex items-center gap-3 border-b border-slate-100 pb-6"><span className="admin-login-mark">T</span><div><p className="text-xl font-bold tracking-tight text-slate-950">Tradagora</p><p className="text-xs font-semibold uppercase tracking-[.16em] text-amber-700">Administración</p></div></div>
+        <div className="mb-7 flex flex-col items-center border-b border-slate-100 pb-6 text-center"><TradagoraBrand variant="dark" priority sizes="256px" className="w-64 max-w-full" /><p className="mt-2 text-xs font-semibold uppercase tracking-[.16em] text-amber-700">Administración</p></div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-950">Bienvenido</h1>
         <p className="mt-2 mb-6 text-sm leading-6 text-slate-500">Ingresa con tu cuenta autorizada para administrar el contenido y los catálogos.</p>
 
