@@ -1,1 +1,16 @@
-import type{Metadata}from'next';import{PublicPageShell}from'@/components/public/PublicPageShell';import{BlogCatalog}from'@/components/public/DiscoveryCatalogs';import{getBlogPosts}from'@/lib/discovery';import{resolvePublicLanguage}from'@/lib/language';export const metadata:Metadata={title:'Blog | Tradagora',description:'Ideas, análisis y recursos para traders.'};export const revalidate=60;export default async function Page({searchParams}:{searchParams:Promise<{lang?:string|string[]}>}){const language=await resolvePublicLanguage((await searchParams).lang),posts=await getBlogPosts();return <PublicPageShell language={language}><section className="tg-hero"><div className="mx-auto max-w-[1440px] px-4 py-10 sm:px-6 lg:px-8"><p className="tg-eyebrow">Blog</p><h1 className="mt-3 text-4xl font-bold sm:text-5xl">Ideas, análisis y recursos.</h1><p className="mt-3 text-slate-400">Contenido editorial para traders.</p></div></section><main className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-8"><BlogCatalog posts={posts}/></main></PublicPageShell>}
+import type { Metadata } from 'next'
+import { BlogCatalog } from '@/components/public/DiscoveryCatalogs'
+import { PageHero } from '@/components/public/PageHero'
+import { PublicPageShell } from '@/components/public/PublicPageShell'
+import { getBlogPosts } from '@/lib/discovery'
+import { resolvePublicLanguage } from '@/lib/language'
+import { getPageContent } from '@/lib/site-content'
+
+export const metadata: Metadata = { title: 'Blog | Tradagora', description: 'Ideas, análisis y recursos para traders.' }
+export const revalidate = 60
+
+export default async function Page({ searchParams }: { searchParams: Promise<{ lang?: string | string[] }> }) {
+  const language = await resolvePublicLanguage((await searchParams).lang)
+  const [posts, content] = await Promise.all([getBlogPosts(), getPageContent('blog', language)])
+  return <PublicPageShell language={language}><PageHero content={content} fallbackTitle="Ideas, análisis y recursos." fallbackSubtitle="Contenido editorial para traders." primaryHref="#articulos" secondaryHref={`/herramientas?lang=${language}`} compact /><main id="articulos" className="mx-auto max-w-[1440px] scroll-mt-24 px-4 py-8 sm:px-6 lg:px-8"><BlogCatalog posts={posts} /></main></PublicPageShell>
+}

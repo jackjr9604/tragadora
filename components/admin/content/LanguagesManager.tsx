@@ -58,8 +58,6 @@ export function LanguagesManager({ translationProviderConfigured }: { translatio
         const now = new Date().toISOString()
         const contentResult = await supabase.from('site_content').insert({ key: source.key, language: code, value: translated.translation, type: source.type, updated_by: user.id, updated_at: now })
         if (contentResult.error) { setError(contentResult.error.message); await load(); return }
-        const metaResult = await supabase.from('content_translation_meta').upsert({ key: source.key, language: code, source_language: baseLanguage.code, source_updated_at: source.updated_at, translated_at: now, translation_method: 'auto_generated', manually_edited: false, updated_at: now }, { onConflict: 'key,language' })
-        if (metaResult.error) { setError(metaResult.error.message); await load(); return }
       }
     }
     setForm({ code: '', name: '', nativeName: '', active: true, autoTranslate: false, generateInitial: false })
@@ -92,8 +90,6 @@ export function LanguagesManager({ translationProviderConfigured }: { translatio
       const confirmation = window.prompt(`Este idioma tiene ${count} contenidos. Escribe ELIMINAR ${language.code.toUpperCase()} para borrarlo definitivamente. Recomendamos desactivarlo.`)
       if (confirmation !== `ELIMINAR ${language.code.toUpperCase()}`) return
     } else if (!window.confirm(`¿Eliminar el idioma ${language.native_name}?`)) return
-    const metaResult = await supabase.from('content_translation_meta').delete().or(`language.eq.${language.code},source_language.eq.${language.code}`)
-    if (metaResult.error) { setError(metaResult.error.message); return }
     if (count > 0) {
       const contentResult = await supabase.from('site_content').delete().eq('language', language.code)
       if (contentResult.error) { setError(contentResult.error.message); return }

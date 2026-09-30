@@ -13,13 +13,22 @@ async function getSiteContentUncached(
   language: SiteLanguage = 'es'
 ): Promise<SiteContent> {
   const supabase = createAdminClient()
+  const { data: languageRows } = await supabase
+    .from('languages')
+    .select('code')
+    .eq('is_active', true)
+    .eq('is_default', true)
+    .limit(1)
+
+  const defaultLanguage = languageRows?.[0]?.code ?? 'es'
+  const languages = [...new Set(['global', defaultLanguage, language])]
   const { data } = await supabase
     .from('site_content')
     .select('key, value, language')
-    .in('language', language === 'es' ? ['global', 'es'] : ['global', 'es', language])
+    .in('language', languages)
 
   const rows = data ?? []
-  const fallback = rows.filter((row) => row.language === 'es')
+  const fallback = rows.filter((row) => row.language === defaultLanguage)
   const localized = rows.filter((row) => row.language === language)
   const global = rows.filter((row) => row.language === 'global')
 

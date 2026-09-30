@@ -7,6 +7,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { BrandMark } from './BrandMark'
 import { languageUrl, persistPublicLanguage, type PublicLanguage, type PublicLanguageOption } from '@/lib/public-language'
 import type { PublicSearchItem } from '@/lib/public-search'
+import type { BrandingAsset } from '@/lib/branding-config'
 import { PublicGlobalSearch } from './PublicGlobalSearch'
 
 const paths = ['/payouts', '/prop-firms', '/comparador', '/ofertas', '/brokers', '/herramientas', '/comunidades', '/exchanges', '/blog', '/giveaway'] as const
@@ -16,7 +17,7 @@ const navCopy = {
   pt: { links: ['Payouts', 'Prop Firms', 'Comparador', 'Ofertas', 'Brokers', 'Ferramentas', 'Comunidades', 'Exchanges', 'Blog', 'Giveaway'], methodology: 'Metodologia', explore: 'Explorar firmas' },
 } as const
 
-export function PublicNavbar({ language = 'es', languages, searchItems }: { language?: PublicLanguage; languages: PublicLanguageOption[]; searchItems: PublicSearchItem[] }) {
+export function PublicNavbar({ language = 'es', languages, searchItems, desktopLogo, mobileLogo }: { language?: PublicLanguage; languages: PublicLanguageOption[]; searchItems: PublicSearchItem[]; desktopLogo: BrandingAsset; mobileLogo: BrandingAsset }) {
   const [open, setOpen] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
@@ -36,7 +37,7 @@ export function PublicNavbar({ language = 'es', languages, searchItems }: { lang
     <header className="sticky top-0 z-50 border-b border-amber-300/15 bg-[#060d18]/94 shadow-[0_10px_35px_rgba(0,0,0,.22)] backdrop-blur-xl">
       <div className="mx-auto flex h-18 max-w-7xl items-center gap-7 px-4 sm:px-6 lg:px-8">
         <Link href="/" aria-label="Tradagora, inicio" className="shrink-0">
-          <BrandMark responsive />
+          <BrandMark responsive desktop={desktopLogo} mobile={mobileLogo} />
         </Link>
 
         <nav className="hidden flex-1 items-center gap-6 lg:flex" aria-label="Principal">

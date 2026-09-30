@@ -9,6 +9,7 @@ export const ADMIN_MODULES = [
   { key: 'affiliate_links', label: 'Afiliados', href: '/admin/affiliate-links', actions: ['view', 'create', 'update', 'delete'] },
   { key: 'content', label: 'Contenido', href: '/admin/content', actions: ['view', 'create', 'update', 'delete'] },
   { key: 'media', label: 'Multimedia', href: '/admin/media', actions: ['view', 'create', 'update', 'delete'] },
+  { key: 'branding', label: 'Identidad visual', href: '/admin/branding', actions: ['view', 'create', 'update', 'delete'] },
   { key: 'tools', label: 'Herramientas', href: '/admin/tools', actions: ['view', 'create', 'update', 'delete'] },
   { key: 'communities', label: 'Comunidades', href: '/admin/communities', actions: ['view', 'create', 'update', 'delete'] },
   { key: 'blog', label: 'Blog', href: '/admin/blog', actions: ['view', 'create', 'update', 'delete'] },
@@ -49,6 +50,7 @@ export function permissionForAdminPath(pathname: string): PermissionKey {
   if (path.startsWith('/admin/affiliate-links')) return 'affiliate_links.view'
   if (path.startsWith('/admin/content')) return 'content.view'
   if (path.startsWith('/admin/media')) return 'media.view'
+  if (path.startsWith('/admin/branding')) return 'branding.view'
   if (path === '/admin/tools/new') return 'tools.create'
   if (/^\/admin\/tools\/[^/]+\/edit$/.test(path)) return 'tools.update'
   if (path.startsWith('/admin/tools')) return 'tools.view'

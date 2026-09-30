@@ -7,6 +7,8 @@ import { payoutPeriod, payoutPeriodLabel } from '@/lib/payout-periods'
 import { getPayoutTrackerSummaries, type PayoutFirmSummary } from '@/lib/payout-tracker'
 import { resolvePublicLanguage } from '@/lib/language'
 import { GlobalOffersStrip } from '@/components/public/offers/GlobalOffersStrip'
+import { PageHero } from '@/components/public/PageHero'
+import { getPageContent, pageValue, sectionEnabled } from '@/lib/site-content'
 
 export const revalidate = 60
 export const metadata: Metadata = { title: 'Payout Tracker de Prop Firms | Tradagora', description: 'Compara datos externos de referencia con payouts verificados independientemente por Tradagora.' }
@@ -16,16 +18,20 @@ export default async function PayoutsPage({ searchParams }: { searchParams: Prom
   const params = await searchParams
   const language = await resolvePublicLanguage(params.lang)
   const period = payoutPeriod(scalar(params.period), '30d')
-  const allSummaries = await getPayoutTrackerSummaries(period)
+  const [allSummaries, content] = await Promise.all([
+    getPayoutTrackerSummaries(period),
+    getPageContent('payouts', language),
+  ])
   const query = scalar(params.q).trim().toLocaleLowerCase('es')
   const market = scalar(params.market) || 'all'
   const sort = scalar(params.sort) || 'total'
   const summaries = allSummaries.filter((item) => !query || item.name.toLocaleLowerCase('es').includes(query)).filter((item) => market === 'all' || item.markets.includes(market)).sort(sorter(sort))
 
   return <PublicPageShell language={language}>
-    <section className="tg-hero"><div className="mx-auto max-w-[1440px] px-4 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-14"><p className="tg-eyebrow">Payout Tracker</p><h1 className="mt-3 max-w-4xl text-4xl font-bold leading-tight sm:text-5xl">Ranking de payouts de Prop Firms.</h1><p className="mt-4 max-w-3xl text-base leading-7 text-slate-400">Explora las cifras de payouts de las principales Prop Firms. Los datos de referencia provienen de seguimiento externo y pueden consultarse por periodo.</p><div className="mt-7"><PeriodTabs active={period} basePath="/payouts" language={language} /></div></div></section>
+    <PageHero content={content} fallbackTitle="Ranking de payouts de Prop Firms." fallbackSubtitle="Explora las cifras de payouts de las principales Prop Firms. Los datos de referencia provienen de seguimiento externo y pueden consultarse por periodo." primaryHref="#ranking" secondaryHref="#metodologia" compact><div className="mt-7"><PeriodTabs active={period} basePath="/payouts" language={language} /></div></PageHero>
     <Suspense fallback={null}><GlobalOffersStrip language={language} /></Suspense>
-    <section className="mx-auto w-full min-w-0 max-w-[1440px] px-4 py-8 sm:px-6 lg:px-8 lg:py-10"><div className="mb-6"><h2 className="text-2xl font-bold">Payouts · {payoutPeriodLabel(period)}</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">Estas cifras son referencias externas y no representan verificaciones propias de Tradagora. Consulta cada firma para ver el análisis detallado.</p></div><form className="tg-surface mb-5 grid min-w-0 gap-3 rounded-2xl p-4 md:grid-cols-[minmax(0,1.4fr)_minmax(0,.8fr)_minmax(0,.8fr)_auto]"><input type="hidden" name="lang" value={language} /><input type="hidden" name="period" value={period} /><SearchInput key={scalar(params.q)} value={scalar(params.q)} placeholder="Buscar Prop Firm" theme="dark" /><Select name="market" value={market} options={[["all", "Todos los mercados"], ["cfd", "Forex / CFD"], ["futures", "Futures"], ["crypto", "Crypto"]]} /><Select name="sort" value={sort} options={[["total", "Ordenar por total"], ["payouts", "Ordenar por payouts"], ["largest", "Ordenar por mayor"], ["average", "Ordenar por promedio"]]} /><button className="tg-button-gold w-full px-5 py-3 text-sm md:w-auto">Aplicar</button></form><SummaryTable summaries={summaries} language={language} /></section>
+    <section id="ranking" className="mx-auto w-full min-w-0 max-w-[1440px] scroll-mt-24 px-4 py-8 sm:px-6 lg:px-8 lg:py-10"><div className="mb-6"><h2 className="text-2xl font-bold">Payouts · {payoutPeriodLabel(period)}</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">Estas cifras son referencias externas y no representan verificaciones propias de Tradagora. Consulta cada firma para ver el análisis detallado.</p></div><form className="tg-surface mb-5 grid min-w-0 gap-3 rounded-2xl p-4 md:grid-cols-[minmax(0,1.4fr)_minmax(0,.8fr)_minmax(0,.8fr)_auto]"><input type="hidden" name="lang" value={language} /><input type="hidden" name="period" value={period} /><SearchInput key={scalar(params.q)} value={scalar(params.q)} placeholder="Buscar Prop Firm" theme="dark" /><Select name="market" value={market} options={[["all", "Todos los mercados"], ["cfd", "Forex / CFD"], ["futures", "Futures"], ["crypto", "Crypto"]]} /><Select name="sort" value={sort} options={[["total", "Ordenar por total"], ["payouts", "Ordenar por payouts"], ["largest", "Ordenar por mayor"], ["average", "Ordenar por promedio"]]} /><button className="tg-button-gold w-full px-5 py-3 text-sm md:w-auto">Aplicar</button></form><SummaryTable summaries={summaries} language={language} /></section>
+    {sectionEnabled(content, 'methodology') && <section id="metodologia" className="mx-auto w-full max-w-[1440px] scroll-mt-24 px-4 pb-12 sm:px-6 lg:px-8"><div className="tg-surface rounded-2xl p-6 sm:p-8"><p className="tg-eyebrow">{pageValue(content, 'methodology', 'badge', 'Verificación')}</p><h2 className="mt-3 text-2xl font-bold text-white">{pageValue(content, 'methodology', 'title', 'Cómo verificamos los payouts')}</h2><p className="mt-3 max-w-3xl leading-7 text-slate-400">{pageValue(content, 'methodology', 'subtitle', 'Contrastamos fuentes y registros on-chain.')}</p></div></section>}
   </PublicPageShell>
 }
 

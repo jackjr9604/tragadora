@@ -6,9 +6,9 @@ import { createClient } from '@/lib/supabase/client'
 
 export type PickedMedia = { id: string; file_name: string; file_url: string; alt_text: string | null }
 type Category = { id: string; name: string; slug: string }
-type MediaRow = PickedMedia & { category_id: string | null }
+type MediaRow = PickedMedia & { category_id: string | null; file_type: string | null }
 
-export function MediaPicker({ value, onChange, defaultCategory = 'logos-firmas', label = 'Imagen' }: { value: PickedMedia | null; onChange: (media: PickedMedia | null) => void; defaultCategory?: string; label?: string }) {
+export function MediaPicker({ value, onChange, defaultCategory = 'logos-firmas', label = 'Imagen', imagesOnly = false }: { value: PickedMedia | null; onChange: (media: PickedMedia | null) => void; defaultCategory?: string; label?: string; imagesOnly?: boolean }) {
   const [open, setOpen] = useState(false)
   const [media, setMedia] = useState<MediaRow[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -24,7 +24,7 @@ export function MediaPicker({ value, onChange, defaultCategory = 'logos-firmas',
       setLoading(true); setError('')
       const supabase = createClient()
       const [mediaResult, categoryResult] = await Promise.all([
-        supabase.from('media').select('id, file_name, file_url, alt_text, category_id').order('created_at', { ascending: false }),
+        supabase.from('media').select('id, file_name, file_url, file_type, alt_text, category_id').order('created_at', { ascending: false }),
         supabase.from('media_categories').select('id, name, slug').order('name'),
       ])
       if (cancelled) return
@@ -43,8 +43,8 @@ export function MediaPicker({ value, onChange, defaultCategory = 'logos-firmas',
 
   const visible = useMemo(() => {
     const needle = search.trim().toLocaleLowerCase('es')
-    return media.filter((item) => category === 'all' || item.category_id === category).filter((item) => !needle || `${item.file_name} ${item.alt_text ?? ''}`.toLocaleLowerCase('es').includes(needle))
-  }, [media, search, category])
+    return media.filter((item) => !imagesOnly || (item.file_type?.startsWith('image/') && item.file_type !== 'image/svg+xml')).filter((item) => category === 'all' || item.category_id === category).filter((item) => !needle || `${item.file_name} ${item.alt_text ?? ''}`.toLocaleLowerCase('es').includes(needle))
+  }, [media, search, category, imagesOnly])
 
   return <div>
     <p className="mb-2 text-sm font-medium">{label}</p>

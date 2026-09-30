@@ -1,1 +1,16 @@
-import type{Metadata}from'next';import{PublicPageShell}from'@/components/public/PublicPageShell';import{CommunitiesCatalog}from'@/components/public/DiscoveryCatalogs';import{getCommunities}from'@/lib/discovery';import{resolvePublicLanguage}from'@/lib/language';export const metadata:Metadata={title:'Comunidades para traders | Tradagora',description:'Encuentra espacios para aprender, compartir y conectar con otros traders.'};export const revalidate=60;export default async function Page({searchParams}:{searchParams:Promise<{lang?:string|string[]}>}){const language=await resolvePublicLanguage((await searchParams).lang),items=await getCommunities();return <PublicPageShell language={language}><Hero eyebrow="Comunidades" title="Espacios para aprender y conectar." text="Encuentra comunidades relevantes para traders."/><main className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-8"><CommunitiesCatalog items={items}/></main></PublicPageShell>}function Hero({eyebrow,title,text}:{eyebrow:string;title:string;text:string}){return <section className="tg-hero"><div className="mx-auto max-w-[1440px] px-4 py-10 sm:px-6 lg:px-8"><p className="tg-eyebrow">{eyebrow}</p><h1 className="mt-3 text-4xl font-bold sm:text-5xl">{title}</h1><p className="mt-3 text-slate-400">{text}</p></div></section>}
+import type { Metadata } from 'next'
+import { PageHero } from '@/components/public/PageHero'
+import { PublicPageShell } from '@/components/public/PublicPageShell'
+import { CommunitiesCatalog } from '@/components/public/DiscoveryCatalogs'
+import { getCommunities } from '@/lib/discovery'
+import { resolvePublicLanguage } from '@/lib/language'
+import { getPageContent } from '@/lib/site-content'
+
+export const metadata: Metadata = { title: 'Comunidades para traders | Tradagora', description: 'Encuentra espacios para aprender, compartir y conectar con otros traders.' }
+export const revalidate = 60
+
+export default async function Page({ searchParams }: { searchParams: Promise<{ lang?: string | string[] }> }) {
+  const language = await resolvePublicLanguage((await searchParams).lang)
+  const [items, content] = await Promise.all([getCommunities(), getPageContent('comunidades', language)])
+  return <PublicPageShell language={language}><PageHero content={content} fallbackTitle="Espacios para aprender y conectar." fallbackSubtitle="Encuentra comunidades relevantes para traders." primaryHref="#comunidades" secondaryHref={`/blog?lang=${language}`} compact /><main id="comunidades" className="mx-auto max-w-[1440px] scroll-mt-24 px-4 py-8 sm:px-6 lg:px-8"><CommunitiesCatalog items={items} /></main></PublicPageShell>
+}

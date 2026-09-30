@@ -6,7 +6,7 @@ import type { HomeRankings } from '@/lib/home-data'
 import { PlatformLogo } from './PlatformLogo'
 import { compactMoney } from './public-format'
 
-export function HomePayoutRankings({ rankings }: { rankings: HomeRankings }) {
+export function HomePayoutRankings({ rankings, badge, title, subtitle }: { rankings: HomeRankings; badge: string; title: string; subtitle: string }) {
   const [period, setPeriod] = useState<'30d' | 'all'>('30d')
   const rows = period === '30d' ? rankings.thirtyDays : rankings.allTime
   if (!rankings.thirtyDays.length && !rankings.allTime.length) return null
@@ -17,14 +17,14 @@ export function HomePayoutRankings({ rankings }: { rankings: HomeRankings }) {
     <section className="border-y border-white/8 bg-[#0c1626] py-16">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-          <div><p className="font-mono text-xs uppercase tracking-[.18em] text-[#f7c64b]">Datos agregados</p><h2 className="mt-3 text-3xl font-bold">Rankings de payouts reportados</h2><p className="mt-2 text-sm text-slate-400">Mondo publica métricas agregadas por firma y período; no son payouts verificados individualmente.</p></div>
+          <div><p className="font-mono text-xs uppercase tracking-[.18em] text-[#f7c64b]">{badge}</p><h2 className="mt-3 text-3xl font-bold">{title}</h2><p className="mt-2 text-sm text-slate-400">{subtitle}</p></div>
           <div className="flex rounded-xl border border-white/10 bg-[#111c2e] p-1">
             <PeriodButton active={period === '30d'} onClick={() => setPeriod('30d')}>30 días</PeriodButton>
             <PeriodButton active={period === 'all'} onClick={() => setPeriod('all')}>Histórico</PeriodButton>
           </div>
         </div>
         {rows.length ? <div className="mt-8 grid gap-5 lg:grid-cols-2"><Ranking title="Mayor monto pagado" rows={byAmount} metric="amount" /><Ranking title="Mayor número de payouts" rows={byCount} metric="count" /></div> : <p className="mt-8 rounded-2xl border border-white/10 p-8 text-slate-400">Sin datos disponibles para este período.</p>}
-        <p className="mt-4 text-xs text-slate-500">Fuente: Mondo · snapshots actuales del período seleccionado.</p>
+        <p className="mt-4 text-xs text-slate-500">Datos externos agregados · snapshots actuales del período seleccionado.</p>
       </div>
     </section>
   )

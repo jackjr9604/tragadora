@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { HomeHeroFallback, HomePublic } from '@/components/public/HomePublic'
 import { PublicPageShell } from '@/components/public/PublicPageShell'
@@ -7,8 +8,26 @@ import { getPageContent } from '@/lib/site-content'
 import { resolvePublicLanguage } from '@/lib/language'
 import type { RecommendationCriteria } from '@/lib/prop-firm-recommender'
 import { getPublicOffers } from '@/lib/public-offers'
+import { SITE_URL } from '@/lib/site-url'
 
 export const revalidate = 60
+export const metadata: Metadata = { alternates: { canonical: SITE_URL } }
+
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'Tradagora',
+    url: SITE_URL,
+    logo: new URL('/brand/organization-logo', SITE_URL).toString(),
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'Tradagora',
+    url: SITE_URL,
+  },
+]
 
 export default async function Home({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const params = await searchParams
@@ -25,11 +44,14 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
   const content = await getPageContent('home', language)
 
   return (
-    <PublicPageShell language={language}>
-      <Suspense fallback={<HomeHeroFallback content={content} language={language} />}>
-        <HomeData content={content} language={language} initialCriteria={initialCriteria} />
-      </Suspense>
-    </PublicPageShell>
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, '\\u003c') }} />
+      <PublicPageShell language={language}>
+        <Suspense fallback={<HomeHeroFallback content={content} language={language} />}>
+          <HomeData content={content} language={language} initialCriteria={initialCriteria} />
+        </Suspense>
+      </PublicPageShell>
+    </>
   )
 }
 

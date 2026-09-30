@@ -187,7 +187,6 @@ export function Comparator({ choices, firms, initial, filterOptions, matching, c
   const importantDifferences = sections.flatMap((section) => section.rows.filter((row) => valuesDiffer(row.values)).map((row) => row.label)).slice(0, 5)
 
   return <div className="mx-auto w-full max-w-7xl px-4 pb-20 pt-10 sm:px-6 lg:px-8">
-    <header className="mb-8"><p className="tg-eyebrow">Decide con contexto</p><h1 className="mt-3 text-4xl font-bold text-white sm:text-5xl">Comparador de Prop Firms</h1><p className="mt-3 max-w-3xl text-slate-400">Compara programas y tamaños reales. Las diferencias importan según tu forma de operar; no existe una firma ganadora para todos.</p></header>
     <div className={`${card} mb-6`}>
       <div className="flex flex-wrap gap-2">
         <button type="button" className={initial.mode === 'firms' ? 'tg-button-gold px-4 py-2' : button} onClick={() => update({ mode: null, view: null, country: chosenCountry })}>Comparar firmas</button>

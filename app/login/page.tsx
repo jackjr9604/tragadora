@@ -1,9 +1,10 @@
 'use client'
 
-import { FormEvent, useState } from 'react'
+import { FormEvent, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { TradagoraBrand } from '@/components/shared/TradagoraBrand'
+import type { BrandingConfig } from '@/lib/branding-config'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -17,6 +18,15 @@ export default function LoginPage() {
     useState(false)
   const [recoveryMessage, setRecoveryMessage] =
     useState('')
+  const [loginBrand, setLoginBrand] = useState<{ url: string; alt: string } | null>(null)
+
+  useEffect(() => {
+    let active = true
+    fetch('/api/branding').then((response) => response.ok ? response.json() as Promise<BrandingConfig> : null).then((branding) => {
+      if (active && branding) setLoginBrand(branding.login_logo)
+    }).catch(() => undefined)
+    return () => { active = false }
+  }, [])
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -76,7 +86,7 @@ export default function LoginPage() {
   return (
     <main className="admin-login flex min-h-screen items-center justify-center p-4">
       <div className="admin-login-card">
-        <div className="mb-7 flex flex-col items-center border-b border-slate-100 pb-6 text-center"><TradagoraBrand variant="dark" priority sizes="256px" className="w-64 max-w-full" /><p className="mt-2 text-xs font-semibold uppercase tracking-[.16em] text-amber-700">Administración</p></div>
+        <div className="mb-7 flex flex-col items-center border-b border-slate-100 pb-6 text-center"><TradagoraBrand variant="dark" src={loginBrand?.url} alt={loginBrand?.alt} priority sizes="256px" className="w-64 max-w-full" /><p className="mt-2 text-xs font-semibold uppercase tracking-[.16em] text-amber-700">Administración</p></div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-950">Bienvenido</h1>
         <p className="mt-2 mb-6 text-sm leading-6 text-slate-500">Ingresa con tu cuenta autorizada para administrar el contenido y los catálogos.</p>
 
