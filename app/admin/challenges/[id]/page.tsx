@@ -1,8 +1,11 @@
 import Link from 'next/link'
-import { AdminAction } from '@/components/admin/AdminPermissionsProvider'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { resolveChallenge, type AccountPlan, type ChallengePhase, type ChallengeRewardOption, type ChallengeVariant, type ChallengeVariantPhase, type EffectivePhase } from '@/lib/challenge-resolver'
+import { ChallengeGeneralForm } from '@/components/admin/challenges/ChallengeGeneralForm'
+import { AccountPlansManager } from '@/components/admin/challenges/AccountPlansManager'
+import { ChallengePhasesManager } from '@/components/admin/challenges/ChallengePhasesManager'
+import type { EditableChallengePhase } from '@/components/admin/challenges/PhaseForm'
 
 export default async function ChallengePage({
   params,
@@ -18,7 +21,8 @@ export default async function ChallengePage({
     .select(`
       *,
       platforms (
-        name
+        name,
+        slug
       )
     `)
     .eq('id', id)
@@ -29,7 +33,7 @@ export default async function ChallengePage({
   }
 
   const visibleAt = new Date().toISOString()
-  const [plansResult, phasesResult, variantsResult, rewardOptionsResult] = await Promise.all([
+  const [plansResult, phasesResult, variantsResult, rewardOptionsResult, platformsResult] = await Promise.all([
     supabase.from('account_plans').select('*').eq('challenge_id', id).order('account_size'),
     supabase.from('challenge_phases').select('*').eq('challenge_id', id).order('phase_number'),
     supabase.from('challenge_variants').select('*').eq('challenge_id', id).order('name'),
@@ -37,8 +41,9 @@ export default async function ChallengePage({
       .or(`effective_from.is.null,effective_from.lte.${visibleAt}`)
       .or(`effective_to.is.null,effective_to.gt.${visibleAt}`)
       .order('sort_order'),
+    supabase.from('platforms').select('id, name, slug').eq('type', 'prop_firm').order('name'),
   ])
-  const queryError = plansResult.error ?? phasesResult.error ?? variantsResult.error ?? rewardOptionsResult.error
+  const queryError = plansResult.error ?? phasesResult.error ?? variantsResult.error ?? rewardOptionsResult.error ?? platformsResult.error
   if (queryError) throw new Error(queryError.message)
   const variantIds = (variantsResult.data ?? []).map((variant) => variant.id)
   const variantPhasesResult = variantIds.length
@@ -46,42 +51,51 @@ export default async function ChallengePage({
     : { data: [], error: null }
   if (variantPhasesResult.error) throw new Error(variantPhasesResult.error.message)
   const plans = (plansResult.data ?? []) as AccountPlan[]
+  const phases = (phasesResult.data ?? []) as EditableChallengePhase[]
   const resolved = resolveChallenge({
     challenge,
     plans,
-    phases: (phasesResult.data ?? []) as ChallengePhase[],
+    phases: phases as ChallengePhase[],
     variants: (variantsResult.data ?? []) as ChallengeVariant[],
     variantPhases: (variantPhasesResult.data ?? []) as ChallengeVariantPhase[],
     rewardOptions: (rewardOptionsResult.data ?? []) as ChallengeRewardOption[],
     now: visibleAt,
   })
   const variantName = new Map(resolved.variants.map((variant) => [variant.id, variant.name]))
+  const platform = Array.isArray(challenge.platforms) ? challenge.platforms[0] : challenge.platforms
+  if (!platform) throw new Error('La Prop Firm del Challenge no está disponible.')
+  const legacyPlanCount = plans.filter((plan) => [
+    plan.profit_target,
+    plan.daily_drawdown,
+    plan.max_drawdown,
+    plan.profit_split,
+    plan.min_trading_days,
+    plan.max_trading_days,
+    plan.payout_frequency,
+  ].some((value) => value !== null)).length
 
   return (
     <main className="min-h-screen bg-slate-100 p-4 sm:p-8">
       <div className="mx-auto max-w-6xl">
-        <div className="mb-8 flex flex-wrap items-start justify-between gap-4"><div><p className="text-sm text-slate-500">{challenge.platforms?.name}</p><h1 className="text-3xl font-bold">{challenge.name}</h1><p className="mt-1 text-slate-500">{challenge.phases ?? (resolved.basePhases.length || '—')} fases · {challenge.status ?? 'estado pendiente'}</p></div><AdminAction permission="challenges.create"><Link href={`/admin/challenges/${id}/plans/new`} className="rounded-lg bg-black px-5 py-3 text-white">+ Nueva cuenta</Link></AdminAction></div>
+        <Link href={`/admin/challenges/platform/${challenge.platform_id}`} className="text-sm font-medium text-slate-600">← Volver a {platform.name}</Link>
+        <div className="mb-6 mt-5 flex flex-wrap items-start justify-between gap-4"><div><p className="text-sm text-slate-500">{platform.name}</p><h1 className="text-3xl font-bold">{challenge.name}</h1><div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold"><span className="rounded-full bg-slate-900 px-3 py-1 text-white">{challenge.status}</span><span className="rounded-full bg-white px-3 py-1 text-slate-700">{challenge.challenge_type ?? 'Tipo pendiente'}</span><span className="rounded-full bg-white px-3 py-1 text-slate-700">{challenge.phases === null ? 'Fases pendientes' : challenge.phases === 0 ? 'Instant / 0 fases' : `${challenge.phases} fases`}</span></div></div></div>
+
+        <nav className="mb-6 flex gap-2 overflow-x-auto rounded-xl border bg-white p-2 text-sm font-semibold" aria-label="Secciones del Challenge"><a href="#general" className="rounded-lg bg-slate-900 px-4 py-2 text-white">General</a><a href="#planes" className="rounded-lg px-4 py-2 text-slate-700 hover:bg-slate-100">Planes</a><a href="#fases" className="rounded-lg px-4 py-2 text-slate-700 hover:bg-slate-100">Fases</a><a href="#variantes" className="rounded-lg px-4 py-2 text-slate-700 hover:bg-slate-100">Variantes</a><a href="#rewards" className="rounded-lg px-4 py-2 text-slate-700 hover:bg-slate-100">Rewards</a></nav>
 
         <div className="grid gap-6">
-          <section className="rounded-xl bg-white p-5 shadow sm:p-6"><h2 className="text-xl font-bold">Fases de evaluación</h2><p className="mt-1 text-sm text-slate-500">La fuente principal para target, pérdidas y días mínimos.</p>{resolved.hasNormalizedPhases ? <MainPhaseTable phases={resolved.basePhases} /> : <p className="mt-5 rounded-lg bg-amber-50 p-4 text-sm text-amber-800">No hay fases normalizadas. Este challenge todavía usa reglas legacy por cuenta.</p>}</section>
+          <section id="general" className="scroll-mt-24 rounded-xl bg-white p-5 shadow sm:p-6"><div className="mb-6"><h2 className="text-xl font-bold">General</h2><p className="mt-1 text-sm text-slate-500">Identidad, clasificación, fases declaradas y publicación.</p></div><ChallengeGeneralForm challenge={challenge} platforms={platformsResult.data ?? []} normalizedPhaseCount={resolved.basePhases.length} /></section>
 
-          <section className="rounded-xl bg-white p-5 shadow sm:p-6"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-bold">Planes y cuentas</h2><p className="mt-1 text-sm text-slate-500">Tamaño, precio, moneda y variante cuando aplica.</p></div><AdminAction permission="challenges.create"><Link href={`/admin/challenges/${id}/plans/new`} className="rounded-lg border px-4 py-2 text-sm font-medium">Agregar cuenta</Link></AdminAction></div><MainPlansTable plans={plans} variantName={variantName} /></section>
+          <section id="planes" className="scroll-mt-24 rounded-xl bg-white p-5 shadow sm:p-6"><AccountPlansManager challengeId={id} platformSlug={platform.slug} plans={plans} variants={(variantsResult.data ?? []) as ChallengeVariant[]} hasNormalizedPhases={resolved.hasNormalizedPhases} /></section>
 
-          <section className="rounded-xl bg-white p-5 shadow sm:p-6"><h2 className="text-xl font-bold">Reward principal</h2><p className="mt-1 text-sm text-slate-500">Profit split, frecuencia y espera mínima visibles públicamente.</p><RewardScope title="General" options={resolved.generalRewardOptions} />{resolved.variants.filter((variant) => variant.rewardOptionsSource === 'specific').map((variant) => <RewardScope key={variant.id} title={variant.name} options={variant.rewardOptions} />)}{!resolved.generalRewardOptions.length && !resolved.variants.some((variant) => variant.rewardOptionsSource === 'specific') && <p className="mt-4 rounded-lg bg-slate-50 p-4 text-sm text-slate-500">No hay rewards normalizados visibles.</p>}</section>
+          <section id="fases" className="scroll-mt-24 rounded-xl bg-white p-5 shadow sm:p-6"><ChallengePhasesManager challengeId={id} challengeName={challenge.name} platformSlug={platform.slug} declaredPhases={challenge.phases} phases={phases} variantIds={variantIds} legacyPlanCount={legacyPlanCount} /></section>
 
-          <details className="rounded-xl bg-white p-5 shadow sm:p-6"><summary className="cursor-pointer text-xl font-bold">Detalles avanzados</summary><p className="mt-2 text-sm text-slate-500">Overrides, campos legacy, requisitos avanzados y trazabilidad.</p><div className="mt-6 space-y-6 border-t pt-6"><section><h3 className="font-semibold">Fuente y reglas completas de las fases</h3>{resolved.hasNormalizedPhases ? <AdminPhaseTable phases={resolved.basePhases} /> : <p className="mt-3 text-sm text-slate-500">Sin fases normalizadas.</p>}</section><LegacyPlansTable plans={plans} variantName={variantName} /><section><h3 className="font-semibold">Variantes y overrides</h3><div className="mt-4 space-y-5">{resolved.variants.map((variant) => <article key={variant.id} className="rounded-xl border p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><h4 className="font-bold">{variant.name}</h4><p className="text-sm text-slate-500">{variant.slug} · {variant.status ? 'Activa' : 'Inactiva'} · {variant.plans.length} planes</p></div><span className="rounded-full bg-slate-100 px-3 py-1 text-sm">{variant.profit_split !== null ? `${variant.profit_split}% split legacy` : 'Split legacy —'}</span></div>{variant.notes && <p className="mt-3 text-sm text-slate-600">{variant.notes}</p>}<AdminOverrideTable overrides={variant.overrides} /><h5 className="mt-5 font-semibold">Reglas efectivas completas</h5><AdminPhaseTable phases={variant.effectivePhases} /><p className="mt-4 text-sm text-slate-500">{variant.rewardOptionsSource === 'specific' ? 'Usa rewards propios.' : variant.rewardOptionsSource === 'inherited' ? 'Hereda los rewards generales.' : 'Sin rewards normalizados.'}</p></article>)}{!resolved.variants.length && <p className="text-sm text-slate-500">No hay variantes registradas.</p>}</div></section></div></details>
+          <section id="rewards" className="scroll-mt-24 rounded-xl bg-white p-5 shadow sm:p-6"><div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-xl font-bold">Reward principal</h2><p className="mt-1 text-sm text-slate-500">Profit split, frecuencia y espera mínima visibles públicamente.</p></div><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">Edición en próxima etapa</span></div><RewardScope title="General" options={resolved.generalRewardOptions} />{resolved.variants.filter((variant) => variant.rewardOptionsSource === 'specific').map((variant) => <RewardScope key={variant.id} title={variant.name} options={variant.rewardOptions} />)}{!resolved.generalRewardOptions.length && !resolved.variants.some((variant) => variant.rewardOptionsSource === 'specific') && <p className="mt-4 rounded-lg bg-slate-50 p-4 text-sm text-slate-500">No hay rewards normalizados visibles.</p>}</section>
+
+          <details id="variantes" className="scroll-mt-24 rounded-xl bg-white p-5 shadow sm:p-6"><summary className="cursor-pointer text-xl font-bold">Variantes y detalles avanzados</summary><p className="mt-2 text-sm text-slate-500">Overrides, campos legacy, requisitos avanzados y trazabilidad. La edición llegará en la próxima etapa.</p><div className="mt-6 space-y-6 border-t pt-6"><section><h3 className="font-semibold">Fuente y reglas completas de las fases</h3>{resolved.hasNormalizedPhases ? <AdminPhaseTable phases={resolved.basePhases} /> : <p className="mt-3 text-sm text-slate-500">Sin fases normalizadas.</p>}</section><LegacyPlansTable plans={plans} variantName={variantName} /><section><h3 className="font-semibold">Variantes y overrides</h3><div className="mt-4 space-y-5">{resolved.variants.map((variant) => <article key={variant.id} className="rounded-xl border p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><h4 className="font-bold">{variant.name}</h4><p className="text-sm text-slate-500">{variant.slug} · {variant.status ? 'Activa' : 'Inactiva'} · {variant.plans.length} planes</p></div><span className="rounded-full bg-slate-100 px-3 py-1 text-sm">{variant.profit_split !== null ? `${variant.profit_split}% split legacy` : 'Split legacy —'}</span></div>{variant.notes && <p className="mt-3 text-sm text-slate-600">{variant.notes}</p>}<AdminOverrideTable overrides={variant.overrides} /><h5 className="mt-5 font-semibold">Reglas efectivas completas</h5><AdminPhaseTable phases={variant.effectivePhases} /><p className="mt-4 text-sm text-slate-500">{variant.rewardOptionsSource === 'specific' ? 'Usa rewards propios.' : variant.rewardOptionsSource === 'inherited' ? 'Hereda los rewards generales.' : 'Sin rewards normalizados.'}</p></article>)}{!resolved.variants.length && <p className="text-sm text-slate-500">No hay variantes registradas.</p>}</div></section></div></details>
         </div>
       </div>
     </main>
   )
-}
-
-function MainPhaseTable({ phases }: { phases: EffectivePhase[] }) {
-  return <div className="mt-5 overflow-x-auto"><table className="w-full min-w-[680px] text-sm"><thead className="border-b bg-slate-50"><tr><th className="px-4 py-3 text-left">Fase</th><th className="px-4 py-3 text-left">Target</th><th className="px-4 py-3 text-left">Daily loss</th><th className="px-4 py-3 text-left">Max loss</th><th className="px-4 py-3 text-left">Mín. días</th></tr></thead><tbody>{phases.map((phase) => <tr key={phase.phaseNumber} className="border-b last:border-0"><td className="px-4 py-3 font-medium">{phase.name || `Fase ${phase.phaseNumber}`}</td><td className="px-4 py-3">{formatPercent(phase.profitTarget)}</td><td className="px-4 py-3">{formatPercent(phase.dailyDrawdown)}</td><td className="px-4 py-3">{formatPercent(phase.maxDrawdown)}</td><td className="px-4 py-3">{phase.minTradingDays ?? '—'}</td></tr>)}</tbody></table></div>
-}
-
-function MainPlansTable({ plans, variantName }: { plans: AccountPlan[]; variantName: Map<string, string> }) {
-  return <div className="mt-5 overflow-x-auto"><table className="w-full min-w-[600px] text-sm"><thead className="border-b bg-slate-50"><tr><th className="px-4 py-3 text-left">Cuenta</th><th className="px-4 py-3 text-left">Precio</th><th className="px-4 py-3 text-left">Moneda</th><th className="px-4 py-3 text-left">Variante</th></tr></thead><tbody>{plans.map((plan) => <tr key={plan.id} className="border-b last:border-0"><td className="px-4 py-3 font-medium">{plan.account_size === null ? '—' : `$${plan.account_size.toLocaleString()}`}</td><td className="px-4 py-3">{plan.price === null ? '—' : `$${plan.price.toLocaleString()}`}</td><td className="px-4 py-3">{plan.currency ?? '—'}</td><td className="px-4 py-3">{plan.variant_id ? variantName.get(plan.variant_id) ?? 'Variante desconocida' : 'Base'}</td></tr>)}{!plans.length && <tr><td colSpan={4} className="px-4 py-10 text-center text-slate-500">No hay cuentas registradas.</td></tr>}</tbody></table></div>
 }
 
 function AdminPhaseTable({ phases }: { phases: EffectivePhase[] }) {

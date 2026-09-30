@@ -3,10 +3,12 @@
 import { FormEvent, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { challengeMutationError, normalizeChallengeSlug, optionalInteger, revalidateChallengeData } from '@/lib/challenge-admin'
 
 type Platform = {
   id: string
   name: string
+  slug: string
 }
 
 const supabase = createClient()
@@ -21,6 +23,7 @@ export default function NewChallengePage() {
   const [slug, setSlug] = useState('')
   const [challengeType, setChallengeType] = useState('')
   const [phases, setPhases] = useState('')
+  const [status, setStatus] = useState('draft')
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -29,7 +32,7 @@ export default function NewChallengePage() {
     async function loadPlatforms() {
       const { data } = await supabase
         .from('platforms')
-        .select('id, name')
+        .select('id, name, slug')
         .eq('type', 'prop_firm')
         .order('name')
 
@@ -57,28 +60,43 @@ export default function NewChallengePage() {
   ) {
     event.preventDefault()
 
-    setLoading(true)
     setError('')
+    const normalizedSlug = normalizeChallengeSlug(slug)
+    const parsedPhases = optionalInteger(phases)
+    if (!platformId || !name.trim() || !normalizedSlug) return setError('Prop Firm, nombre y slug son obligatorios.')
+    if (parsedPhases !== null && (!Number.isInteger(Number(phases)) || parsedPhases < 0)) return setError('El número de fases debe ser un entero mayor o igual a cero.')
+    setLoading(true)
+
+    const duplicate = await supabase.from('challenges').select('id').eq('slug', normalizedSlug).maybeSingle()
+    if (duplicate.error) { setError(duplicate.error.message); setLoading(false); return }
+    if (duplicate.data) { setError('Ese slug ya está siendo utilizado por otro Challenge.'); setLoading(false); return }
 
     const { error } = await supabase
       .from('challenges')
       .insert({
         platform_id: platformId,
-        name,
-        slug,
-        challenge_type: challengeType || null,
-        phases: phases ? Number(phases) : null,
-        status: 'active',
+        name: name.trim(),
+        slug: normalizedSlug,
+        challenge_type: challengeType.trim() || null,
+        phases: parsedPhases,
+        status,
       })
 
     if (error) {
-      setError(error.message)
+      setError(challengeMutationError(error.message, 'challenge'))
       setLoading(false)
       return
     }
 
-    router.push(`/admin/challenges/platform/${platformId}`)
-    router.refresh()
+    const platform = platforms.find((item) => item.id === platformId)
+    try {
+      await revalidateChallengeData('create', platform ? [platform.slug] : [])
+      router.push(`/admin/challenges/platform/${platformId}`)
+      router.refresh()
+    } catch (revalidationError) {
+      setError(revalidationError instanceof Error ? `El Challenge se creó, pero ${revalidationError.message}` : 'El Challenge se creó, pero no se pudo revalidar.')
+      setLoading(false)
+    }
   }
 
   return (
@@ -145,7 +163,7 @@ export default function NewChallengePage() {
 
             <input
               value={slug}
-              onChange={(e) => setSlug(e.target.value)}
+              onChange={(e) => setSlug(normalizeChallengeSlug(e.target.value))}
               placeholder="ftmo-2-step"
               className="w-full rounded-lg border p-3"
               required
@@ -174,7 +192,8 @@ export default function NewChallengePage() {
 
             <input
               type="number"
-              min="1"
+              min="0"
+              step="1"
               value={phases}
               onChange={(e) =>
                 setPhases(e.target.value)
@@ -183,6 +202,8 @@ export default function NewChallengePage() {
               className="w-full rounded-lg border p-3"
             />
           </div>
+
+          <div><label className="mb-2 block text-sm font-medium">Estado</label><select value={status} onChange={(event) => setStatus(event.target.value)} className="w-full rounded-lg border p-3"><option value="draft">Borrador</option><option value="active">Activo</option><option value="inactive">Inactivo</option></select></div>
 
           {error && (
             <div className="rounded-lg bg-red-50 p-4 text-sm text-red-600">
