@@ -5,7 +5,9 @@ import { resolveChallenge, type AccountPlan, type ChallengePhase, type Challenge
 import { ChallengeGeneralForm } from '@/components/admin/challenges/ChallengeGeneralForm'
 import { AccountPlansManager } from '@/components/admin/challenges/AccountPlansManager'
 import { ChallengePhasesManager } from '@/components/admin/challenges/ChallengePhasesManager'
+import { ChallengeVariantsManager } from '@/components/admin/challenges/ChallengeVariantsManager'
 import type { EditableChallengePhase } from '@/components/admin/challenges/PhaseForm'
+import type { EditableChallengeVariant } from '@/components/admin/challenges/VariantForm'
 
 export default async function ChallengePage({
   params,
@@ -37,10 +39,7 @@ export default async function ChallengePage({
     supabase.from('account_plans').select('*').eq('challenge_id', id).order('account_size'),
     supabase.from('challenge_phases').select('*').eq('challenge_id', id).order('phase_number'),
     supabase.from('challenge_variants').select('*').eq('challenge_id', id).order('name'),
-    supabase.from('challenge_reward_options').select('*').eq('challenge_id', id).eq('status', true)
-      .or(`effective_from.is.null,effective_from.lte.${visibleAt}`)
-      .or(`effective_to.is.null,effective_to.gt.${visibleAt}`)
-      .order('sort_order'),
+    supabase.from('challenge_reward_options').select('*').eq('challenge_id', id).order('sort_order'),
     supabase.from('platforms').select('id, name, slug').eq('type', 'prop_firm').order('name'),
   ])
   const queryError = plansResult.error ?? phasesResult.error ?? variantsResult.error ?? rewardOptionsResult.error ?? platformsResult.error
@@ -89,9 +88,11 @@ export default async function ChallengePage({
 
           <section id="fases" className="scroll-mt-24 rounded-xl bg-white p-5 shadow sm:p-6"><ChallengePhasesManager challengeId={id} challengeName={challenge.name} platformSlug={platform.slug} declaredPhases={challenge.phases} phases={phases} variantIds={variantIds} legacyPlanCount={legacyPlanCount} /></section>
 
+          <section id="variantes" className="scroll-mt-24 rounded-xl bg-white p-5 shadow sm:p-6"><ChallengeVariantsManager challengeId={id} challengeName={challenge.name} platformSlug={platform.slug} variants={(variantsResult.data ?? []) as EditableChallengeVariant[]} plans={plans} phases={phases} overrides={(variantPhasesResult.data ?? []) as ChallengeVariantPhase[]} rewards={(rewardOptionsResult.data ?? []) as ChallengeRewardOption[]} hasNormalizedPhases={resolved.hasNormalizedPhases} /></section>
+
           <section id="rewards" className="scroll-mt-24 rounded-xl bg-white p-5 shadow sm:p-6"><div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-xl font-bold">Reward principal</h2><p className="mt-1 text-sm text-slate-500">Profit split, frecuencia y espera mínima visibles públicamente.</p></div><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">Edición en próxima etapa</span></div><RewardScope title="General" options={resolved.generalRewardOptions} />{resolved.variants.filter((variant) => variant.rewardOptionsSource === 'specific').map((variant) => <RewardScope key={variant.id} title={variant.name} options={variant.rewardOptions} />)}{!resolved.generalRewardOptions.length && !resolved.variants.some((variant) => variant.rewardOptionsSource === 'specific') && <p className="mt-4 rounded-lg bg-slate-50 p-4 text-sm text-slate-500">No hay rewards normalizados visibles.</p>}</section>
 
-          <details id="variantes" className="scroll-mt-24 rounded-xl bg-white p-5 shadow sm:p-6"><summary className="cursor-pointer text-xl font-bold">Variantes y detalles avanzados</summary><p className="mt-2 text-sm text-slate-500">Overrides, campos legacy, requisitos avanzados y trazabilidad. La edición llegará en la próxima etapa.</p><div className="mt-6 space-y-6 border-t pt-6"><section><h3 className="font-semibold">Fuente y reglas completas de las fases</h3>{resolved.hasNormalizedPhases ? <AdminPhaseTable phases={resolved.basePhases} /> : <p className="mt-3 text-sm text-slate-500">Sin fases normalizadas.</p>}</section><LegacyPlansTable plans={plans} variantName={variantName} /><section><h3 className="font-semibold">Variantes y overrides</h3><div className="mt-4 space-y-5">{resolved.variants.map((variant) => <article key={variant.id} className="rounded-xl border p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><h4 className="font-bold">{variant.name}</h4><p className="text-sm text-slate-500">{variant.slug} · {variant.status ? 'Activa' : 'Inactiva'} · {variant.plans.length} planes</p></div><span className="rounded-full bg-slate-100 px-3 py-1 text-sm">{variant.profit_split !== null ? `${variant.profit_split}% split legacy` : 'Split legacy —'}</span></div>{variant.notes && <p className="mt-3 text-sm text-slate-600">{variant.notes}</p>}<AdminOverrideTable overrides={variant.overrides} /><h5 className="mt-5 font-semibold">Reglas efectivas completas</h5><AdminPhaseTable phases={variant.effectivePhases} /><p className="mt-4 text-sm text-slate-500">{variant.rewardOptionsSource === 'specific' ? 'Usa rewards propios.' : variant.rewardOptionsSource === 'inherited' ? 'Hereda los rewards generales.' : 'Sin rewards normalizados.'}</p></article>)}{!resolved.variants.length && <p className="text-sm text-slate-500">No hay variantes registradas.</p>}</div></section></div></details>
+          <details className="rounded-xl bg-white p-5 shadow sm:p-6"><summary className="cursor-pointer text-xl font-bold">Detalles avanzados</summary><p className="mt-2 text-sm text-slate-500">Reglas efectivas, campos legacy y trazabilidad.</p><div className="mt-6 space-y-6 border-t pt-6"><section><h3 className="font-semibold">Fuente y reglas completas de las fases</h3>{resolved.hasNormalizedPhases ? <AdminPhaseTable phases={resolved.basePhases} /> : <p className="mt-3 text-sm text-slate-500">Sin fases normalizadas.</p>}</section><LegacyPlansTable plans={plans} variantName={variantName} /><section><h3 className="font-semibold">Reglas efectivas por variante</h3><div className="mt-4 space-y-5">{resolved.variants.map((variant) => <article key={variant.id} className="rounded-xl border p-5"><h4 className="font-bold">{variant.name}</h4><AdminPhaseTable phases={variant.effectivePhases} /></article>)}{!resolved.variants.length && <p className="text-sm text-slate-500">No hay variantes registradas.</p>}</div></section></div></details>
         </div>
       </div>
     </main>
@@ -103,11 +104,6 @@ function AdminPhaseTable({ phases }: { phases: EffectivePhase[] }) {
 }
 
 function formatPercent(value: number | null) { return value === null ? '—' : `${value}%` }
-
-function AdminOverrideTable({ overrides }: { overrides: ChallengeVariantPhase[] }) {
-  if (!overrides.length) return <p className="mt-4 text-sm text-slate-500">Sin overrides por fase.</p>
-  return <div className="mt-4 overflow-x-auto"><h4 className="mb-2 font-semibold">Overrides registrados</h4><table className="w-full min-w-[760px] text-sm"><thead className="bg-slate-50"><tr><th className="px-3 py-2 text-left">Fase</th><th className="px-3 py-2 text-left">Target</th><th className="px-3 py-2 text-left">Daily DD</th><th className="px-3 py-2 text-left">Max DD</th><th className="px-3 py-2 text-left">Mín. días</th><th className="px-3 py-2 text-left">Días rentables</th></tr></thead><tbody>{overrides.map((override) => <tr key={override.id} className="border-b"><td className="px-3 py-2">Fase {override.phase_number}</td><td className="px-3 py-2">{formatPercent(override.profit_target)}</td><td className="px-3 py-2">{formatPercent(override.daily_drawdown)}</td><td className="px-3 py-2">{formatPercent(override.max_drawdown)}</td><td className="px-3 py-2">{override.min_trading_days ?? '—'}</td><td className="px-3 py-2">{override.min_profitable_days ?? '—'}</td></tr>)}</tbody></table></div>
-}
 
 function AdminRewardOptions({ options }: { options: ChallengeRewardOption[] }) {
   if (!options.length) return <p className="mt-4 rounded-lg bg-slate-50 p-4 text-sm text-slate-500">No hay reward options visibles en este ámbito.</p>
