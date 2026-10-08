@@ -4,8 +4,8 @@ import { ImapFlow, type FetchMessageObject, type ListResponse, type MessageAddre
 import { simpleParser } from 'mailparser'
 import nodemailer from 'nodemailer'
 import MailComposer from 'nodemailer/lib/mail-composer'
-import sanitizeHtml from 'sanitize-html'
 import { getMailConfig } from '@/lib/mail-config'
+import { sanitizeMailHtml } from '@/lib/mail-html'
 import { MAX_MESSAGE_BYTES, safeAttachmentName } from '@/lib/mail-safety'
 
 export type MailFolder = { path: string; name: string; role: string; messages: number; unseen: number }
@@ -68,7 +68,8 @@ export async function readMessage(folderPath: string, uid: number) {
         cc: addressText(parsed.cc),
         replyTo: addressText(parsed.replyTo),
         text: parsed.text ?? '',
-        html: parsed.html ? sanitizeMailHtml(parsed.html) : '',
+        html: parsed.html ? sanitizeMailHtml(parsed.html, false) : '',
+        htmlWithRemoteImages: parsed.html ? sanitizeMailHtml(parsed.html, true) : '',
         attachments: parsed.attachments.map((attachment, index) => ({ index, filename: safeAttachmentName(attachment.filename || `adjunto-${index + 1}`), contentType: attachment.contentType, size: attachment.size, contentId: attachment.cid ?? null })),
       }
     } finally { lock.release() }
@@ -177,27 +178,4 @@ function addressText(value?: { text: string } | { text: string }[]) {
 function countAttachments(node?: MessageStructureObject): number {
   if (!node) return 0
   return (node.disposition?.toLocaleLowerCase('en-US') === 'attachment' ? 1 : 0) + (node.childNodes ?? []).reduce((total, child) => total + countAttachments(child), 0)
-}
-
-function sanitizeMailHtml(html: string) {
-  return sanitizeHtml(html, {
-    allowedTags: sanitizeHtml.defaults.allowedTags
-      .filter((tag) => tag !== 'img')
-      .concat(['table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td']),
-    allowedAttributes: {
-      a: ['href', 'title'],
-      table: ['border', 'cellpadding', 'cellspacing'],
-      td: ['colspan', 'rowspan'],
-      th: ['colspan', 'rowspan'],
-    },
-    allowedSchemes: ['http', 'https', 'mailto'],
-    transformTags: {
-      a: sanitizeHtml.simpleTransform(
-        'a',
-        { target: '_blank', rel: 'noopener noreferrer' },
-        true,
-      ),
-    },
-    disallowedTagsMode: 'discard',
-  })
 }
