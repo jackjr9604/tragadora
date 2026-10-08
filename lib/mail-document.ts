@@ -1,0 +1,4 @@
+export function mailDocument(html: string, allowRemoteImages: boolean) {
+  const imageSource = allowRemoteImages ? 'img-src http: https:' : "img-src 'none'"
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; ${imageSource}; style-src 'unsafe-inline'; font-src 'none'; media-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'"><style>html{color-scheme:light;background:#f8fafc}body{margin:0;padding:16px;overflow:auto;color:#1e293b;background:#f8fafc;font:14px/1.5 Arial,sans-serif}.email-canvas{display:table;min-width:min-content;margin:0 auto;background:#fff}blockquote{margin-left:0;padding-left:16px;border-left:3px solid #e2e8f0}pre{white-space:pre-wrap}</style></head><body><div class="email-canvas">${html}</div></body></html>`
+}
