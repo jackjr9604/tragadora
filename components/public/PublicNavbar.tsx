@@ -10,11 +10,11 @@ import type { PublicSearchItem } from '@/lib/public-search'
 import type { BrandingAsset } from '@/lib/branding-config'
 import { PublicGlobalSearch } from './PublicGlobalSearch'
 
-const paths = ['/payouts', '/prop-firms', '/comparador', '/ofertas', '/brokers', '/herramientas', '/comunidades', '/exchanges', '/blog', '/giveaway'] as const
+const paths = ['/payouts', '/prop-firms', '/comparador', '/ofertas', '/brokers', '/herramientas', '/calculadoras', '/comunidades', '/exchanges', '/blog', '/giveaway'] as const
 const navCopy = {
-  es: { links: ['Payouts', 'Prop Firms', 'Comparador', 'Ofertas', 'Brokers', 'Herramientas', 'Comunidades', 'Exchanges', 'Blog', 'Giveaway'], methodology: 'Metodología', explore: 'Explorar firmas' },
-  en: { links: ['Payouts', 'Prop Firms', 'Compare', 'Offers', 'Brokers', 'Tools', 'Communities', 'Exchanges', 'Blog', 'Giveaway'], methodology: 'Methodology', explore: 'Explore firms' },
-  pt: { links: ['Payouts', 'Prop Firms', 'Comparador', 'Ofertas', 'Brokers', 'Ferramentas', 'Comunidades', 'Exchanges', 'Blog', 'Giveaway'], methodology: 'Metodologia', explore: 'Explorar firmas' },
+  es: { links: ['Payouts', 'Prop Firms', 'Comparador', 'Ofertas', 'Brokers', 'Herramientas', 'Calculadoras', 'Comunidades', 'Exchanges', 'Blog', 'Giveaway'], methodology: 'Metodología', explore: 'Explorar firmas' },
+  en: { links: ['Payouts', 'Prop Firms', 'Compare', 'Offers', 'Brokers', 'Tools', 'Calculators', 'Communities', 'Exchanges', 'Blog', 'Giveaway'], methodology: 'Methodology', explore: 'Explore firms' },
+  pt: { links: ['Payouts', 'Prop Firms', 'Comparador', 'Ofertas', 'Brokers', 'Ferramentas', 'Calculadoras', 'Comunidades', 'Exchanges', 'Blog', 'Giveaway'], methodology: 'Metodologia', explore: 'Explorar firmas' },
 } as const
 
 export function PublicNavbar({ language = 'es', languages, searchItems, desktopLogo, mobileLogo }: { language?: PublicLanguage; languages: PublicLanguageOption[]; searchItems: PublicSearchItem[]; desktopLogo: BrandingAsset; mobileLogo: BrandingAsset }) {
@@ -35,14 +35,14 @@ export function PublicNavbar({ language = 'es', languages, searchItems, desktopL
 
   return (
     <header className="sticky top-0 z-50 border-b border-amber-300/15 bg-[#060d18]/94 shadow-[0_10px_35px_rgba(0,0,0,.22)] backdrop-blur-xl">
-      <div className="mx-auto flex h-18 max-w-7xl items-center gap-7 px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-18 max-w-[1440px] items-center gap-5 px-4 sm:px-6 lg:px-8">
         <Link href="/" aria-label="Tradagora, inicio" className="shrink-0">
           <BrandMark responsive desktop={desktopLogo} mobile={mobileLogo} />
         </Link>
 
-        <nav className="hidden flex-1 items-center gap-6 lg:flex" aria-label="Principal">
+        <nav className="hidden flex-1 items-center gap-3 xl:gap-4 lg:flex" aria-label="Principal">
           {links.map(([label, href]) => (
-            <Link key={label} href={href} aria-current={pathname === href || pathname.startsWith(`${href}/`) ? 'page' : undefined} className="relative py-6 text-sm text-slate-400 transition after:absolute after:inset-x-0 after:bottom-0 after:h-px after:origin-center after:scale-x-0 after:bg-[#f0c454] after:shadow-[0_0_10px_#f0c454] after:transition hover:text-white aria-[current=page]:text-[#f0c454] aria-[current=page]:after:scale-x-100">
+            <Link key={label} href={href} aria-current={pathname === href || pathname.startsWith(`${href}/`) ? 'page' : undefined} className="relative whitespace-nowrap py-6 text-[13px] text-slate-400 transition after:absolute after:inset-x-0 after:bottom-0 after:h-px after:origin-center after:scale-x-0 after:bg-[#f0c454] after:shadow-[0_0_10px_#f0c454] after:transition hover:text-white aria-[current=page]:text-[#f0c454] aria-[current=page]:after:scale-x-100 xl:text-sm">
               {label}
             </Link>
           ))}

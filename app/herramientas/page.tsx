@@ -3,17 +3,16 @@ import { PublicPageShell } from '@/components/public/PublicPageShell'
 import { ToolsDirectory } from '@/components/tools/ToolsDirectory'
 import { resolvePublicLanguage } from '@/lib/language'
 import { getPublishedTools } from '@/lib/tools'
-import { PageHero } from '@/components/public/PageHero'
-import { getPageContent } from '@/lib/site-content'
+import { getPageContent, pageValue } from '@/lib/site-content'
 
-export const metadata: Metadata = { title: 'Herramientas para traders | Tradagora', description: 'Calculadoras y recursos prácticos para planear y evaluar tu operativa.' }
+export const metadata: Metadata = { title: 'Herramientas de trading | Tradagora', description: 'Recursos, plataformas y servicios útiles para traders.', alternates: { canonical: '/herramientas' } }
 export const revalidate = 60
 
 export default async function ToolsPage({ searchParams }: { searchParams: Promise<{ lang?: string | string[] }> }) {
   const language = await resolvePublicLanguage((await searchParams).lang)
   const [tools, content] = await Promise.all([getPublishedTools(), getPageContent('herramientas', language)])
   return <PublicPageShell language={language}>
-    <PageHero content={content} fallbackTitle="Utilidades para traders." fallbackSubtitle="Recursos prácticos para planear, calcular y evaluar tus operaciones." primaryHref="#herramientas" secondaryHref={`/blog?lang=${language}`} compact />
-    <section id="herramientas" className="mx-auto w-full max-w-[1440px] scroll-mt-24 px-4 py-8 sm:px-6 lg:px-8 lg:py-10"><ToolsDirectory tools={tools} /></section>
+    <header className="tg-hero"><div className="mx-auto max-w-[1440px] px-4 py-12 sm:px-6 sm:py-14 lg:px-8"><span className="tg-eyebrow">{pageValue(content, 'hero', 'badge', language === 'en' ? 'Tools' : language === 'pt' ? 'Ferramentas' : 'Herramientas')}</span><h1 className="mt-3 max-w-4xl text-4xl font-bold leading-[1.02] text-white sm:text-5xl lg:text-6xl">{pageValue(content, 'hero', 'title', language === 'en' ? 'Trading tools' : language === 'pt' ? 'Ferramentas de trading' : 'Herramientas de trading')}</h1><p className="mt-4 max-w-2xl text-base leading-7 text-slate-400 sm:text-lg">{pageValue(content, 'hero', 'subtitle', language === 'en' ? 'Discover platforms, data, indicators, and resources that can support your trading workflow.' : language === 'pt' ? 'Descubra plataformas, dados, indicadores e recursos úteis para sua operação.' : 'Descubre plataformas, datos, indicadores y recursos útiles para mejorar tu operativa.')}</p></div></header>
+    <section id="herramientas" className="mx-auto w-full max-w-[1440px] scroll-mt-24 px-4 py-8 sm:px-6 lg:px-8 lg:py-12"><ToolsDirectory tools={tools} language={language} /></section>
   </PublicPageShell>
 }

@@ -12,9 +12,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const access = await getCurrentAdminPermissions()
   if (!access.userId) redirect('/login')
   const links = availableAdminLinks(access)
-  const navigationLinks = links.flatMap((link) => link.href === '/admin/platforms'
-    ? [link, { label: 'Brokers', href: '/admin/brokers' }, { label: 'Exchanges', href: '/admin/exchanges' }]
-    : [link])
+  const navigationLinks = links.flatMap((link) => {
+    if (link.href === '/admin/platforms') return [link, { label: 'Brokers', href: '/admin/brokers' }, { label: 'Exchanges', href: '/admin/exchanges' }]
+    if (link.href === '/admin/tools') return [link, { label: 'Calculadoras', href: '/admin/calculators' }]
+    return [link]
+  })
   if (!links.length) redirect('/')
   const branding = await getBranding()
 

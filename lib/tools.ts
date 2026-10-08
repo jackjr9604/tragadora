@@ -3,8 +3,11 @@ import { createClient } from '@/lib/supabase/server'
 
 export type ToolType = 'internal' | 'external' | 'coming_soon'
 export type ToolStatus = 'draft' | 'published'
+export type ToolPricingModel = 'free' | 'freemium' | 'paid'
 
-export type ToolRecord = {
+type MediaRelation = { file_url: string; alt_text: string | null }
+
+type ToolRow = {
   id: string
   slug: string
   name: string
@@ -19,20 +22,58 @@ export type ToolRecord = {
   display_order: number
   status: ToolStatus
   open_in_new_tab: boolean
+  pricing_model: ToolPricingModel | null
+  has_free_plan: boolean
+  price_label: string | null
+  availability: string | null
+  author_name: string | null
+  promo_code: string | null
+  promo_label: string | null
+  is_ours: boolean
+  logo_media_id: string | null
+  logo: MediaRelation | MediaRelation[] | null
 }
 
-const TOOL_FIELDS = 'id, slug, name, short_description, tool_type, category, icon_key, badge, internal_path, external_url, is_featured, display_order, status, open_in_new_tab'
+export type ToolRecord = Omit<ToolRow, 'logo'> & {
+  logo_url: string | null
+  logo_alt: string | null
+}
+
+export const TOOL_SELECT = `
+  id, slug, name, short_description, tool_type, category, icon_key, badge,
+  internal_path, external_url, is_featured, display_order, status,
+  open_in_new_tab, pricing_model, has_free_plan, price_label, availability,
+  author_name, promo_code, promo_label, is_ours, logo_media_id,
+  logo:logo_media_id(file_url, alt_text)
+`
 
 export async function getPublishedTools(): Promise<ToolRecord[]> {
   const db = await createClient()
-  const result = await db.from('tools').select(TOOL_FIELDS).eq('status', 'published').order('display_order').order('name')
+  const result = await db.from('tools').select(TOOL_SELECT).eq('status', 'published').in('tool_type', ['external', 'coming_soon']).order('is_featured', { ascending: false }).order('display_order').order('name')
   if (result.error) throw new Error(result.error.message)
-  return (result.data ?? []) as ToolRecord[]
+  return mapTools(result.data as ToolRow[] | null)
+}
+
+export async function getPublishedCalculators(): Promise<ToolRecord[]> {
+  const db = await createClient()
+  const result = await db.from('tools').select(TOOL_SELECT).eq('status', 'published').eq('tool_type', 'internal').order('display_order').order('name')
+  if (result.error) throw new Error(result.error.message)
+  return mapTools(result.data as ToolRow[] | null)
 }
 
 export async function getPublishedTool(slug: string): Promise<ToolRecord | null> {
   const db = await createClient()
-  const result = await db.from('tools').select(TOOL_FIELDS).eq('slug', slug).eq('status', 'published').maybeSingle()
+  const result = await db.from('tools').select(TOOL_SELECT).eq('slug', slug).eq('status', 'published').maybeSingle()
   if (result.error) throw new Error(result.error.message)
-  return result.data as ToolRecord | null
+  return result.data ? mapTool(result.data as ToolRow) : null
+}
+
+function mapTools(rows: ToolRow[] | null): ToolRecord[] {
+  return (rows ?? []).map(mapTool)
+}
+
+function mapTool(row: ToolRow): ToolRecord {
+  const { logo: relation, ...tool } = row
+  const logo = Array.isArray(relation) ? relation[0] ?? null : relation
+  return { ...tool, logo_url: logo?.file_url ?? null, logo_alt: logo?.alt_text ?? row.name }
 }

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { BadgeDollarSign, BookOpen, BriefcaseBusiness, Building2, FileText, Gift, Home, Image, LayoutDashboard, Link2, Newspaper, Palette, Search, Settings2, ShieldCheck, Tags, Users, Wrench } from 'lucide-react'
+import { BadgeDollarSign, BookOpen, BriefcaseBusiness, Building2, Calculator, FileText, Gift, Home, Image, LayoutDashboard, Link2, Newspaper, Palette, Search, Settings2, ShieldCheck, Tags, Users, Wrench } from 'lucide-react'
 
 type AdminLink = { label: string; href: string }
 
@@ -19,6 +19,7 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   '/admin/media': Image,
   '/admin/branding': Palette,
   '/admin/tools': Wrench,
+  '/admin/calculators': Calculator,
   '/admin/communities': Users,
   '/admin/blog': Newspaper,
   '/admin/giveaways': Gift,
@@ -34,7 +35,7 @@ export function AdminShellNavigation({ links, mobile = false }: { links: AdminLi
   if (mobile) return <nav className="admin-mobile-nav" aria-label="Administración móvil">{links.map((link) => <NavItem key={link.href} link={link} pathname={pathname} mobile />)}</nav>
 
   const management = links.filter((link) => ['/admin', '/admin/home', '/admin/platforms', '/admin/brokers', '/admin/exchanges', '/admin/challenges', '/admin/payouts', '/admin/offers', '/admin/affiliate-links'].includes(link.href))
-  const content = links.filter((link) => ['/admin/content', '/admin/media', '/admin/branding', '/admin/tools', '/admin/communities', '/admin/blog', '/admin/giveaways', '/admin/docs'].includes(link.href))
+  const content = links.filter((link) => ['/admin/content', '/admin/media', '/admin/branding', '/admin/tools', '/admin/calculators', '/admin/communities', '/admin/blog', '/admin/giveaways', '/admin/docs'].includes(link.href))
   const system = links.filter((link) => !management.includes(link) && !content.includes(link))
   return <nav className="admin-sidebar-nav" aria-label="Administración"><NavGroup title="Gestión" links={management} pathname={pathname} /><NavGroup title="Contenido" links={content} pathname={pathname} />{system.length > 0 && <NavGroup title="Sistema" links={system} pathname={pathname} />}</nav>
 }

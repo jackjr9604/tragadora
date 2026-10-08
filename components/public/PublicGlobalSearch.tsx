@@ -6,13 +6,13 @@ import { useRouter } from 'next/navigation'
 import type { PublicSearchItem } from '@/lib/public-search'
 
 const copy = {
-  es: { placeholder: 'Buscar firma, bróker o exchange', empty: 'No encontramos resultados', labels: { prop_firm: 'Prop Firms', broker: 'Brokers', exchange: 'Exchanges' } },
-  en: { placeholder: 'Search firm, broker or exchange', empty: 'No results found', labels: { prop_firm: 'Prop Firms', broker: 'Brokers', exchange: 'Exchanges' } },
-  pt: { placeholder: 'Buscar firma, corretora ou exchange', empty: 'Nenhum resultado encontrado', labels: { prop_firm: 'Prop Firms', broker: 'Brokers', exchange: 'Exchanges' } },
+  es: { placeholder: 'Buscar en Tradagora', empty: 'No encontramos resultados', labels: { prop_firm: 'Prop Firms', broker: 'Brokers', exchange: 'Exchanges', tool: 'Herramientas', calculator: 'Calculadoras' } },
+  en: { placeholder: 'Search Tradagora', empty: 'No results found', labels: { prop_firm: 'Prop Firms', broker: 'Brokers', exchange: 'Exchanges', tool: 'Tools', calculator: 'Calculators' } },
+  pt: { placeholder: 'Buscar na Tradagora', empty: 'Nenhum resultado encontrado', labels: { prop_firm: 'Prop Firms', broker: 'Brokers', exchange: 'Exchanges', tool: 'Ferramentas', calculator: 'Calculadoras' } },
 } as const
 
-const paths = { prop_firm: 'prop-firms', broker: 'brokers', exchange: 'exchanges' } as const
-const typeLabels = { prop_firm: 'Prop Firm', broker: 'Broker', exchange: 'Exchange' } as const
+const paths = { prop_firm: 'prop-firms', broker: 'brokers', exchange: 'exchanges', tool: 'herramientas', calculator: 'calculadoras' } as const
+const typeLabels = { prop_firm: 'Prop Firm', broker: 'Broker', exchange: 'Exchange', tool: 'Herramienta', calculator: 'Calculadora' } as const
 
 export function PublicGlobalSearch({ items, language }: { items: PublicSearchItem[]; language: string }) {
   const [query, setQuery] = useState('')
@@ -41,7 +41,7 @@ export function PublicGlobalSearch({ items, language }: { items: PublicSearchIte
     router.push(`/${paths[item.type]}/${item.slug}`)
   }
 
-  const grouped = (['prop_firm', 'broker', 'exchange'] as const).map((type) => ({ type, items: results.filter((item) => item.type === type) })).filter((group) => group.items.length)
+  const grouped = (['prop_firm', 'broker', 'exchange', 'tool', 'calculator'] as const).map((type) => ({ type, items: results.filter((item) => item.type === type) })).filter((group) => group.items.length)
   let resultIndex = -1
 
   return <div ref={rootRef} className="relative hidden xl:block">

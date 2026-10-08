@@ -5,9 +5,9 @@ insert into public.tools (
   internal_path, external_url, is_featured, display_order, status, open_in_new_tab
 )
 values
-  ('drawdown', 'Calculadora de Drawdown', 'Calcula cuánto margen queda antes de alcanzar tu límite de pérdida.', 'internal', 'Riesgo', 'shield', null, '/herramientas/drawdown', null, true, 10, 'published', false),
-  ('profit-split', 'Calculadora de Profit Split', 'Distribuye una ganancia entre el trader y la firma según el porcentaje acordado.', 'internal', 'Payouts', 'percent', null, '/herramientas/profit-split', null, true, 20, 'published', false),
-  ('challenge-target', 'Calculadora de Objetivo', 'Mide el progreso y el saldo faltante para alcanzar el objetivo de un challenge.', 'internal', 'Challenges', 'target', null, '/herramientas/challenge-target', null, false, 30, 'published', false)
+  ('drawdown', 'Calculadora de Drawdown', 'Calcula cuánto margen queda antes de alcanzar tu límite de pérdida.', 'internal', 'Riesgo', 'shield', null, '/calculadoras/drawdown', null, true, 10, 'published', false),
+  ('profit-split', 'Calculadora de Profit Split', 'Distribuye una ganancia entre el trader y la firma según el porcentaje acordado.', 'internal', 'Payouts', 'percent', null, '/calculadoras/profit-split', null, true, 20, 'published', false),
+  ('challenge-target', 'Calculadora de Objetivo', 'Mide el progreso y el saldo faltante para alcanzar el objetivo de un challenge.', 'internal', 'Challenges', 'target', null, '/calculadoras/challenge-target', null, false, 30, 'published', false)
 on conflict (slug) do update set
   name = excluded.name,
   short_description = excluded.short_description,
@@ -20,5 +20,9 @@ on conflict (slug) do update set
   display_order = excluded.display_order,
   status = excluded.status,
   open_in_new_tab = excluded.open_in_new_tab;
+
+update public.tools
+set pricing_model = 'free', has_free_plan = true, is_ours = true
+where slug in ('drawdown', 'profit-split', 'challenge-target');
 
 commit;

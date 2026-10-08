@@ -51,6 +51,8 @@ export function permissionForAdminPath(pathname: string): PermissionKey {
   if (path.startsWith('/admin/content')) return 'content.view'
   if (path.startsWith('/admin/media')) return 'media.view'
   if (path.startsWith('/admin/branding')) return 'branding.view'
+  if (/^\/admin\/calculators\/[^/]+\/edit$/.test(path)) return 'tools.update'
+  if (path.startsWith('/admin/calculators')) return 'tools.view'
   if (path === '/admin/tools/new') return 'tools.create'
   if (/^\/admin\/tools\/[^/]+\/edit$/.test(path)) return 'tools.update'
   if (path.startsWith('/admin/tools')) return 'tools.view'

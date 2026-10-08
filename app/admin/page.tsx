@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { BadgeDollarSign, BookOpen, BriefcaseBusiness, Building2, Gift, Image, Link2, Newspaper, Tags, Users, Wrench } from 'lucide-react'
+import { BadgeDollarSign, BookOpen, BriefcaseBusiness, Building2, Calculator, Gift, Image, Link2, Newspaper, Tags, Users, Wrench } from 'lucide-react'
 import { redirect } from 'next/navigation'
 import type { PermissionKey } from '@/lib/admin-permissions'
 import { getCurrentAdminPermissions, hasPermission } from '@/lib/admin-permissions-server'
@@ -19,7 +19,7 @@ export default async function AdminDashboard() {
     return result.error ? { value: null, available: false } : { value: result.count ?? 0, available: true }
   }
 
-  const [propFirms, activePropFirms, draftPropFirms, brokers, exchanges, challenges, activeOffers, affiliateClicks, media, tools, publishedTools, communities, publishedCommunities, blogPosts, publishedBlogPosts, giveaways, publishedGiveaways, endedGiveaways, docs, publishedDocs] = await Promise.all([
+  const [propFirms, activePropFirms, draftPropFirms, brokers, exchanges, challenges, activeOffers, affiliateClicks, media, tools, publishedTools, calculators, publishedCalculators, communities, publishedCommunities, blogPosts, publishedBlogPosts, giveaways, publishedGiveaways, endedGiveaways, docs, publishedDocs] = await Promise.all([
     count(can('platforms.view'), supabase.from('platforms').select('id', { count: 'exact', head: true }).eq('type', 'prop_firm')),
     count(can('platforms.view'), supabase.from('platforms').select('id', { count: 'exact', head: true }).eq('type', 'prop_firm').eq('status', 'active')),
     count(can('platforms.view'), supabase.from('platforms').select('id', { count: 'exact', head: true }).eq('type', 'prop_firm').eq('status', 'draft')),
@@ -29,8 +29,10 @@ export default async function AdminDashboard() {
     count(can('offers.view'), supabase.from('offers').select('id', { count: 'exact', head: true }).eq('status', true)),
     count(can('affiliate_links.view'), supabase.from('affiliate_clicks').select('id', { count: 'exact', head: true })),
     count(can('media.view'), supabase.from('media').select('id', { count: 'exact', head: true })),
-    count(can('tools.view'), supabase.from('tools').select('id', { count: 'exact', head: true })),
-    count(can('tools.view'), supabase.from('tools').select('id', { count: 'exact', head: true }).eq('status', 'published')),
+    count(can('tools.view'), supabase.from('tools').select('id', { count: 'exact', head: true }).in('tool_type', ['external', 'coming_soon'])),
+    count(can('tools.view'), supabase.from('tools').select('id', { count: 'exact', head: true }).in('tool_type', ['external', 'coming_soon']).eq('status', 'published')),
+    count(can('tools.view'), supabase.from('tools').select('id', { count: 'exact', head: true }).eq('tool_type', 'internal')),
+    count(can('tools.view'), supabase.from('tools').select('id', { count: 'exact', head: true }).eq('tool_type', 'internal').eq('status', 'published')),
     count(can('communities.view'), supabase.from('communities').select('id', { count: 'exact', head: true })),
     count(can('communities.view'), supabase.from('communities').select('id', { count: 'exact', head: true }).eq('status', 'published')),
     count(can('blog.view'), supabase.from('blog_posts').select('id', { count: 'exact', head: true })),
@@ -55,6 +57,7 @@ export default async function AdminDashboard() {
     metric('Brokers', brokers, '/admin/brokers', Building2),
     metric('Exchanges', exchanges, '/admin/exchanges', BadgeDollarSign),
     metric('Herramientas', tools, '/admin/tools', Wrench, publishedDetail(publishedTools, tools)),
+    metric('Calculadoras', calculators, '/admin/calculators', Calculator, publishedDetail(publishedCalculators, calculators)),
     metric('Comunidades', communities, '/admin/communities', Users, publishedDetail(publishedCommunities, communities)),
     metric('Blog', blogPosts, '/admin/blog', Newspaper, publishedDetail(publishedBlogPosts, blogPosts)),
     metric('Giveaways', giveaways, '/admin/giveaways', Gift, detailParts([publishedGiveaways, 'publicados'], [endedGiveaways, 'finalizados'])),
