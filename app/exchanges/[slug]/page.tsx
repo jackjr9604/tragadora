@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowUpRight, ExternalLink } from 'lucide-react'
@@ -6,7 +7,7 @@ import { PromoCodeButton } from '@/components/public/offers/PromoCodeButton'
 import { getPublicExchange } from '@/lib/exchanges'
 import { resolvePublicLanguage } from '@/lib/language'
 import { getPublicOffers } from '@/lib/public-offers'
-import { firmProfileText, localizedCountryName, publicExchangeProfileCopy, publicLocale, publicPath, publicUiLanguage } from '@/lib/public-i18n'
+import { firmProfileText, getPublicUi, localizedCountryName, publicExchangeProfileCopy, publicLocale, publicPath, publicUiLanguage } from '@/lib/public-i18n'
 
 export const revalidate = 60
 
@@ -15,10 +16,18 @@ type PageProps = {
   searchParams: Promise<{ lang?: string | string[] }>
 }
 
+export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
+  const [{ slug }, query] = await Promise.all([params, searchParams])
+  const language = await resolvePublicLanguage(query.lang)
+  const exchange = await getPublicExchange(slug, language)
+  return exchange ? { title: exchange.seoTitle || `${exchange.name} | Tradagora`, description: exchange.seoDescription || exchange.shortDescription || undefined } : {}
+}
+
 export default async function Page({ params, searchParams }: PageProps) {
   const [{ slug }, query] = await Promise.all([params, searchParams])
   const language = await resolvePublicLanguage(query.lang)
   const copy = publicExchangeProfileCopy[publicUiLanguage(language)]
+  const t = getPublicUi(language)
   const locale = publicLocale(language)
   const [exchange, offers] = await Promise.all([getPublicExchange(slug, language), getPublicOffers(language, null)])
   if (!exchange) notFound()
@@ -58,6 +67,7 @@ export default async function Page({ params, searchParams }: PageProps) {
               <Fact label={copy.fiatSupport} value={fiatSupport} fallback={copy.unverified} />
               <Fact label={copy.regulation} value={exchange.regulationSummary} fallback={copy.unverified} />
             </div>
+            {(exchange.pros.length || exchange.cons.length) ? <div className="mt-6 grid gap-4 sm:grid-cols-2">{exchange.pros.length > 0 && <TranslationList title={t('platform.pros')} items={exchange.pros} />}{exchange.cons.length > 0 && <TranslationList title={t('platform.cons')} items={exchange.cons} />}</div> : null}
             {exchange.regulationSourceUrl && <a href={exchange.regulationSourceUrl} target="_blank" rel="noopener noreferrer" className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-amber-300">{copy.checkSource} <ExternalLink className="size-4" /></a>}
           </section>
 
@@ -89,3 +99,4 @@ export default async function Page({ params, searchParams }: PageProps) {
 function Fact({ label, value, fallback }: { label: string; value: string | null; fallback: string }) {
   return <div><dt className="text-xs uppercase tracking-wider text-slate-500">{label}</dt><dd className="mt-1 text-sm font-semibold text-slate-200">{value || fallback}</dd></div>
 }
+function TranslationList({ title, items }: { title: string; items: string[] }) { return <section className="rounded-xl border border-white/8 bg-black/10 p-4"><h3 className="font-semibold">{title}</h3><ul className="mt-3 space-y-2 text-sm text-slate-400">{items.map((item) => <li key={item}>• {item}</li>)}</ul></section> }

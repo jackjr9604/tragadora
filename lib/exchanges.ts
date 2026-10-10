@@ -1,9 +1,88 @@
 import 'server-only'
+
 import { unstable_cache } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { PublicLanguage } from '@/lib/public-language'
+import { getPublicPlatformTranslations } from '@/lib/public-platform-translations'
 
-type Media={file_url:string;alt_text:string|null}; const first=<T,>(v:T|T[]|null):T|null=>Array.isArray(v)?v[0]??null:v
-export type PublicExchange={id:string;name:string;slug:string;country:string|null;countryCode:string|null;logoUrl:string|null;logoAlt:string|null;description:string|null;foundedYear:number|null;exchangeType:string;productSummary:string|null;fiatSupport:boolean|null;regulationSummary:string|null;regulationSourceUrl:string|null;isFeatured:boolean;displayOrder:number}
-async function queryExchanges(language:PublicLanguage):Promise<PublicExchange[]>{const db=createAdminClient();const p=await db.from('platforms').select('id,name,slug,origin_country_code,logo_url,media:logo_media_id(file_url,alt_text)').eq('type','exchange').eq('status','active').order('name');if(p.error)throw new Error(p.error.message);const ids=(p.data??[]).map(x=>x.id);if(!ids.length)return[];const[d,t,c]=await Promise.all([db.from('exchange_details').select('*').in('platform_id',ids),db.from('platform_translations').select('platform_id,language,short_description').in('platform_id',ids).in('language',language==='es'?['es']:[language,'es']),db.from('countries').select('code,name')]);const error=d.error??t.error??c.error;if(error)throw new Error(error.message);const dm=new Map((d.data??[]).map(x=>[x.platform_id,x])),cm=new Map((c.data??[]).map(x=>[x.code,x.name])),tm=new Map<string,string|null>();for(const x of t.data??[])if(x.language==='es')tm.set(x.platform_id,x.short_description);for(const x of t.data??[])if(x.language===language)tm.set(x.platform_id,x.short_description);return(p.data??[]).map(x=>{const m=first(x.media as Media|Media[]|null),z=dm.get(x.id);return{id:x.id,name:x.name,slug:x.slug,countryCode:x.origin_country_code,country:x.origin_country_code?cm.get(x.origin_country_code)??x.origin_country_code:null,logoUrl:m?.file_url??x.logo_url,logoAlt:m?.alt_text??x.name,description:tm.get(x.id)??null,foundedYear:z?.founded_year??null,exchangeType:z?.exchange_type??'centralized',productSummary:z?.product_summary??null,fiatSupport:z?.fiat_support??null,regulationSummary:z?.regulation_summary??null,regulationSourceUrl:z?.regulation_source_url??null,isFeatured:z?.is_featured??false,displayOrder:z?.display_order??100}}).sort((a,b)=>Number(b.isFeatured)-Number(a.isFeatured)||a.displayOrder-b.displayOrder||a.name.localeCompare(b.name,'es'))}
-const cached=unstable_cache(queryExchanges,['public-exchanges-v1'],{revalidate:60});export function getPublicExchanges(language:PublicLanguage){return cached(language)}export async function getPublicExchange(slug:string,language:PublicLanguage){return(await cached(language)).find(x=>x.slug===slug)??null}
+type Media = { file_url: string; alt_text: string | null }
+const first = <T,>(value: T | T[] | null): T | null => Array.isArray(value) ? value[0] ?? null : value
+
+export type PublicExchange = {
+  id: string
+  name: string
+  slug: string
+  country: string | null
+  countryCode: string | null
+  logoUrl: string | null
+  logoAlt: string | null
+  description: string | null
+  shortDescription: string | null
+  pros: string[]
+  cons: string[]
+  seoTitle: string | null
+  seoDescription: string | null
+  foundedYear: number | null
+  exchangeType: string
+  productSummary: string | null
+  fiatSupport: boolean | null
+  regulationSummary: string | null
+  regulationSourceUrl: string | null
+  isFeatured: boolean
+  displayOrder: number
+}
+
+async function queryExchanges(language: PublicLanguage): Promise<PublicExchange[]> {
+  const db = createAdminClient()
+  const platforms = await db.from('platforms')
+    .select('id,name,slug,origin_country_code,logo_url,media:logo_media_id(file_url,alt_text)')
+    .eq('type', 'exchange').eq('status', 'active').order('name')
+  if (platforms.error) throw new Error(platforms.error.message)
+  const ids = (platforms.data ?? []).map((item) => item.id)
+  if (!ids.length) return []
+
+  const [details, translations, countries] = await Promise.all([
+    db.from('exchange_details').select('*').in('platform_id', ids),
+    getPublicPlatformTranslations(ids, language),
+    db.from('countries').select('code,name'),
+  ])
+  const error = details.error ?? countries.error
+  if (error) throw new Error(error.message)
+  const detailMap = new Map((details.data ?? []).map((item) => [item.platform_id, item]))
+  const countryMap = new Map((countries.data ?? []).map((item) => [item.code, item.name]))
+
+  return (platforms.data ?? []).map((item) => {
+    const media = first(item.media as Media | Media[] | null)
+    const detail = detailMap.get(item.id)
+    const translation = translations.get(item.id)
+    return {
+      id: item.id,
+      name: item.name,
+      slug: item.slug,
+      countryCode: item.origin_country_code,
+      country: item.origin_country_code ? countryMap.get(item.origin_country_code) ?? item.origin_country_code : null,
+      logoUrl: media?.file_url ?? item.logo_url,
+      logoAlt: media?.alt_text ?? item.name,
+      description: translation?.description ?? translation?.shortDescription ?? null,
+      shortDescription: translation?.shortDescription ?? null,
+      pros: translation?.pros ?? [],
+      cons: translation?.cons ?? [],
+      seoTitle: translation?.seoTitle ?? null,
+      seoDescription: translation?.seoDescription ?? null,
+      foundedYear: detail?.founded_year ?? null,
+      exchangeType: detail?.exchange_type ?? 'centralized',
+      productSummary: detail?.product_summary ?? null,
+      fiatSupport: detail?.fiat_support ?? null,
+      regulationSummary: detail?.regulation_summary ?? null,
+      regulationSourceUrl: detail?.regulation_source_url ?? null,
+      isFeatured: detail?.is_featured ?? false,
+      displayOrder: detail?.display_order ?? 100,
+    }
+  }).sort((a, b) => Number(b.isFeatured) - Number(a.isFeatured) || a.displayOrder - b.displayOrder || a.name.localeCompare(b.name, 'es'))
+}
+
+const cached = unstable_cache(queryExchanges, ['public-exchanges-v2'], { revalidate: 60 })
+export function getPublicExchanges(language: PublicLanguage) { return cached(language) }
+export async function getPublicExchange(slug: string, language: PublicLanguage) {
+  return (await cached(language)).find((item) => item.slug === slug) ?? null
+}

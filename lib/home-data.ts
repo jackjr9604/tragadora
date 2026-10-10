@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { visibleBrandText } from '@/lib/public-language'
 import { classifyPayoutVerification, payoutSpeedOption, type PayoutSpeedOption, type RecommendableFirm } from '@/lib/prop-firm-recommender'
 import { conservativeMaxDrawdown, resolveChallenge, type AccountPlan, type ChallengePhase, type ChallengeRewardOption, type ChallengeVariant, type ChallengeVariantPhase } from '@/lib/challenge-resolver'
+import { getPublicPlatformTranslations } from '@/lib/public-platform-translations'
 
 export type HomePlatform = {
   id: string
@@ -76,7 +77,7 @@ async function getHomeDataUncached(language = 'es', countryCode?: string | null)
   const supabase = createAdminClient()
   const now = new Date()
 
-  const [platformResult, detailResult, translationResult, sourceResult, challengeResult, availabilityResult, countryResult, marketResult, featuredResult, affiliateResult, rankingResult] =
+  const [platformResult, detailResult, sourceResult, challengeResult, availabilityResult, countryResult, marketResult, featuredResult, affiliateResult, rankingResult] =
     await Promise.all([
       supabase
         .from('platforms')
@@ -94,10 +95,6 @@ async function getHomeDataUncached(language = 'es', countryCode?: string | null)
           allows_news_trading, allows_weekend_holding,
           allows_scalping, allows_day_trading, allows_copy_trading
         `),
-      supabase
-        .from('platform_translations')
-        .select('platform_id, language, short_description')
-        .in('language', language === 'es' ? ['es'] : ['es', language]),
       supabase
         .from('payout_sources')
         .select('id, platform_id, name, source_type, config')
@@ -121,11 +118,7 @@ async function getHomeDataUncached(language = 'es', countryCode?: string | null)
   const details = new Map(
     (detailResult.data ?? []).map((item) => [item.platform_id, item])
   )
-  const translations = new Map<string, { short_description: string | null }>()
-  for (const item of translationResult.data ?? []) {
-    const current = translations.get(item.platform_id)
-    if (!current || item.language === language) translations.set(item.platform_id, item)
-  }
+  const translations = await getPublicPlatformTranslations((platformResult.data ?? []).map((item) => item.id), language)
   const marketsByPlatform = new Map<string, string[]>()
   const affiliatePlatformIds = new Set((affiliateResult.data ?? []).map((item) => item.platform_id))
   for (const item of marketResult.data ?? []) {
@@ -146,7 +139,7 @@ async function getHomeDataUncached(language = 'es', countryCode?: string | null)
       score: row.score === null ? null : Number(row.score),
       logoUrl: media?.file_url ?? null,
       logoAlt: media?.alt_text ?? null,
-      description: translation?.short_description ?? null,
+      description: translation?.shortDescription ?? null,
       profitSplit:
         detail?.profit_split_max === null ||
         detail?.profit_split_max === undefined

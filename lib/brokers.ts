@@ -3,6 +3,7 @@ import 'server-only'
 import { unstable_cache } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { PublicLanguage } from '@/lib/public-language'
+import { getPublicPlatformTranslations } from '@/lib/public-platform-translations'
 
 export type PublicBroker = {
   id: string
@@ -13,6 +14,11 @@ export type PublicBroker = {
   logoUrl: string | null
   logoAlt: string | null
   description: string | null
+  shortDescription: string | null
+  pros: string[]
+  cons: string[]
+  seoTitle: string | null
+  seoDescription: string | null
   foundedYear: number | null
   minimumDeposit: number | null
   minimumDepositCurrency: string | null
@@ -39,13 +45,13 @@ async function queryBrokers(language: PublicLanguage): Promise<PublicBroker[]> {
 
   const [details, translations, markets, tradingPlatforms, countries, offers] = await Promise.all([
     db.from('broker_details').select('platform_id, founded_year, minimum_deposit, minimum_deposit_currency, regulation_summary, regulation_source_url, is_featured, display_order').in('platform_id', ids),
-    db.from('platform_translations').select('platform_id, language, short_description').in('platform_id', ids).in('language', language === 'es' ? ['es'] : [language, 'es']),
+    getPublicPlatformTranslations(ids, language),
     db.from('platform_markets').select('platform_id, market').in('platform_id', ids),
     db.from('platform_trading_platforms').select('platform_id, catalog:trading_platform_id(name, status)').in('platform_id', ids),
     db.from('countries').select('code, name'),
     db.from('offers').select('platform_id, starts_at, expires_at').in('platform_id', ids).eq('status', true),
   ])
-  const failures = [details, translations, markets, tradingPlatforms, countries, offers]
+  const failures = [details, markets, tradingPlatforms, countries, offers]
   const failure = failures.find((result) => result.error)
   if (failure?.error) throw new Error(`BROKERS_QUERY_FAILED phase=related_data message=${failure.error.message}`)
 
@@ -58,13 +64,6 @@ async function queryBrokers(language: PublicLanguage): Promise<PublicBroker[]> {
     const catalog = first(row.catalog)
     if (catalog?.status) tradingMap.set(row.platform_id, [...(tradingMap.get(row.platform_id) ?? []), catalog.name])
   }
-  const translationMap = new Map<string, string | null>()
-  for (const row of translations.data ?? []) {
-    if (row.language === 'es' && !translationMap.has(row.platform_id)) translationMap.set(row.platform_id, row.short_description)
-  }
-  for (const row of translations.data ?? []) {
-    if (row.language === language) translationMap.set(row.platform_id, row.short_description)
-  }
   const now = Date.now()
   const offerIds = new Set((offers.data ?? []).filter((offer) =>
     (!offer.starts_at || new Date(offer.starts_at).getTime() <= now)
@@ -73,6 +72,7 @@ async function queryBrokers(language: PublicLanguage): Promise<PublicBroker[]> {
 
   return (platforms.data ?? []).map((row) => {
     const detailsRow = detailMap.get(row.id)
+    const translation = translations.get(row.id)
     const media = first(row.media as MediaRelation | MediaRelation[] | null)
     return {
       id: row.id,
@@ -82,7 +82,12 @@ async function queryBrokers(language: PublicLanguage): Promise<PublicBroker[]> {
       country: row.origin_country_code ? countryMap.get(row.origin_country_code) ?? row.origin_country_code : null,
       logoUrl: media?.file_url ?? row.logo_url ?? null,
       logoAlt: media?.alt_text ?? row.name,
-      description: translationMap.get(row.id) ?? null,
+      description: translation?.description ?? translation?.shortDescription ?? null,
+      shortDescription: translation?.shortDescription ?? null,
+      pros: translation?.pros ?? [],
+      cons: translation?.cons ?? [],
+      seoTitle: translation?.seoTitle ?? null,
+      seoDescription: translation?.seoDescription ?? null,
       foundedYear: detailsRow?.founded_year ?? null,
       minimumDeposit: detailsRow?.minimum_deposit === null || detailsRow?.minimum_deposit === undefined ? null : Number(detailsRow.minimum_deposit),
       minimumDepositCurrency: detailsRow?.minimum_deposit_currency ?? null,

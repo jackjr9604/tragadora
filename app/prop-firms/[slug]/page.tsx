@@ -14,7 +14,8 @@ import { FirmPayoutDashboard } from '@/components/public/FirmPayoutDashboard'
 import { payoutPeriod } from '@/lib/payout-periods'
 import { getPayoutFirmDetail } from '@/lib/payout-tracker'
 import { getPublicPlatformBySlug } from '@/lib/public-platform'
-import { firmProfileText, localizedCountryName, publicFirmProfileCopy, publicLocale, publicPath, publicUiLanguage } from '@/lib/public-i18n'
+import { firmProfileText, getPublicUi, localizedCountryName, publicFirmProfileCopy, publicLocale, publicPath, publicUiLanguage } from '@/lib/public-i18n'
+import { getPublicPlatformTranslations } from '@/lib/public-platform-translations'
 
 export const revalidate = 60
 
@@ -28,13 +29,16 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   const language = await resolvePublicLanguage(query.lang)
   const copy = publicFirmProfileCopy[publicUiLanguage(language)]
   const platform = await getPublicPlatformBySlug(slug)
-  return platform ? { title: `${platform.name} | Tradagora`, description: firmProfileText(copy.metaDescription, { name: platform.name }) } : {}
+  if (!platform) return {}
+  const translation = (await getPublicPlatformTranslations([platform.id], language)).get(platform.id)
+  return { title: translation?.seoTitle || `${platform.name} | Tradagora`, description: translation?.seoDescription || translation?.shortDescription || firmProfileText(copy.metaDescription, { name: platform.name }) }
 }
 
 export default async function PropFirmDetailPage({ params, searchParams }: PageProps) {
   const [{ slug }, query] = await Promise.all([params, searchParams])
   const language = await resolvePublicLanguage(query.lang)
   const copy = publicFirmProfileCopy[publicUiLanguage(language)]
+  const t = getPublicUi(language)
   const locale = publicLocale(language)
   const requestedView = Array.isArray(query.view) ? query.view[0] : query.view
   const activeView = requestedView === 'offers' || requestedView === 'payouts' ? requestedView : 'overview'
@@ -46,9 +50,9 @@ export default async function PropFirmDetailPage({ params, searchParams }: PageP
   const row = await getPublicPlatformBySlug(slug)
   if (!row) notFound()
 
-  const [detailsResult, translationsResult, marketsResult, availabilityResult, countriesResult, challengesResult, offersResult, tradingPlatformsResult, transactionMethodsResult, instrumentsResult, payoutDetail] = await Promise.all([
+  const [detailsResult, platformTranslations, marketsResult, availabilityResult, countriesResult, challengesResult, offersResult, tradingPlatformsResult, transactionMethodsResult, instrumentsResult, payoutDetail] = await Promise.all([
     supabase.from('prop_firm_details').select('platform_id, profit_split_max, supports_ea, allows_news_trading, allows_weekend_holding, allows_scalping, allows_day_trading, allows_copy_trading, broker_provider, ceo_name, founded_at, consistency_rules, inactivity_days').eq('platform_id', row.id).maybeSingle(),
-    needsOverview ? supabase.from('platform_translations').select('language, short_description').eq('platform_id', row.id).in('language', [language, 'es']) : Promise.resolve({ data: [], error: null }),
+    needsOverview ? getPublicPlatformTranslations([row.id], language) : Promise.resolve(new Map()),
     supabase.from('platform_markets').select('market').eq('platform_id', row.id),
     needsOverview
   ? supabase
@@ -66,10 +70,8 @@ export default async function PropFirmDetailPage({ params, searchParams }: PageP
   ])
 
   const details = detailsResult.data
-  const translations = translationsResult.data ?? []
-  const description = translations.find((item) => item.language === language)?.short_description
-    ?? translations.find((item) => item.language === 'es')?.short_description
-    ?? null
+  const translation = platformTranslations.get(row.id)
+  const description = translation?.description ?? translation?.shortDescription ?? null
   const media = first(row.media)
   const platform: HomePlatform = {
     id: row.id, name: row.name, slug: row.slug, score: row.score === null ? null : Number(row.score),
@@ -153,7 +155,7 @@ export default async function PropFirmDetailPage({ params, searchParams }: PageP
       {activeView === 'overview' && <div className="grid gap-10 py-10 lg:grid-cols-[200px_minmax(0,1fr)] lg:py-14">
         <FirmProfileNavigation sections={sections} name={platform.name} score={platform.score} logoUrl={platform.logoUrl} logoAlt={platform.logoAlt} ctaHref={ctaHref} ctaLabel={ctaLabel} language={language} />
         <main className="min-w-0 space-y-6">
-          <ProfileSection id="resumen" title={copy.overview}><p className="max-w-3xl text-base leading-7 text-slate-300">{description || firmProfileText(copy.fallbackDescription, { name: platform.name })}</p><dl className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3"><InfoStat icon={<Landmark className="size-4" />} label={copy.country} value={row.origin_country_code ? localizedCountryName(row.origin_country_code, countryMap.get(row.origin_country_code) ?? row.origin_country_code, language) : null} /><InfoStat icon={<CalendarDays className="size-4" />} label={copy.founded} value={details?.founded_at ? formatFoundedDate(details.founded_at, locale) : null} /><InfoStat icon={<Clock3 className="size-4" />} label={copy.operating} value={details?.founded_at ? yearsOperating(details.founded_at, copy) : null} /><InfoStat label={copy.market} value={platform.markets.map((market) => marketLabel(market, copy)).join(' · ') || null} /><InfoStat label={copy.maximumAccount} value={maximumAccountSize === null ? null : compactMoney(maximumAccountSize, copy, locale)} /><InfoStat label={copy.profitSplit} value={maximumRewardSplit === null ? null : firmProfileText(copy.upTo, { value: percent(maximumRewardSplit) })} /></dl></ProfileSection>
+          <ProfileSection id="resumen" title={copy.overview}><p className="max-w-3xl text-base leading-7 text-slate-300">{description || firmProfileText(copy.fallbackDescription, { name: platform.name })}</p><dl className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3"><InfoStat icon={<Landmark className="size-4" />} label={copy.country} value={row.origin_country_code ? localizedCountryName(row.origin_country_code, countryMap.get(row.origin_country_code) ?? row.origin_country_code, language) : null} /><InfoStat icon={<CalendarDays className="size-4" />} label={copy.founded} value={details?.founded_at ? formatFoundedDate(details.founded_at, locale) : null} /><InfoStat icon={<Clock3 className="size-4" />} label={copy.operating} value={details?.founded_at ? yearsOperating(details.founded_at, copy) : null} /><InfoStat label={copy.market} value={platform.markets.map((market) => marketLabel(market, copy)).join(' · ') || null} /><InfoStat label={copy.maximumAccount} value={maximumAccountSize === null ? null : compactMoney(maximumAccountSize, copy, locale)} /><InfoStat label={copy.profitSplit} value={maximumRewardSplit === null ? null : firmProfileText(copy.upTo, { value: percent(maximumRewardSplit) })} /></dl>{(translation?.pros.length || translation?.cons.length) ? <div className="mt-6 grid gap-4 md:grid-cols-2">{translation.pros.length > 0 && <TranslationList title={t('platform.pros')} items={translation.pros} tone="positive" />}{translation.cons.length > 0 && <TranslationList title={t('platform.cons')} items={translation.cons} tone="negative" />}</div> : null}</ProfileSection>
           {hasFirmInformation && <ProfileSection id="informacion" title={copy.generalInformation}><div className="grid gap-4 md:grid-cols-2"><TagCard icon={<Monitor className="size-5" />} title={copy.tradingPlatforms} values={tradingPlatformNames} /><TagCard icon={<CreditCard className="size-5" />} title={copy.paymentMethods} values={paymentMethodNames} /><TagCard icon={<HandCoins className="size-5" />} title={copy.payoutMethods} values={payoutMethodNames} /><TagCard icon={<CandlestickChart className="size-5" />} title={copy.instruments} values={instrumentNames} />{details?.broker_provider && <TagCard icon={<Landmark className="size-5" />} title={copy.broker} values={[details.broker_provider]} />}</div></ProfileSection>}
           {platform.markets.length > 0 && <ProfileSection id="mercados" title={copy.markets}><div className="flex flex-wrap gap-2">{platform.markets.map((market) => <Badge key={market}>{marketLabel(market, copy)}</Badge>)}</div></ProfileSection>}
           <ProfileSection id="reglas" title={copy.tradingRules}><div className="grid gap-3 sm:grid-cols-2">{[[copy.newsTrading, platform.allowsNews], [copy.automatedTrading, platform.supportsEa], [copy.copyTrading, platform.allowsCopyTrading], [copy.weekendHolding, platform.allowsWeekend], [copy.scalping, platform.allowsScalping], [copy.dayTrading, platform.allowsDayTrading]].map(([label, value]) => <RuleRow key={String(label)} label={String(label)} value={value as boolean | null} copy={copy} />)}{details?.inactivity_days !== null && details?.inactivity_days !== undefined && <TextRuleRow label={copy.inactivity} value={firmProfileText(copy.days, { count: details.inactivity_days })} />}</div>{details?.consistency_rules && <div className="mt-6 rounded-xl border border-white/8 bg-black/10 p-4"><h3 className="font-semibold">{copy.consistencyRule}</h3><p className="mt-2 text-sm leading-6 text-slate-400">{details.consistency_rules}</p></div>}</ProfileSection>
@@ -186,6 +188,7 @@ function formatFoundedDate(value: string, locale: string) { return new Intl.Date
 function yearsOperating(value: string, copy: FirmProfileCopy) { const founded = new Date(`${value}T00:00:00Z`); const now = new Date(); let years = now.getUTCFullYear() - founded.getUTCFullYear(); if (now.getUTCMonth() < founded.getUTCMonth() || (now.getUTCMonth() === founded.getUTCMonth() && now.getUTCDate() < founded.getUTCDate())) years--; const count = Math.max(0, years); return `${count} ${count === 1 ? copy.year : copy.years}` }
 function ViewHeading({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) { return <header><p className="tg-eyebrow">{eyebrow}</p><h2 className="mt-2 text-3xl font-bold tracking-tight">{title}</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">{description}</p></header> }
 function EmptyState({ title, description }: { title: string; description: string }) { return <div className="tradagora-pattern tradagora-pattern-gold mt-7 rounded-2xl border border-dashed border-white/15 px-5 py-12 text-center"><p className="font-semibold text-slate-200">{title}</p><p className="mx-auto mt-2 max-w-md text-sm text-slate-500">{description}</p></div> }
+function TranslationList({ title, items, tone }: { title: string; items: string[]; tone: 'positive' | 'negative' }) { return <section className="rounded-xl border border-white/8 bg-black/10 p-4"><h3 className="font-semibold text-slate-200">{title}</h3><ul className="mt-3 space-y-2 text-sm text-slate-400">{items.map((item) => <li key={item} className="flex gap-2"><span className={tone === 'positive' ? 'text-emerald-300' : 'text-rose-300'} aria-hidden>{tone === 'positive' ? '+' : '−'}</span><span>{item}</span></li>)}</ul></section> }
 function ChallengeDetails({ resolved, legacyPlans, copy, locale }: { resolved: ResolvedChallenge; legacyPlans: AccountPlan[]; copy: FirmProfileCopy; locale: string }) {
   const normalizedPlans = [...resolved.basePlans, ...resolved.variants.flatMap((variant) => variant.plans)]
   const visiblePlans: AccountPlan[] = resolved.hasNormalizedPhases ? normalizedPlans : legacyPlans
