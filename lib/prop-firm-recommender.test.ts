@@ -30,7 +30,11 @@ test('los booleanos null se reportan como desconocidos, no como restricciones', 
   }
   const result = recommendPropFirms(criteria, [firm({ supportsEa: null, allowsWeekend: null })])[0]
   assert.equal(result.negatives.length, 0)
-  assert.equal(result.unavailable.length, 2)
+  assert.deepEqual(result.unavailable, [
+    'Permite EA / Bots: dato no disponible',
+    'Permite mantener el fin de semana: dato no disponible',
+    'Profit split no disponible',
+  ])
 })
 
 function firm(values: Partial<RecommendableFirm>): RecommendableFirm {

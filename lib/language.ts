@@ -2,17 +2,16 @@ import 'server-only'
 
 import { cookies } from 'next/headers'
 import { getActivePublicLanguages } from '@/lib/site-content'
-import { normalizedLanguage, PUBLIC_LANGUAGE_COOKIE, type PublicLanguage } from '@/lib/public-language'
+import { choosePublicLanguage, PUBLIC_LANGUAGE_COOKIE, type PublicLanguage } from '@/lib/public-language'
+import { publishablePublicLanguages } from '@/lib/public-i18n'
 
 export async function resolvePublicLanguage(value?: string | string[]): Promise<PublicLanguage> {
-  const languages = await getActivePublicLanguages()
-  const activeCodes = new Set(languages.map((language) => language.code.toLowerCase()))
-  const explicit = normalizedLanguage(value)
-  if (explicit && activeCodes.has(explicit)) return explicit
-
+  const languages = publishablePublicLanguages(await getActivePublicLanguages())
   const cookieStore = await cookies()
-  const stored = normalizedLanguage(cookieStore.get(PUBLIC_LANGUAGE_COOKIE)?.value)
-  if (stored && activeCodes.has(stored)) return stored
-
-  return languages.find((language) => language.isDefault)?.code ?? 'es'
+  return choosePublicLanguage({
+    requested: value,
+    stored: cookieStore.get(PUBLIC_LANGUAGE_COOKIE)?.value,
+    active: languages.map((language) => language.code),
+    defaultLanguage: languages.find((language) => language.isDefault)?.code,
+  })
 }

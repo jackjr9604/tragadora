@@ -12,11 +12,16 @@ export function payoutPeriod(value: string | undefined, fallback: PayoutPeriodKe
   return payoutPeriods.some((period) => period.key === value) ? value as PayoutPeriodKey : fallback
 }
 
-export function payoutPeriodLabel(key: PayoutPeriodKey) {
-  return payoutPeriods.find((period) => period.key === key)?.label ?? key
+export function payoutPeriodLabel(key: PayoutPeriodKey, language = 'es') {
+  if (key === '24h') return getPublicUi(language)('payout.hours24')
+  if (key === 'all') return getPublicUi(language)('payout.allTime')
+  const unit = language.startsWith('en') ? 'days' : language.startsWith('pt') ? 'dias' : 'días'
+  const days = payoutPeriods.find((period) => period.key === key)?.days
+  return days ? `${days} ${unit}` : key
 }
 
 export function payoutPeriodSince(key: PayoutPeriodKey) {
   const days = payoutPeriods.find((period) => period.key === key)?.days
   return days ? new Date(Date.now() - days * 86_400_000).toISOString() : null
 }
+import { getPublicUi } from '@/lib/public-i18n'

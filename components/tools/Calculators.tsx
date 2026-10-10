@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { PublicLanguage } from '@/lib/public-language'
+import { publicCalculatorCopy, publicLocale, publicUiLanguage } from '@/lib/public-i18n'
 
 const INPUT = 'mt-2 w-full rounded-xl border border-white/10 bg-[#0b1423] px-4 py-3 text-base text-white outline-none transition focus:border-amber-300/50 focus:ring-2 focus:ring-amber-300/10'
 
@@ -10,21 +11,21 @@ export function DrawdownCalculator({ language = 'es' }: { language?: PublicLangu
   const [initial, setInitial] = useState('100000'), [current, setCurrent] = useState('94500'), [maximum, setMaximum] = useState('10'), [daily, setDaily] = useState('')
   const start = number(initial), equity = number(current), percent = clamp(number(maximum), 0, 100)
   const lossLimit = start * (1 - percent / 100), loss = Math.max(0, start - equity), remaining = Math.max(0, equity - lossLimit), consumed = start * percent / 100 > 0 ? clamp(loss / (start * percent / 100) * 100, 0, 100) : 0
-  return <CalculatorLayout resultLabel={text.result} fields={<><MoneyField label={text.initialBalance} value={initial} onChange={setInitial} /><MoneyField label={text.currentBalance} value={current} onChange={setCurrent} /><NumberField label={text.maxLoss} value={maximum} onChange={setMaximum} min={0} max={100} /><NumberField label={text.dailyLoss} value={daily} onChange={setDaily} min={0} max={100} /></>} results={[[text.minimumBalance, money(lossLimit)], [text.currentLoss, money(loss)], [text.remaining, money(remaining)], [text.consumed, `${format(consumed, language)}%`]]} />
+  return <CalculatorLayout resultLabel={text.result} fields={<><MoneyField label={text.initialBalance} value={initial} onChange={setInitial} /><MoneyField label={text.currentBalance} value={current} onChange={setCurrent} /><NumberField label={text.maxLoss} value={maximum} onChange={setMaximum} min={0} max={100} /><NumberField label={text.dailyLoss} value={daily} onChange={setDaily} min={0} max={100} /></>} results={[[text.minimumBalance, calculatorMoney(lossLimit, language)], [text.currentLoss, calculatorMoney(loss, language)], [text.remaining, calculatorMoney(remaining, language)], [text.consumed, calculatorPercentage(consumed, language)]]} />
 }
 
 export function ProfitSplitCalculator({ language = 'es' }: { language?: PublicLanguage }) {
   const text = copy(language)
   const [profit, setProfit] = useState('10000'), [split, setSplit] = useState('80')
   const total = number(profit), traderPercent = clamp(number(split), 0, 100), trader = total * traderPercent / 100
-  return <CalculatorLayout resultLabel={text.result} fields={<><MoneyField label={text.profit} value={profit} onChange={setProfit} /><NumberField label={text.traderSplit} value={split} onChange={setSplit} min={0} max={100} /></>} results={[[text.trader, money(trader)], [text.firm, money(total - trader)]]} />
+  return <CalculatorLayout resultLabel={text.result} fields={<><MoneyField label={text.profit} value={profit} onChange={setProfit} /><NumberField label={text.traderSplit} value={split} onChange={setSplit} min={0} max={100} /></>} results={[[text.trader, calculatorMoney(trader, language)], [text.firm, calculatorMoney(total - trader, language)]]} />
 }
 
 export function ChallengeTargetCalculator({ language = 'es' }: { language?: PublicLanguage }) {
   const text = copy(language)
   const [initial, setInitial] = useState('100000'), [target, setTarget] = useState('8'), [current, setCurrent] = useState('104500')
   const start = number(initial), percent = clamp(number(target), 0, 100), equity = number(current), targetAmount = start * percent / 100, targetBalance = start + targetAmount, gain = equity - start, missing = Math.max(0, targetBalance - equity), progress = targetAmount > 0 ? clamp(gain / targetAmount * 100, 0, 100) : 0
-  return <CalculatorLayout resultLabel={text.result} fields={<><MoneyField label={text.initialBalanceShort} value={initial} onChange={setInitial} /><NumberField label={text.target} value={target} onChange={setTarget} min={0} max={100} /><MoneyField label={text.currentBalance} value={current} onChange={setCurrent} /></>} results={[[text.targetAmount, money(targetAmount)], [text.targetBalance, money(targetBalance)], [text.currentProfit, money(gain)], [text.missing, money(missing)], [text.progress, `${format(progress, language)}%`]]} />
+  return <CalculatorLayout resultLabel={text.result} fields={<><MoneyField label={text.initialBalanceShort} value={initial} onChange={setInitial} /><NumberField label={text.target} value={target} onChange={setTarget} min={0} max={100} /><MoneyField label={text.currentBalance} value={current} onChange={setCurrent} /></>} results={[[text.targetAmount, calculatorMoney(targetAmount, language)], [text.targetBalance, calculatorMoney(targetBalance, language)], [text.currentProfit, calculatorMoney(gain, language)], [text.missing, calculatorMoney(missing, language)], [text.progress, calculatorPercentage(progress, language)]]} />
 }
 
 function CalculatorLayout({ fields, results, resultLabel }: { fields: React.ReactNode; results: Array<[string, string]>; resultLabel: string }) { return <div className="grid gap-6 lg:grid-cols-2"><div className="space-y-5 rounded-2xl border border-white/10 bg-[#111c2e] p-5 sm:p-6">{fields}</div><div className="rounded-2xl border border-amber-300/20 bg-[linear-gradient(145deg,rgba(232,187,73,.08),rgba(17,28,46,.96)_45%)] p-5 sm:p-6"><p className="text-xs font-semibold uppercase tracking-[.16em] text-amber-300">{resultLabel}</p><dl className="mt-4 divide-y divide-white/8">{results.map(([label, value]) => <div key={label} className="flex items-center justify-between gap-4 py-4"><dt className="text-sm text-slate-400">{label}</dt><dd className="text-right font-mono text-lg font-semibold text-white">{value}</dd></div>)}</dl></div></div> }
@@ -33,13 +34,6 @@ type FieldProps = { label: string; value: string; onChange: (value: string) => v
 function NumberField({ label, value, onChange, min, max, step = 'any', prefix }: FieldProps) { return <label className="block"><span className="text-sm font-medium text-slate-200">{label}</span><span className="relative block">{prefix && <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">{prefix}</span>}<input type="number" inputMode="decimal" min={min} max={max} step={step} value={value} onChange={(event) => onChange(event.target.value)} className={`${INPUT} ${prefix ? 'pl-8' : ''}`} /></span></label> }
 function number(value: string) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : 0 }
 function clamp(value: number, min: number, max: number) { return Math.min(max, Math.max(min, value)) }
-function money(value: number) { return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) }
-function format(value: number, language: PublicLanguage) { return new Intl.NumberFormat(language === 'en' ? 'en-US' : language === 'pt' ? 'pt-BR' : 'es-CO', { maximumFractionDigits: 2 }).format(value) }
-
-const CALCULATOR_COPY = {
-  es: { result: 'Resultado', initialBalance: 'Balance inicial de la cuenta', initialBalanceShort: 'Balance inicial', currentBalance: 'Balance / equity actual', maxLoss: 'Límite máximo de pérdida (%)', dailyLoss: 'Límite diario (%) · opcional', minimumBalance: 'Límite mínimo permitido', currentLoss: 'Pérdida actual', remaining: 'Margen restante', consumed: 'Drawdown consumido', profit: 'Ganancia', traderSplit: 'Split del trader (%)', trader: 'Trader', firm: 'Firma', target: 'Objetivo (%)', targetAmount: 'Objetivo monetario', targetBalance: 'Balance objetivo', currentProfit: 'Ganancia actual', missing: 'Faltante', progress: 'Progreso' },
-  en: { result: 'Result', initialBalance: 'Initial account balance', initialBalanceShort: 'Initial balance', currentBalance: 'Current balance / equity', maxLoss: 'Maximum loss limit (%)', dailyLoss: 'Daily loss limit (%) · optional', minimumBalance: 'Minimum allowed balance', currentLoss: 'Current loss', remaining: 'Remaining margin', consumed: 'Drawdown used', profit: 'Profit', traderSplit: 'Trader split (%)', trader: 'Trader', firm: 'Firm', target: 'Target (%)', targetAmount: 'Target amount', targetBalance: 'Target balance', currentProfit: 'Current profit', missing: 'Remaining', progress: 'Progress' },
-  pt: { result: 'Resultado', initialBalance: 'Saldo inicial da conta', initialBalanceShort: 'Saldo inicial', currentBalance: 'Saldo / equity atual', maxLoss: 'Limite máximo de perda (%)', dailyLoss: 'Limite diário (%) · opcional', minimumBalance: 'Saldo mínimo permitido', currentLoss: 'Perda atual', remaining: 'Margem restante', consumed: 'Drawdown consumido', profit: 'Lucro', traderSplit: 'Split do trader (%)', trader: 'Trader', firm: 'Firma', target: 'Objetivo (%)', targetAmount: 'Objetivo monetário', targetBalance: 'Saldo objetivo', currentProfit: 'Lucro atual', missing: 'Restante', progress: 'Progresso' },
-} as const
-
-function copy(language: PublicLanguage) { return CALCULATOR_COPY[language as keyof typeof CALCULATOR_COPY] ?? CALCULATOR_COPY.es }
+export function calculatorMoney(value: number, language: PublicLanguage = 'es') { return new Intl.NumberFormat(publicLocale(language), { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) }
+export function calculatorPercentage(value: number, language: PublicLanguage) { return new Intl.NumberFormat(publicLocale(language), { style: 'percent', maximumFractionDigits: 2 }).format(value / 100) }
+function copy(language: PublicLanguage) { return publicCalculatorCopy[publicUiLanguage(language)] }

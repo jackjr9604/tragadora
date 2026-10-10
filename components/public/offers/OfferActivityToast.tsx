@@ -6,12 +6,15 @@ import type { PublicOffer } from '@/lib/public-offers'
 import { OfferLogo } from './OfferLogo'
 import { PromoCodeButton } from './PromoCodeButton'
 import { offerBenefit } from './offer-ui'
+import { publicOfferToastCopy, publicUiLanguage } from '@/lib/public-i18n'
+import type { PublicLanguage } from '@/lib/public-language'
 
 const SESSION_COUNT_KEY = 'tradagora_offer_toast_count'
 const MAX_TOASTS_PER_SESSION = 3
 const VISIBLE_DURATION = process.env.NODE_ENV === 'development' ? 5000 : 6000
 
-export function OfferActivityToast({ offers }: { offers: PublicOffer[] }) {
+export function OfferActivityToast({ offers, language = 'es' }: { offers: PublicOffer[]; language?: PublicLanguage }) {
+  const copy = publicOfferToastCopy[publicUiLanguage(language)]
   const [index, setIndex] = useState(-1)
   const [visible, setVisible] = useState(false)
   const currentIndex = useRef(-1)
@@ -78,7 +81,7 @@ export function OfferActivityToast({ offers }: { offers: PublicOffer[] }) {
 
   if (!visible || index < 0 || !eligibleOffers[index]) return null
   const offer = eligibleOffers[index]
-  const benefit = offer.shortHighlight || `${offerBenefit(offer)} activo`
+  const benefit = offer.shortHighlight || `${offerBenefit(offer, language)} ${copy.activeSuffix}`
   return (
     <aside
       role="status"
@@ -89,7 +92,7 @@ export function OfferActivityToast({ offers }: { offers: PublicOffer[] }) {
       <button
         type="button"
         onClick={() => setVisible(false)}
-        aria-label="Cerrar notificación de oferta"
+        aria-label={copy.close}
         className="absolute right-2 top-2 flex size-8 items-center justify-center rounded-md bg-transparent text-slate-500 transition-colors hover:bg-white/[.06] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/60"
       >
         <X className="size-4" />
@@ -104,10 +107,10 @@ export function OfferActivityToast({ offers }: { offers: PublicOffer[] }) {
             <strong className="truncate text-sm font-semibold text-white">{offer.platform.name}</strong>
             {offer.hotBadge ? <span className="rounded-full border border-amber-300/20 bg-amber-300/[.06] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[.12em] text-amber-200/90">{offer.hotBadge}</span> : null}
           </div>
-          <p className="mt-1 truncate text-[13px] leading-5 text-slate-300">{offer.isFeatured ? `Oferta destacada · ${benefit}` : benefit}</p>
+          <p className="mt-1 truncate text-[13px] leading-5 text-slate-300">{offer.isFeatured ? `${copy.featured} · ${benefit}` : benefit}</p>
           <div className="mt-2 flex min-h-8 flex-wrap items-center gap-2">
-            {offer.promoCode ? <PromoCodeButton code={offer.promoCode} compact /> : <span className="text-[11px] text-slate-500">Oferta vigente</span>}
-            {offer.includesFreeAccount ? <span className="rounded-full border border-cyan-300/15 bg-cyan-300/[.05] px-2.5 py-1 text-[10px] font-medium text-cyan-100/80">+ {offer.freeAccountLabel || 'Cuenta gratis'}</span> : null}
+            {offer.promoCode ? <PromoCodeButton code={offer.promoCode} compact language={language} /> : <span className="text-[11px] text-slate-500">{copy.current}</span>}
+            {offer.includesFreeAccount ? <span className="rounded-full border border-cyan-300/15 bg-cyan-300/[.05] px-2.5 py-1 text-[10px] font-medium text-cyan-100/80">+ {offer.freeAccountLabel || copy.freeAccount}</span> : null}
           </div>
         </div>
       </div>

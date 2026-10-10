@@ -10,6 +10,7 @@ import { Comparator } from './Comparator'
 import { GlobalOffersStrip } from '@/components/public/offers/GlobalOffersStrip'
 import { PageHero } from '@/components/public/PageHero'
 import { getPageContent } from '@/lib/site-content'
+import { getPublicUi } from '@/lib/public-i18n'
 
 export const metadata: Metadata = {
   title: 'Comparador de Prop Firms | Tradagora',
@@ -30,6 +31,7 @@ const getCountries = unstable_cache(getComparisonCountries, ['comparison-countri
 export default async function ComparatorPage({ searchParams }: { searchParams: Promise<Query> }) {
   const query = await searchParams
   const language = await resolvePublicLanguage(query.lang)
+  const t = getPublicUi(language)
   const slugs = (single(query.firms) ?? '').split(',').filter(Boolean).slice(0, 3)
   const personal = single(query.mode) === 'personal'
   const showMatches = personal && single(query.view) === 'matches'
@@ -49,7 +51,7 @@ export default async function ComparatorPage({ searchParams }: { searchParams: P
     market: single(query.market) ?? '', size: nonnegative(single(query.size)), budget: nonnegative(single(query.budget)),
     platform: single(query.platform) ?? '', priorities, styles,
   }) : { results: [], hasExactRequirements: false, eligibleFirmCount: 0, excludedByCountryCount: 0 }
-  return <PublicPageShell language={language}><PageHero content={content} fallbackTitle="Comparador de Prop Firms" fallbackSubtitle="Compara programas y tamaños reales según tu forma de operar." primaryHref="#comparador" secondaryHref={`/prop-firms?lang=${language}`} compact /><Suspense fallback={null}><GlobalOffersStrip language={language} /></Suspense><div id="comparador" className="scroll-mt-24"><Comparator key={`${personal}:${showMatches}:${single(query.market)}:${single(query.size)}:${single(query.budget)}:${single(query.platform)}:${country}:${priorities.join(',')}:${styles.join(',')}`} {...data} countries={countries} initial={{
+  return <PublicPageShell language={language}><PageHero content={content} language={language} fallbackTitle={t('hero.comparator.title')} fallbackSubtitle={t('hero.comparator.subtitle')} primaryHref="#comparador" secondaryHref={`/prop-firms?lang=${language}`} compact /><Suspense fallback={null}><GlobalOffersStrip language={language} /></Suspense><div id="comparador" className="scroll-mt-24"><Comparator key={`${personal}:${showMatches}:${single(query.market)}:${single(query.size)}:${single(query.budget)}:${single(query.platform)}:${country}:${priorities.join(',')}:${styles.join(',')}`} {...data} countries={countries} initial={{
     plans: (single(query.plans) ?? '').split(','), size: single(query.size) ?? '', priorities, styles,
     market: single(query.market) ?? '', budget: single(query.budget) ?? '', platform: single(query.platform) ?? '', country, mode: personal ? 'personal' : 'firms', showMatches, differences: single(query.differences) === '1',
   }} filterOptions={filterOptions} matching={matching} /></div></PublicPageShell>

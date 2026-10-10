@@ -98,7 +98,7 @@ export async function getPageContent(
   language: SiteLanguage = 'es'
 ): Promise<PageContent> {
   const content = await getSiteContent(language)
-  const pageContent: PageContent = {}
+  const pageContent: PageContent = { $meta: { language } }
 
   for (const [key, value] of Object.entries(content)) {
     const [pageName, sectionName, fieldName] = key.split('.')

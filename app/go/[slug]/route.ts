@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { normalizedLanguage } from '@/lib/public-language'
+import { getPublicUi } from '@/lib/public-i18n'
 
 type AffiliateLink = {
   id: string
@@ -20,6 +21,7 @@ export async function GET(
   const countryCode = request.headers.get('x-vercel-ip-country')?.toUpperCase() ?? null
   const knownCountry = countryCode?.trim() || null
   const language = normalizedLanguage(request.nextUrl.searchParams.get('lang') ?? undefined)
+  const t = getPublicUi(language)
 
   const { data: platform, error: platformError } = await supabase
     .from('platforms')
@@ -28,7 +30,7 @@ export async function GET(
     .single()
 
   if (platformError || !platform) {
-    return new NextResponse(`Prop Firm no encontrada: ${slug}`, { status: 404 })
+    return new NextResponse(t('go.platformNotFound', { slug }), { status: 404 })
   }
 
   const offerId = request.nextUrl.searchParams.get('offer')
@@ -57,7 +59,7 @@ export async function GET(
       && (!data?.starts_at || new Date(data.starts_at).getTime() <= now)
       && (!data?.expires_at || new Date(data.expires_at).getTime() >= now)
     if (!data || !validCountry || !validLanguage || !validDates) {
-      return new NextResponse('La oferta no está disponible.', { status: 404 })
+      return new NextResponse(t('go.offerUnavailable'), { status: 404 })
     }
     offer = data
   }
@@ -70,7 +72,7 @@ export async function GET(
     .order('priority', { ascending: true })
 
   if (affiliateError) {
-    return new NextResponse(`No hay enlace de afiliado activo para ${platform.name}`, { status: 404 })
+    return new NextResponse(t('go.noAffiliateLink', { name: platform.name }), { status: 404 })
   }
 
   const links = (linkRows ?? []) as AffiliateLink[]

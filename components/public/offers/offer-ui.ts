@@ -1,13 +1,16 @@
 import type { PublicOffer } from '@/lib/public-offers'
+import { getPublicUi, publicLocale } from '@/lib/public-i18n'
+import type { PublicLanguage } from '@/lib/public-language'
 
-export function offerBenefit(offer: PublicOffer) {
+export function offerBenefit(offer: PublicOffer, language?: PublicLanguage) {
   if (offer.discountValue > 0) {
     return offer.discountType === 'percentage'
       ? `${offer.discountValue}% OFF`
       : `$${offer.discountValue} OFF`
   }
-  if (offer.includesFreeAccount) return offer.freeAccountLabel || 'Cuenta gratis'
-  return offer.shortHighlight || 'Beneficio activo'
+  const t = getPublicUi(language)
+  if (offer.includesFreeAccount) return offer.freeAccountLabel || t('offers.freeAccount')
+  return offer.shortHighlight || t('offers.activeBenefit')
 }
 
 export function offerExpiresSoon(offer: PublicOffer, nowMs: number) {
@@ -16,8 +19,8 @@ export function offerExpiresSoon(offer: PublicOffer, nowMs: number) {
   return remaining >= 0 && remaining <= 7 * 24 * 60 * 60 * 1000
 }
 
-export function offerDateLabel(value: string, language: string) {
-  return new Intl.DateTimeFormat(language, {
+export function offerDateLabel(value: string, language?: PublicLanguage) {
+  return new Intl.DateTimeFormat(publicLocale(language), {
     day: 'numeric',
     month: 'short',
     timeZone: 'America/Bogota',

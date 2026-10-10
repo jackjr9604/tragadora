@@ -4,15 +4,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Search } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import type { PublicSearchItem } from '@/lib/public-search'
-
-const copy = {
-  es: { placeholder: 'Buscar en Tradagora', empty: 'No encontramos resultados', labels: { prop_firm: 'Prop Firms', broker: 'Brokers', exchange: 'Exchanges', tool: 'Herramientas', calculator: 'Calculadoras' } },
-  en: { placeholder: 'Search Tradagora', empty: 'No results found', labels: { prop_firm: 'Prop Firms', broker: 'Brokers', exchange: 'Exchanges', tool: 'Tools', calculator: 'Calculators' } },
-  pt: { placeholder: 'Buscar na Tradagora', empty: 'Nenhum resultado encontrado', labels: { prop_firm: 'Prop Firms', broker: 'Brokers', exchange: 'Exchanges', tool: 'Ferramentas', calculator: 'Calculadoras' } },
-} as const
+import { getPublicUi, publicLocale, publicPath } from '@/lib/public-i18n'
 
 const paths = { prop_firm: 'prop-firms', broker: 'brokers', exchange: 'exchanges', tool: 'herramientas', calculator: 'calculadoras' } as const
-const typeLabels = { prop_firm: 'Prop Firm', broker: 'Broker', exchange: 'Exchange', tool: 'Herramienta', calculator: 'Calculadora' } as const
 
 export function PublicGlobalSearch({ items, language }: { items: PublicSearchItem[]; language: string }) {
   const [query, setQuery] = useState('')
@@ -20,12 +14,14 @@ export function PublicGlobalSearch({ items, language }: { items: PublicSearchIte
   const [activeIndex, setActiveIndex] = useState(0)
   const rootRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
-  const text = copy[language as keyof typeof copy] ?? copy.es
+  const t = getPublicUi(language)
+  const groupLabels = { prop_firm: t('nav.propFirms'), broker: t('nav.brokers'), exchange: t('nav.exchanges'), tool: t('nav.tools'), calculator: t('nav.calculators') }
+  const typeLabels = { prop_firm: t('search.type.propFirm'), broker: t('search.type.broker'), exchange: t('search.type.exchange'), tool: t('search.type.tool'), calculator: t('search.type.calculator') }
   const results = useMemo(() => {
-    const needle = normalize(query)
+    const needle = normalize(query, language)
     if (needle.length < 2) return []
-    return items.filter((item) => normalize(`${item.name} ${item.slug}`).includes(needle)).slice(0, 8)
-  }, [items, query])
+    return items.filter((item) => normalize(`${item.name} ${item.slug}`, language).includes(needle)).slice(0, 8)
+  }, [items, language, query])
 
   useEffect(() => {
     const close = (event: PointerEvent) => {
@@ -38,7 +34,7 @@ export function PublicGlobalSearch({ items, language }: { items: PublicSearchIte
   function navigate(item: PublicSearchItem) {
     setQuery('')
     setOpen(false)
-    router.push(`/${paths[item.type]}/${item.slug}`)
+    router.push(publicPath(`/${paths[item.type]}/${item.slug}`, language))
   }
 
   const grouped = (['prop_firm', 'broker', 'exchange', 'tool', 'calculator'] as const).map((type) => ({ type, items: results.filter((item) => item.type === type) })).filter((group) => group.items.length)
@@ -46,12 +42,12 @@ export function PublicGlobalSearch({ items, language }: { items: PublicSearchIte
 
   return <div ref={rootRef} className="relative hidden xl:block">
     <label className="relative block">
-      <span className="sr-only">{text.placeholder}</span>
+      <span className="sr-only">{t('search.placeholder')}</span>
       <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500" />
       <input
         type="search"
         value={query}
-        placeholder={text.placeholder}
+        placeholder={t('search.placeholder')}
         autoComplete="off"
         role="combobox"
         aria-expanded={open && query.trim().length >= 2}
@@ -69,8 +65,8 @@ export function PublicGlobalSearch({ items, language }: { items: PublicSearchIte
       />
     </label>
     {open && query.trim().length >= 2 && <div id="public-global-search-results" role="listbox" className="absolute right-0 top-[calc(100%+.6rem)] z-[70] max-h-[min(30rem,calc(100vh-7rem))] w-[22rem] overflow-y-auto rounded-2xl border border-amber-300/20 bg-[#07111e]/98 p-2 shadow-[0_24px_70px_rgba(0,0,0,.55)] backdrop-blur-xl">
-      {grouped.map((group) => <section key={group.type} aria-label={text.labels[group.type]}>
-        <p className="px-3 pb-1 pt-2 font-mono text-[10px] font-bold uppercase tracking-[.18em] text-amber-300/75">{text.labels[group.type]}</p>
+      {grouped.map((group) => <section key={group.type} aria-label={groupLabels[group.type]}>
+        <p className="px-3 pb-1 pt-2 font-mono text-[10px] font-bold uppercase tracking-[.18em] text-amber-300/75">{groupLabels[group.type]}</p>
         {group.items.map((item) => {
           resultIndex += 1
           const index = resultIndex
@@ -80,7 +76,7 @@ export function PublicGlobalSearch({ items, language }: { items: PublicSearchIte
           </button>
         })}
       </section>)}
-      {!results.length && <p className="px-4 py-6 text-center text-sm text-slate-400">{text.empty}</p>}
+      {!results.length && <p className="px-4 py-6 text-center text-sm text-slate-400">{t('search.empty')}</p>}
     </div>}
   </div>
 }
@@ -92,6 +88,6 @@ function SearchLogo({ item }: { item: PublicSearchItem }) {
   return <img src={item.logoUrl} alt={item.logoAlt || item.name} width={36} height={36} className="size-9 shrink-0 rounded-lg border border-white/10 bg-white object-contain p-1" />
 }
 
-function normalize(value: string) {
-  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es').trim()
+function normalize(value: string, language = 'es') {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase(publicLocale(language)).trim()
 }

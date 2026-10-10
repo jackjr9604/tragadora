@@ -1,8 +1,8 @@
 export const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 export const compactMoney = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 1 })
 
-const relative = new Intl.RelativeTimeFormat('es', { numeric: 'auto' })
-export function relativeDate(date: string) {
+export function relativeDate(date: string, locale = 'es-CO') {
+  const relative = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' })
   const minutes = Math.round((new Date(date).getTime() - Date.now()) / 60_000)
   if (Math.abs(minutes) < 60) return relative.format(minutes, 'minute')
   const hours = Math.round(minutes / 60)

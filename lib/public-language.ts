@@ -15,6 +15,17 @@ export function normalizedLanguage(value: string | string[] | undefined) {
   return candidate && /^[a-z]{2,3}(?:-[a-z0-9]{2,8})?$/.test(candidate) ? candidate : null
 }
 
+export function choosePublicLanguage({ requested, stored, active, defaultLanguage }: { requested?: string | string[]; stored?: string; active: string[]; defaultLanguage?: string | null }): PublicLanguage {
+  const activeCodes = new Set(active.map((code) => code.toLowerCase()))
+  const explicit = normalizedLanguage(requested)
+  if (explicit && activeCodes.has(explicit)) return explicit
+  const persisted = normalizedLanguage(stored)
+  if (persisted && activeCodes.has(persisted)) return persisted
+  const configured = normalizedLanguage(defaultLanguage ?? undefined)
+  if (configured && activeCodes.has(configured)) return configured
+  return 'es'
+}
+
 export function languageUrl(currentUrl: string, language: PublicLanguage) {
   const url = new URL(currentUrl)
   url.searchParams.set('lang', language)
