@@ -3,6 +3,8 @@ import { unstable_cache } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { payoutPeriodSince, type PayoutPeriodKey } from '@/lib/payout-periods'
 import type { HomePayout, HomePlatform } from '@/lib/home-data'
+import { getPublicChallengeTranslations } from '@/lib/public-challenge-translations'
+import type { ChallengeRewardOption } from '@/lib/challenge-resolver'
 
 export type VerificationLevel = 'verified' | 'tracked_external' | 'blockchain_external' | 'firm_reported' | 'unverified'
 
@@ -58,7 +60,7 @@ export const getPayoutTrackerSummaries = unstable_cache(
   { revalidate: 60, tags: ['public-payouts'] }
 )
 
-async function getPayoutFirmDetailUncached(slug: string, period: PayoutPeriodKey) {
+async function getPayoutFirmDetailUncached(slug: string, period: PayoutPeriodKey, language = 'es') {
   const supabase = createAdminClient()
   const summaryResult = await supabase.from('platform_payout_period_summary').select('*').eq('slug', slug).eq('period_key', period).maybeSingle()
   if (summaryResult.error) throw new Error(migrationError(summaryResult.error.message))
@@ -87,8 +89,12 @@ async function getPayoutFirmDetailUncached(slug: string, period: PayoutPeriodKey
   if (!platform) return null
   const challengeRows = challengesResult.data ?? []
   const challengeIds = challengeRows.map((challenge) => challenge.id)
-  const rewardResult = challengeIds.length ? await supabase.from('challenge_reward_options').select('challenge_id, name, payout_frequency, minimum_payout_days, status, effective_from, effective_to').in('challenge_id', challengeIds).eq('status', true).order('sort_order') : { data: [], error: null }
+  const rewardResult = challengeIds.length ? await supabase.from('challenge_reward_options').select('*').in('challenge_id', challengeIds).eq('status', true).order('sort_order') : { data: [], error: null }
   if (rewardResult.error) throw new Error(rewardResult.error.message)
+  const localizedRewards = (await getPublicChallengeTranslations({
+    phases: [], variants: [], variantPhases: [], plans: [],
+    rewards: (rewardResult.data ?? []) as ChallengeRewardOption[],
+  }, language)).rewards
   const now = Date.now()
   const challengeNames = new Map(challengeRows.map((challenge) => [challenge.id, challenge.name]))
   const countryNames = new Map((countriesResult.data ?? []).map((country) => [country.code, country.name]))
@@ -97,7 +103,7 @@ async function getPayoutFirmDetailUncached(slug: string, period: PayoutPeriodKey
     foundedAt: detailsResult.data?.founded_at ?? null,
     profitSplit: numeric(detailsResult.data?.profit_split_max),
     payoutMethods: (methodsResult.data ?? []).flatMap((row) => { const method = first(row.method as { name: string } | Array<{ name: string }> | null); return method?.name ? [method.name] : [] }),
-    policies: (rewardResult.data ?? []).filter((option) => (!option.effective_from || new Date(option.effective_from).getTime() <= now) && (!option.effective_to || new Date(option.effective_to).getTime() > now)).map((option) => ({ challenge: challengeNames.get(option.challenge_id) ?? 'Challenge', option: option.name, frequency: option.payout_frequency, minimumDays: numeric(option.minimum_payout_days) })),
+    policies: localizedRewards.filter((option) => (!option.effective_from || new Date(option.effective_from).getTime() <= now) && (!option.effective_to || new Date(option.effective_to).getTime() > now)).map((option) => ({ challenge: challengeNames.get(option.challenge_id) ?? 'Challenge', option: option.name, frequency: option.payout_frequency, minimumDays: numeric(option.minimum_payout_days) })),
   }
   return {
     summary: toSummary(summaryResult.data, platform, (marketsResult.data ?? []).map((item) => item.market)),

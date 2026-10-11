@@ -18,6 +18,7 @@ import { firmProfileText, getPublicUi, localizedCountryName, publicFirmProfileCo
 import { getPublicPlatformTranslations } from '@/lib/public-platform-translations'
 import { getPublicOfferTranslations } from '@/lib/public-offer-translations'
 import { selectCanonicalOfferRows } from '@/lib/public-offer-translation-policy'
+import { getPublicChallengeTranslations } from '@/lib/public-challenge-translations'
 
 export const revalidate = 60
 
@@ -68,7 +69,7 @@ export default async function PropFirmDetailPage({ params, searchParams }: PageP
     needsOverview ? supabase.from('platform_trading_platforms').select('catalog:trading_platform_id(name)').eq('platform_id', row.id) : Promise.resolve({ data: [], error: null }),
     needsOverview ? supabase.from('platform_transaction_methods').select('supports_deposit, supports_payout, catalog:transaction_method_id(name)').eq('platform_id', row.id) : Promise.resolve({ data: [], error: null }),
     needsOverview ? supabase.from('platform_instruments').select('catalog:instrument_category_id(name)').eq('platform_id', row.id) : Promise.resolve({ data: [], error: null }),
-    activeView === 'payouts' ? getPayoutFirmDetail(slug, payoutPeriodKey) : Promise.resolve(null),
+    activeView === 'payouts' ? getPayoutFirmDetail(slug, payoutPeriodKey, language) : Promise.resolve(null),
   ])
 
   const details = detailsResult.data
@@ -109,11 +110,14 @@ export default async function PropFirmDetailPage({ params, searchParams }: PageP
     ? await supabase.from('challenge_variant_phases').select('*').in('variant_id', variantIds).order('phase_number')
     : { data: [], error: null }
   if (variantPhasesResult.error) throw new Error(variantPhasesResult.error.message)
-  const plans = (plansResult.data ?? []) as AccountPlan[]
-  const phases = (phasesResult.data ?? []) as ChallengePhase[]
-  const variants = (variantsResult.data ?? []) as ChallengeVariant[]
-  const variantPhases = (variantPhasesResult.data ?? []) as ChallengeVariantPhase[]
-  const rewardOptions = (rewardOptionsResult.data ?? []) as ChallengeRewardOption[]
+  const localizedChallengeData = await getPublicChallengeTranslations({
+    plans: (plansResult.data ?? []) as AccountPlan[],
+    phases: (phasesResult.data ?? []) as ChallengePhase[],
+    variants: (variantsResult.data ?? []) as ChallengeVariant[],
+    variantPhases: (variantPhasesResult.data ?? []) as ChallengeVariantPhase[],
+    rewards: (rewardOptionsResult.data ?? []) as ChallengeRewardOption[],
+  }, language)
+  const { plans, phases, variants, variantPhases, rewards: rewardOptions } = localizedChallengeData
   const resolvedChallenges = challenges.map((challenge) => resolveChallenge({ challenge, phases, variants, variantPhases, plans, rewardOptions, now: visibleAt }))
   const allRewardOptions = uniqueById(resolvedChallenges.flatMap((resolved) => [
     ...resolved.generalRewardOptions,

@@ -2,7 +2,7 @@ export const PLATFORM_TRANSLATION_FIELDS = ['short_description', 'description', 
 export type PlatformTranslationField = (typeof PLATFORM_TRANSLATION_FIELDS)[number]
 export type PlatformTranslation = { shortDescription: string | null; description: string | null; pros: string[]; cons: string[]; seoTitle: string | null; seoDescription: string | null }
 export type PlatformTranslationRow = { platform_id: string; language: string; short_description: string | null; description: string | null; pros: unknown; cons: unknown; seo_title: string | null; seo_description: string | null }
-export type TranslationFieldState = { resource_id: string; field_name: string; target_language: string; source_hash: string; translated_source_hash: string | null; source_revision: number; translated_revision: number | null; status: string; is_protected: boolean }
+export type TranslationFieldState = { resource_type?: string; resource_id: string; field_name: string; target_language: string; source_hash: string; translated_source_hash: string | null; source_revision: number; translated_revision: number | null; status: string; is_protected: boolean }
 export type TranslationLanguage = { code: string; is_active: boolean; is_default: boolean; publication_status: string }
 
 const EMPTY_TRANSLATION: PlatformTranslation = { shortDescription: null, description: null, pros: [], cons: [], seoTitle: null, seoDescription: null }

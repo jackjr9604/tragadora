@@ -8,6 +8,7 @@ import { conservativeMaxDrawdown, resolveChallenge, type AccountPlan, type Chall
 import { getPublicPlatformTranslations } from '@/lib/public-platform-translations'
 import { getPublicOfferTranslations } from '@/lib/public-offer-translations'
 import { selectCanonicalOfferRows } from '@/lib/public-offer-translation-policy'
+import { getPublicChallengeTranslations } from '@/lib/public-challenge-translations'
 
 export type HomePlatform = {
   id: string
@@ -200,7 +201,9 @@ async function getHomeDataUncached(language = 'es', countryCode?: string | null)
   const allVariants = (variantResult.data ?? []) as ChallengeVariant[]
   const allVariantPhases = (variantPhaseResult.data ?? []) as ChallengeVariantPhase[]
   const allRewardOptions = (rewardResult.data ?? []) as ChallengeRewardOption[]
-  const resolvedChallengeMap = new Map(challenges.map((challenge) => [challenge.id, resolveChallenge({ challenge, plans: allPlans, phases: allPhases, variants: allVariants, variantPhases: allVariantPhases, rewardOptions: allRewardOptions, now })]))
+  const localizedChallengeData = await getPublicChallengeTranslations({ plans: allPlans, phases: allPhases, variants: allVariants, variantPhases: allVariantPhases, rewards: allRewardOptions }, language)
+  const sourceChallengeMap = new Map(challenges.map((challenge) => [challenge.id, resolveChallenge({ challenge, plans: allPlans, phases: allPhases, variants: allVariants, variantPhases: allVariantPhases, rewardOptions: allRewardOptions, now })]))
+  const resolvedChallengeMap = new Map(challenges.map((challenge) => [challenge.id, resolveChallenge({ challenge, plans: localizedChallengeData.plans, phases: localizedChallengeData.phases, variants: localizedChallengeData.variants, variantPhases: localizedChallengeData.variantPhases, rewardOptions: localizedChallengeData.rewards, now })]))
   const rawCountries = (countryResult.data ?? []) as Array<Record<string, unknown>>
   const countries: PublicCountry[] = rawCountries.flatMap((country) => {
     const code = String(country.code ?? country.iso_code ?? country.country_code ?? '').toUpperCase()
@@ -315,6 +318,7 @@ async function getHomeDataUncached(language = 'es', countryCode?: string | null)
     const platformChallenges = challenges.filter((challenge) => challenge.platform_id === platform.id)
     const plans = platformChallenges.flatMap((challenge) => {
       const resolved = resolvedChallengeMap.get(challenge.id)
+      const sourceResolved = sourceChallengeMap.get(challenge.id)
       if (!resolved) return []
       return [...resolved.basePlans, ...resolved.variants.flatMap((variant) => variant.plans)].map((plan) => ({
         price: plan.price === null ? null : Number(plan.price),
@@ -324,7 +328,12 @@ async function getHomeDataUncached(language = 'es', countryCode?: string | null)
         maxDrawdown: conservativeMaxDrawdown(plan.effectivePhases),
         challengeType: challenge.challenge_type,
         challengeName: challenge.name,
-        payoutOption: bestPayoutOption(plan.rewardOptions, plan.effectivePayoutFrequency),
+        payoutOption: bestPayoutOption(
+          [...(sourceResolved?.basePlans ?? []), ...(sourceResolved?.variants.flatMap((variant) => variant.plans) ?? [])].find((sourcePlan) => sourcePlan.id === plan.id)?.rewardOptions ?? plan.rewardOptions,
+          [...(sourceResolved?.basePlans ?? []), ...(sourceResolved?.variants.flatMap((variant) => variant.plans) ?? [])].find((sourcePlan) => sourcePlan.id === plan.id)?.effectivePayoutFrequency ?? plan.effectivePayoutFrequency,
+          plan.rewardOptions,
+          plan.effectivePayoutFrequency
+        ),
       }))
     })
     const platformAvailability = availability.filter(
@@ -384,17 +393,18 @@ async function getHomeDataUncached(language = 'es', countryCode?: string | null)
   }
 }
 
-function bestPayoutOption(options: ChallengeRewardOption[], legacyFrequency: string | null): PayoutSpeedOption | null {
-  const candidates = options.flatMap((option) => {
+function bestPayoutOption(sourceOptions: ChallengeRewardOption[], sourceLegacyFrequency: string | null, localizedOptions: ChallengeRewardOption[], localizedLegacyFrequency: string | null): PayoutSpeedOption | null {
+  const candidates = sourceOptions.flatMap((option) => {
     const parsed = payoutSpeedOption(
       option.payout_frequency,
       option.minimum_payout_days === null ? null : Number(option.minimum_payout_days),
       option.name
     )
-    return parsed ? [parsed] : []
+    const localized = localizedOptions.find((candidate) => candidate.id === option.id)
+    return parsed ? [{ ...parsed, label: localized?.payout_frequency ?? parsed.label, optionName: localized?.name ?? parsed.optionName }] : []
   })
-  const legacy = payoutSpeedOption(legacyFrequency, null, null)
-  if (legacy) candidates.push(legacy)
+  const legacy = payoutSpeedOption(sourceLegacyFrequency, null, null)
+  if (legacy) candidates.push({ ...legacy, label: localizedLegacyFrequency ?? legacy.label })
   const order = { very_fast: 0, fast: 1, normal: 2, slow: 3 }
   return candidates.sort((a, b) => order[a.speed] - order[b.speed] || (a.days ?? Infinity) - (b.days ?? Infinity))[0] ?? null
 }

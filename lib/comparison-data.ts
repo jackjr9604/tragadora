@@ -4,6 +4,7 @@ import { resolveChallenge, type AccountPlan, type ChallengePhase, type Challenge
 import type { AvailabilityStatus, ComparisonFirm, ComparisonPlan } from '@/lib/comparison-engine'
 import type { AvailabilityRule, RestrictionBasis } from '@/lib/platform-availability'
 import type { MatchFirm } from '@/lib/preference-matches'
+import { getPublicChallengeTranslations } from '@/lib/public-challenge-translations'
 
 export type FirmChoice = { id: string; slug: string; name: string; logoUrl: string | null; markets: string[]; availabilityRules: AvailabilityRule[] }
 
@@ -54,7 +55,7 @@ function resolvedPlanRows(challenge: ChallengeRow, catalog: PlanCatalog): Compar
   return [...resolved.basePlans.map((plan) => mapPlan(plan, null)), ...resolved.variants.flatMap((variant) => variant.plans.map((plan) => mapPlan(plan, variant.name)))]
 }
 
-export async function getComparisonData(slugs: string[], countryCode = '', selectedMarket = ''): Promise<{ choices: FirmChoice[]; firms: ComparisonFirm[] }> {
+export async function getComparisonData(slugs: string[], countryCode = '', selectedMarket = '', language = 'es'): Promise<{ choices: FirmChoice[]; firms: ComparisonFirm[] }> {
   const db = createAdminClient()
   const marketFilter = ['cfd', 'futures', 'crypto', 'options'].includes(selectedMarket) ? selectedMarket : ''
   const availabilityQuery = countryCode
@@ -118,7 +119,8 @@ export async function getComparisonData(slugs: string[], countryCode = '', selec
   const overrides = variantIds.length ? await db.from('challenge_variant_phases').select('*').in('variant_id', variantIds) : { data: [], error: null }
   if (overrides.error) throw new Error(overrides.error.message)
   const now = new Date().toISOString()
-  const catalog: PlanCatalog = { plans: (plans.data ?? []) as AccountPlan[], phases: (phases.data ?? []) as ChallengePhase[], variants: (variants.data ?? []) as ChallengeVariant[], overrides: (overrides.data ?? []) as ChallengeVariantPhase[], rewards: (rewards.data ?? []) as ChallengeRewardOption[], now }
+  const localized = await getPublicChallengeTranslations({ plans: (plans.data ?? []) as AccountPlan[], phases: (phases.data ?? []) as ChallengePhase[], variants: (variants.data ?? []) as ChallengeVariant[], variantPhases: (overrides.data ?? []) as ChallengeVariantPhase[], rewards: (rewards.data ?? []) as ChallengeRewardOption[] }, language)
+  const catalog: PlanCatalog = { plans: localized.plans, phases: localized.phases, variants: localized.variants, overrides: localized.variantPhases, rewards: localized.rewards, now }
   const firms: ComparisonFirm[] = selected.map((row) => {
     const record = detail.data?.find((item) => item.platform_id === row.id)
     const planRows = challengeRows.filter((challenge) => challenge.platform_id === row.id).flatMap((challenge) => resolvedPlanRows(challenge, catalog))
@@ -163,7 +165,7 @@ export async function getComparisonCountries(): Promise<Array<{ code: string; na
 }
 
 /** Solo catálogo público activo: sin offers, payout evidence, métricas externas ni afiliados. */
-export async function getMatchCatalog(choices: FirmChoice[]): Promise<MatchFirm[]> {
+export async function getMatchCatalog(choices: FirmChoice[], language = 'es'): Promise<MatchFirm[]> {
   if (!choices.length) return []
   const db = createAdminClient()
   const ids = choices.map((item) => item.id)
@@ -188,11 +190,8 @@ export async function getMatchCatalog(choices: FirmChoice[]): Promise<MatchFirm[
   const variantIds = (variants.data ?? []).map((item) => item.id)
   const overrides = variantIds.length ? await db.from('challenge_variant_phases').select('*').in('variant_id', variantIds) : { data: [], error: null }
   if (overrides.error) throw new Error(overrides.error.message)
-  const catalog: PlanCatalog = {
-    plans, phases: (phases.data ?? []) as ChallengePhase[],
-    variants: (variants.data ?? []) as ChallengeVariant[], overrides: (overrides.data ?? []) as ChallengeVariantPhase[],
-    rewards: (rewards.data ?? []) as ChallengeRewardOption[], now: new Date().toISOString(),
-  }
+  const localized = await getPublicChallengeTranslations({ plans, phases: (phases.data ?? []) as ChallengePhase[], variants: (variants.data ?? []) as ChallengeVariant[], variantPhases: (overrides.data ?? []) as ChallengeVariantPhase[], rewards: (rewards.data ?? []) as ChallengeRewardOption[] }, language)
+  const catalog: PlanCatalog = { plans: localized.plans, phases: localized.phases, variants: localized.variants, overrides: localized.variantPhases, rewards: localized.rewards, now: new Date().toISOString() }
   return choices.map((choice) => {
     const record = details.data?.find((item) => item.platform_id === choice.id)
     return {

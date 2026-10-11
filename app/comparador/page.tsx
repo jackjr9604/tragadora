@@ -23,7 +23,7 @@ const single = (value: string | string[] | undefined) => Array.isArray(value) ? 
 const nonnegative = (value: string | undefined) => value !== undefined && value !== '' && Number.isFinite(Number(value)) && Number(value) >= 0 ? Number(value) : null
 const priorityKeys: Priority[] = ['price', 'payout', 'drawdown', 'split']
 // Solo catálogo público relativamente estable; el comparador manual conserva sus lecturas actuales.
-const getChoices = unstable_cache((country: string, market: string) => getComparisonData([], country, market), ['comparison-choices-availability-v2'], { revalidate: 60 })
+const getChoices = unstable_cache((language: string, country: string, market: string) => getComparisonData([], country, market, language), ['comparison-choices-availability-v3'], { revalidate: 60 })
 const getFilters = unstable_cache(getComparisonFilterOptions, ['comparison-filters-v1'], { revalidate: 60 })
 const getCatalog = unstable_cache(getMatchCatalog, ['comparison-match-catalog-v1'], { revalidate: 60 })
 const getCountries = unstable_cache(getComparisonCountries, ['comparison-countries-v1'], { revalidate: 3600 })
@@ -38,8 +38,8 @@ export default async function ComparatorPage({ searchParams }: { searchParams: P
   const [countries, content] = await Promise.all([getCountries(), getPageContent('comparador', language)])
   const country = countries.some((item) => item.code === single(query.country)?.toUpperCase()) ? single(query.country)!.toUpperCase() : ''
   const selectedMarket = personal ? single(query.market) ?? '' : ''
-  const data = personal || !slugs.length ? await getChoices(country, selectedMarket) : await getComparisonData(slugs, country)
-  const catalog = showMatches ? await getCatalog(data.choices) : []
+  const data = personal || !slugs.length ? await getChoices(language, country, selectedMarket) : await getComparisonData(slugs, country, '', language)
+  const catalog = showMatches ? await getCatalog(data.choices, language) : []
   const filterOptions = personal ? showMatches ? {
     sizes: [...new Set(catalog.flatMap((firm) => firm.plans.flatMap((plan) => plan.size === null ? [] : [plan.size])))].sort((a, b) => a - b),
     platforms: [...new Set(catalog.flatMap((firm) => firm.tradingPlatforms))].sort(),

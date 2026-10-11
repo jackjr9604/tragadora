@@ -27,7 +27,7 @@ export default async function PayoutFirmPage({ params, searchParams }: Props) {
   const language = await resolvePublicLanguage(query.lang)
   const requested = scalar(query.period)
   const period = requested === '24h' ? '7d' : payoutPeriod(requested, 'all')
-  const detail = await getPayoutFirmDetail(slug, period)
+  const detail = await getPayoutFirmDetail(slug, period, language)
   if (!detail) notFound()
   const { summary, context } = detail
   const copy = publicFirmProfileCopy[publicUiLanguage(language)]
