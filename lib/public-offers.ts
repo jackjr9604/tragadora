@@ -2,6 +2,8 @@ import 'server-only'
 
 import { unstable_cache } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getPublicOfferTranslations } from '@/lib/public-offer-translations'
+import { selectCanonicalOfferRows } from '@/lib/public-offer-translation-policy'
 
 export type PublicOffer = {
   id: string
@@ -30,7 +32,7 @@ export type PublicOffer = {
 }
 
 const baseFields = `
-  id, platform_id, challenge_id, title, description, discount_value,
+  id, platform_id, challenge_id, affiliate_link_id, title, description, discount_value,
   discount_type, promo_code, country_code, language, starts_at, expires_at,
   status, priority, created_at
 `
@@ -54,6 +56,7 @@ type OfferRow = {
   id: string
   platform_id: string
   challenge_id: string | null
+  affiliate_link_id?: string | null
   title: string
   description: string | null
   discount_value: number | string | null
@@ -128,14 +131,16 @@ async function queryPublicOffers(language: string, countryCode: string | null): 
     throw publicOffersQueryError(presentationUnavailable ? 'legacy' : 'new_schema', queryError)
   }
 
-  const rows = (rowsData ?? []).filter((offer) => {
+  const eligibleRows = (rowsData ?? []).filter((offer) => {
     const started = !offer.starts_at || new Date(offer.starts_at) <= now
     const current = !offer.expires_at || new Date(offer.expires_at) >= now
     const location = countryCode?.trim().toUpperCase() || null
     const locationMatches = !location || !offer.country_code || offer.country_code.toUpperCase() === location
-    const languageMatches = !offer.language || offer.language === language || offer.language === 'es'
-    return started && current && locationMatches && languageMatches
+    return started && current && locationMatches
   })
+  // Legacy rows may have copied the same promotion per language. Commercial
+  // fields define that legacy identity; prefer the language-neutral/base row.
+  const rows = selectCanonicalOfferRows(eligibleRows, language)
   const platformIds = [...new Set(rows.map((row) => row.platform_id))]
   const challengeIds = [...new Set(rows.flatMap((row) => row.challenge_id ? [row.challenge_id] : []))]
   if (!platformIds.length) return []
@@ -168,13 +173,20 @@ async function queryPublicOffers(language: string, countryCode: string | null): 
     }]
   }))
 
+  const localized = await getPublicOfferTranslations(rows.map((row) => ({
+    id: row.id, language: row.language, title: row.title, description: row.description,
+    free_account_label: row.free_account_label ?? null, hot_badge: row.hot_badge ?? null,
+    short_highlight: row.short_highlight ?? null,
+  })), language)
+
   return rows.flatMap((row) => {
     const platform = platformMap.get(row.platform_id)
     if (!platform) return []
+    const text = localized.get(row.id)
     return [{
       id: row.id,
-      title: row.title,
-      description: row.description,
+      title: text?.title ?? row.title,
+      description: text?.description ?? row.description,
       discountValue: Number(row.discount_value ?? 0),
       discountType: row.discount_type,
       promoCode: row.promo_code,
@@ -183,10 +195,10 @@ async function queryPublicOffers(language: string, countryCode: string | null): 
       priority: Number(row.priority ?? 1),
       challengeName: row.challenge_id ? challengeMap.get(row.challenge_id) ?? null : null,
       includesFreeAccount: row.includes_free_account ?? false,
-      freeAccountLabel: row.free_account_label ?? null,
+      freeAccountLabel: text?.freeAccountLabel ?? row.free_account_label ?? null,
       isFeatured: row.is_featured ?? false,
-      hotBadge: row.hot_badge ?? null,
-      shortHighlight: row.short_highlight ?? null,
+      hotBadge: text?.hotBadge ?? row.hot_badge ?? null,
+      shortHighlight: text?.shortHighlight ?? row.short_highlight ?? null,
       platform,
     }]
   })

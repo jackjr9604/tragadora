@@ -16,6 +16,8 @@ import { getPayoutFirmDetail } from '@/lib/payout-tracker'
 import { getPublicPlatformBySlug } from '@/lib/public-platform'
 import { firmProfileText, getPublicUi, localizedCountryName, publicFirmProfileCopy, publicLocale, publicPath, publicUiLanguage } from '@/lib/public-i18n'
 import { getPublicPlatformTranslations } from '@/lib/public-platform-translations'
+import { getPublicOfferTranslations } from '@/lib/public-offer-translations'
+import { selectCanonicalOfferRows } from '@/lib/public-offer-translation-policy'
 
 export const revalidate = 60
 
@@ -62,7 +64,7 @@ export default async function PropFirmDetailPage({ params, searchParams }: PageP
   : Promise.resolve({ data: [], error: null }),
     supabase.from('countries').select('code, name').eq('code', row.origin_country_code ?? ''),
     activeView !== 'payouts' ? supabase.from('challenges').select('id, name, challenge_type, phases, status').eq('platform_id', row.id).eq('status', 'active').order('name') : Promise.resolve({ data: [], error: null }),
-    activeView !== 'payouts' ? supabase.from('offers').select('id, challenge_id, title, description, discount_value, discount_type, promo_code, status').eq('platform_id', row.id).eq('status', true).order('priority') : Promise.resolve({ data: [], error: null }),
+    activeView !== 'payouts' ? supabase.from('offers').select('id, platform_id, challenge_id, affiliate_link_id, title, description, discount_value, discount_type, promo_code, status, language, country_code, starts_at, expires_at, includes_free_account, is_featured, free_account_label, hot_badge, short_highlight').eq('platform_id', row.id).eq('status', true).order('priority') : Promise.resolve({ data: [], error: null }),
     needsOverview ? supabase.from('platform_trading_platforms').select('catalog:trading_platform_id(name)').eq('platform_id', row.id) : Promise.resolve({ data: [], error: null }),
     needsOverview ? supabase.from('platform_transaction_methods').select('supports_deposit, supports_payout, catalog:transaction_method_id(name)').eq('platform_id', row.id) : Promise.resolve({ data: [], error: null }),
     needsOverview ? supabase.from('platform_instruments').select('catalog:instrument_category_id(name)').eq('platform_id', row.id) : Promise.resolve({ data: [], error: null }),
@@ -120,13 +122,23 @@ export default async function PropFirmDetailPage({ params, searchParams }: PageP
   const rewardSplits = allRewardOptions.flatMap((option) => option.profit_split === null ? [] : [Number(option.profit_split)])
   const maximumRewardSplit = rewardSplits.length ? Math.max(...rewardSplits) : platform.profitSplit
   const challengeNames = new Map(challenges.map((challenge) => [challenge.id, challenge.name]))
+  const offerRows = selectCanonicalOfferRows(offersResult.data ?? [], language)
+  const offerTranslations = await getPublicOfferTranslations(offerRows.map((offer) => ({
+    id: offer.id, language: offer.language, title: offer.title, description: offer.description,
+    free_account_label: offer.free_account_label, hot_badge: offer.hot_badge,
+    short_highlight: offer.short_highlight,
+  })), language)
+  const localizedOffers = offerRows.map((offer) => {
+    const text = offerTranslations.get(offer.id)
+    return { ...offer, title: text?.title ?? offer.title, description: text?.description ?? offer.description, hot_badge: text?.hotBadge ?? offer.hot_badge, short_highlight: text?.shortHighlight ?? offer.short_highlight }
+  })
   const maximumAccountSize = plans.reduce<number | null>((maximum, plan) => plan.account_size === null ? maximum : Math.max(maximum ?? 0, Number(plan.account_size)), null)
   const tradingPlatformNames = (tradingPlatformsResult.data ?? []).flatMap((item) => { const catalog = first(item.catalog); return catalog?.name ? [catalog.name] : [] })
   const paymentMethodNames = (transactionMethodsResult.data ?? []).flatMap((item) => { const catalog = first(item.catalog); return item.supports_deposit && catalog?.name ? [catalog.name] : [] })
   const payoutMethodNames = (transactionMethodsResult.data ?? []).flatMap((item) => { const catalog = first(item.catalog); return item.supports_payout && catalog?.name ? [catalog.name] : [] })
   const instrumentNames = (instrumentsResult.data ?? []).flatMap((item) => { const catalog = first(item.catalog); return catalog?.name ? [catalog.name] : [] })
   const hasFirmInformation = Boolean(details?.broker_provider || tradingPlatformNames.length || paymentMethodNames.length || payoutMethodNames.length || instrumentNames.length)
-  const primaryOffer = offersResult.data?.[0]
+  const primaryOffer = localizedOffers[0]
   const ctaHref = publicPath(`/go/${platform.slug}`, language, { offer: primaryOffer?.id })
   const ctaLabel = primaryOffer ? copy.viewOffer : firmProfileText(copy.visit, { name: platform.name })
   const sections: FirmSection[] = [
@@ -165,7 +177,7 @@ export default async function PropFirmDetailPage({ params, searchParams }: PageP
         </main>
       </div>}
 
-      {activeView === 'offers' && <main className="py-10 lg:py-14"><ViewHeading eyebrow={copy.activePromotions} title={copy.offers} description={firmProfileText(copy.offersDescription, { name: platform.name })} />{offersResult.data?.length ? <div className="mt-7 grid gap-5 md:grid-cols-2">{offersResult.data.map((offer) => <article key={offer.id} className="group relative overflow-hidden rounded-2xl border border-amber-300/15 bg-gradient-to-br from-amber-300/10 via-[#142036] to-[#101a2c] p-5 transition hover:-translate-y-0.5 hover:border-amber-300/30"><div className="absolute -right-8 -top-8 size-28 rounded-full bg-amber-300/8 blur-2xl" /><strong className="relative font-mono text-3xl font-bold text-[#f7c64b]">{offer.discount_type === 'percentage' ? firmProfileText(copy.percentageDiscount, { value: offer.discount_value }) : firmProfileText(copy.fixedDiscount, { value: offer.discount_value })} <span className="text-sm uppercase tracking-wider">{copy.off}</span></strong><h3 className="relative mt-4 text-lg font-bold">{offer.title}</h3>{offer.challenge_id && <p className="relative mt-1 text-sm text-slate-400">{challengeNames.get(offer.challenge_id) ?? copy.specificChallenge}</p>}{offer.promo_code && <p className="relative mt-4 inline-flex rounded-lg border border-white/10 bg-black/15 px-3 py-2 font-mono text-sm text-cyan-300">{copy.code}: {offer.promo_code}</p>}<Link href={publicPath(`/go/${platform.slug}`, language, { offer: offer.id })} className="relative mt-5 flex items-center justify-center gap-2 rounded-lg bg-[#f7c64b] px-4 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-[#ffd66c]">{copy.getOffer} <ArrowUpRight className="size-4" /></Link></article>)}</div> : <EmptyState title={copy.noActiveOffers} description={copy.noActiveOffersHelp} />}</main>}
+      {activeView === 'offers' && <main className="py-10 lg:py-14"><ViewHeading eyebrow={copy.activePromotions} title={copy.offers} description={firmProfileText(copy.offersDescription, { name: platform.name })} />{localizedOffers.length ? <div className="mt-7 grid gap-5 md:grid-cols-2">{localizedOffers.map((offer) => <article key={offer.id} className="group relative overflow-hidden rounded-2xl border border-amber-300/15 bg-gradient-to-br from-amber-300/10 via-[#142036] to-[#101a2c] p-5 transition hover:-translate-y-0.5 hover:border-amber-300/30"><div className="absolute -right-8 -top-8 size-28 rounded-full bg-amber-300/8 blur-2xl" /><strong className="relative font-mono text-3xl font-bold text-[#f7c64b]">{offer.discount_type === 'percentage' ? firmProfileText(copy.percentageDiscount, { value: offer.discount_value }) : firmProfileText(copy.fixedDiscount, { value: offer.discount_value })} <span className="text-sm uppercase tracking-wider">{copy.off}</span></strong>{offer.hot_badge && <span className="relative ml-2 rounded-full border border-amber-300/20 px-2 py-1 text-[10px] text-amber-100">{offer.hot_badge}</span>}<h3 className="relative mt-4 text-lg font-bold">{offer.title}</h3>{(offer.short_highlight || offer.description) && <p className="relative mt-2 text-sm text-slate-400">{offer.short_highlight || offer.description}</p>}{offer.challenge_id && <p className="relative mt-1 text-sm text-slate-400">{challengeNames.get(offer.challenge_id) ?? copy.specificChallenge}</p>}{offer.promo_code && <p className="relative mt-4 inline-flex rounded-lg border border-white/10 bg-black/15 px-3 py-2 font-mono text-sm text-cyan-300">{copy.code}: {offer.promo_code}</p>}<Link href={publicPath(`/go/${platform.slug}`, language, { offer: offer.id })} className="relative mt-5 flex items-center justify-center gap-2 rounded-lg bg-[#f7c64b] px-4 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-[#ffd66c]">{copy.getOffer} <ArrowUpRight className="size-4" /></Link></article>)}</div> : <EmptyState title={copy.noActiveOffers} description={copy.noActiveOffersHelp} />}</main>}
 
       {activeView === 'payouts' && <main className="py-10 lg:py-14"><ViewHeading eyebrow={copy.payoutTracker} title={copy.payments} description={firmProfileText(copy.payoutsDescription, { name: platform.name })} />{payoutDetail ? <FirmPayoutDashboard detail={payoutDetail} period={payoutPeriodKey} basePath={`/prop-firms/${platform.slug}`} language={language} embedded /> : <EmptyState title={copy.noActivity} description={copy.noActivityHelp} />}</main>}
     </div>

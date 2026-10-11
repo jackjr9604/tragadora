@@ -6,6 +6,8 @@ import { visibleBrandText } from '@/lib/public-language'
 import { classifyPayoutVerification, payoutSpeedOption, type PayoutSpeedOption, type RecommendableFirm } from '@/lib/prop-firm-recommender'
 import { conservativeMaxDrawdown, resolveChallenge, type AccountPlan, type ChallengePhase, type ChallengeRewardOption, type ChallengeVariant, type ChallengeVariantPhase } from '@/lib/challenge-resolver'
 import { getPublicPlatformTranslations } from '@/lib/public-platform-translations'
+import { getPublicOfferTranslations } from '@/lib/public-offer-translations'
+import { selectCanonicalOfferRows } from '@/lib/public-offer-translation-policy'
 
 export type HomePlatform = {
   id: string
@@ -229,24 +231,21 @@ async function getHomeDataUncached(language = 'es', countryCode?: string | null)
       const current = !offer.expires_at || new Date(offer.expires_at) >= now
       const knownCountry = countryCode?.trim().toUpperCase() || null
       const countryMatches = !knownCountry || !offer.country_code || offer.country_code.toUpperCase() === knownCountry
-      return started && current && countryMatches && (!offer.language || offer.language === language || offer.language === 'es')
+      return started && current && countryMatches
     })
-  const offersByPlatform = new Map<string, typeof validOfferRows>()
-  for (const offer of validOfferRows) offersByPlatform.set(offer.platform_id, [...(offersByPlatform.get(offer.platform_id) ?? []), offer])
-  const localizedOfferRows = [...offersByPlatform.values()].flatMap((rows) => {
-    const global = rows.filter((offer) => !offer.language)
-    const requested = rows.filter((offer) => offer.language === language)
-    const fallback = language === 'es' ? [] : rows.filter((offer) => offer.language === 'es')
-    return [...global, ...(requested.length ? requested : fallback)]
-  })
+  const localizedOfferRows = selectCanonicalOfferRows(validOfferRows, language)
+  const localizedOfferText = await getPublicOfferTranslations(localizedOfferRows.map((offer) => ({
+    id: offer.id, language: offer.language, title: offer.title, description: offer.description,
+    free_account_label: null, hot_badge: null, short_highlight: null,
+  })), language)
   const offers: HomeOffer[] = localizedOfferRows
     .flatMap((offer) => {
       const platform = platformMap.get(offer.platform_id)
       if (!platform) return []
       return [{
         id: offer.id,
-        title: visibleBrandText(offer.title),
-        description: offer.description ? visibleBrandText(offer.description) : null,
+        title: visibleBrandText(localizedOfferText.get(offer.id)?.title ?? offer.title),
+        description: localizedOfferText.get(offer.id)?.description ? visibleBrandText(localizedOfferText.get(offer.id)?.description ?? '') : null,
         discountValue: Number(offer.discount_value ?? 0),
         discountType: offer.discount_type,
         promoCode: offer.promo_code,

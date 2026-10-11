@@ -9,5 +9,5 @@ export async function GlobalOffersStrip({ language }: { language: PublicLanguage
   const offers = await getPublicOffers(language, countryCode)
   const featured = offers.filter((offer) => offer.isFeatured)
   if (!offers.length) return null
-  return <><FeaturedOffersStrip offers={featured} language={language} global /><OfferActivityToast offers={offers} /></>
+  return <><FeaturedOffersStrip offers={featured} language={language} global /><OfferActivityToast offers={offers} language={language} /></>
 }
