@@ -13,6 +13,6 @@ export const revalidate = 60
 export default async function Page({ searchParams }: { searchParams: Promise<{ lang?: string | string[] }> }) {
   const language = await resolvePublicLanguage((await searchParams).lang)
   const t = getPublicUi(language)
-  const [items, content] = await Promise.all([getCommunities(), getPageContent('comunidades', language)])
+  const [items, content] = await Promise.all([getCommunities(language), getPageContent('comunidades', language)])
   return <PublicPageShell language={language}><PageHero content={content} language={language} fallbackTitle={t('hero.communities.title')} fallbackSubtitle={t('hero.communities.subtitle')} primaryHref="#comunidades" secondaryHref={`/blog?lang=${language}`} compact /><main id="comunidades" className="mx-auto max-w-[1440px] scroll-mt-24 px-4 py-8 sm:px-6 lg:px-8"><CommunitiesCatalog items={items} language={language} /></main></PublicPageShell>
 }

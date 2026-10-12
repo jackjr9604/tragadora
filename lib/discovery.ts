@@ -1,13 +1,15 @@
 import 'server-only'
 import { unstable_cache } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getPublicCommunityTranslations } from '@/lib/public-community-translations'
 
 type Media = { id?: string; file_url: string; alt_text: string | null }
 const first = <T,>(value: T | T[] | null): T | null => Array.isArray(value) ? value[0] ?? null : value
 
-export type Community = { id:string; name:string; slug:string; shortDescription:string|null; communityType:string; category:string|null; languageCode:string|null; regionLabel:string|null; logoUrl:string|null; logoAlt:string|null; joinUrl:string; websiteUrl:string|null; badge:string|null; isFeatured:boolean; displayOrder:number }
+export type Community = { id:string; name:string; slug:string; shortDescription:string|null; communityType:string; category:string|null; categoryLabel?:string|null; languageCode:string|null; regionLabel:string|null; logoUrl:string|null; logoAlt:string|null; joinUrl:string; websiteUrl:string|null; badge:string|null; isFeatured:boolean; displayOrder:number }
 async function queryCommunities(): Promise<Community[]> { const db=createAdminClient(); const r=await db.from('communities').select('id,name,slug,short_description,community_type,category,language_code,region_label,join_url,website_url,badge,is_featured,display_order,media:logo_media_id(file_url,alt_text)').eq('status','published').order('is_featured',{ascending:false}).order('display_order').order('name'); if(r.error) throw new Error(r.error.message); return (r.data??[]).map(row=>{const media=first(row.media as Media|Media[]|null);return{id:row.id,name:row.name,slug:row.slug,shortDescription:row.short_description,communityType:row.community_type,category:row.category,languageCode:row.language_code,regionLabel:row.region_label,logoUrl:media?.file_url??null,logoAlt:media?.alt_text??row.name,joinUrl:row.join_url,websiteUrl:row.website_url,badge:row.badge,isFeatured:row.is_featured,displayOrder:row.display_order}}) }
-export const getCommunities=unstable_cache(queryCommunities,['public-communities-v1'],{revalidate:60})
+const getCommunitySources=unstable_cache(queryCommunities,['public-communities-v1'],{revalidate:60})
+export async function getCommunities(language='es') { const items=await getCommunitySources(); const translations=await getPublicCommunityTranslations(items,language); return items.map((item)=>({...item,...translations.get(item.id)})) }
 
 export type BlogPost = { id:string; slug:string; title:string; excerpt:string|null; bodyMarkdown:string; category:string|null; tags:string[]; coverUrl:string|null; coverAlt:string|null; authorName:string|null; isFeatured:boolean; publishedAt:string|null }
 async function queryBlog():Promise<BlogPost[]>{const db=createAdminClient();const r=await db.from('blog_posts').select('id,slug,title,excerpt,body_markdown,category,tags,author_name,is_featured,published_at,media:cover_media_id(file_url,alt_text)').eq('status','published').or(`published_at.is.null,published_at.lte.${new Date().toISOString()}`).order('is_featured',{ascending:false}).order('published_at',{ascending:false,nullsFirst:false});if(r.error)throw new Error(r.error.message);return(r.data??[]).map(row=>{const media=first(row.media as Media|Media[]|null);return{id:row.id,slug:row.slug,title:row.title,excerpt:row.excerpt,bodyMarkdown:row.body_markdown,category:row.category,tags:row.tags??[],coverUrl:media?.file_url??null,coverAlt:media?.alt_text??row.title,authorName:row.author_name,isFeatured:row.is_featured,publishedAt:row.published_at}})}
