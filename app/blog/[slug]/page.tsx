@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { PublicPageShell } from '@/components/public/PublicPageShell'
 import { SafeMarkdown } from '@/components/public/SafeMarkdown'
@@ -7,10 +8,19 @@ import { getPublicUi, publicLocale } from '@/lib/public-i18n'
 
 export const revalidate = 60
 
-export default async function Page({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ lang?: string | string[] }> }) {
+type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ lang?: string | string[] }> }
+
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const [{ slug }, query] = await Promise.all([params, searchParams])
   const language = await resolvePublicLanguage(query.lang)
-  const post = (await getBlogPosts()).find((item) => item.slug === slug)
+  const post = (await getBlogPosts(language)).find((item) => item.slug === slug)
+  return post ? { title: `${post.title} | Tradagora`, description: post.excerpt ?? undefined } : { title: 'Blog | Tradagora' }
+}
+
+export default async function Page({ params, searchParams }: Props) {
+  const [{ slug }, query] = await Promise.all([params, searchParams])
+  const language = await resolvePublicLanguage(query.lang)
+  const post = (await getBlogPosts(language)).find((item) => item.slug === slug)
   if (!post) notFound()
 
   const t = getPublicUi(language)
