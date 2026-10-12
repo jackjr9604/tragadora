@@ -4,6 +4,7 @@ import { unstable_cache } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { PublicLanguage } from '@/lib/public-language'
 import { getPublicPlatformTranslations } from '@/lib/public-platform-translations'
+import { getPublicPlatformDetailTranslations } from '@/lib/public-platform-detail-translations'
 
 type Media = { file_url: string; alt_text: string | null }
 const first = <T,>(value: T | T[] | null): T | null => Array.isArray(value) ? value[0] ?? null : value
@@ -41,9 +42,10 @@ async function queryExchanges(language: PublicLanguage): Promise<PublicExchange[
   const ids = (platforms.data ?? []).map((item) => item.id)
   if (!ids.length) return []
 
-  const [details, translations, countries] = await Promise.all([
+  const [details, translations, specializedTranslations, countries] = await Promise.all([
     db.from('exchange_details').select('*').in('platform_id', ids),
     getPublicPlatformTranslations(ids, language),
+    getPublicPlatformDetailTranslations(ids, language),
     db.from('countries').select('code,name'),
   ])
   const error = details.error ?? countries.error
@@ -71,9 +73,9 @@ async function queryExchanges(language: PublicLanguage): Promise<PublicExchange[
       seoDescription: translation?.seoDescription ?? null,
       foundedYear: detail?.founded_year ?? null,
       exchangeType: detail?.exchange_type ?? 'centralized',
-      productSummary: detail?.product_summary ?? null,
+      productSummary: specializedTranslations.exchanges.get(item.id)?.productSummary ?? detail?.product_summary ?? null,
       fiatSupport: detail?.fiat_support ?? null,
-      regulationSummary: detail?.regulation_summary ?? null,
+      regulationSummary: specializedTranslations.exchanges.get(item.id)?.regulationSummary ?? detail?.regulation_summary ?? null,
       regulationSourceUrl: detail?.regulation_source_url ?? null,
       isFeatured: detail?.is_featured ?? false,
       displayOrder: detail?.display_order ?? 100,

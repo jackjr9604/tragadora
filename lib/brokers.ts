@@ -4,6 +4,7 @@ import { unstable_cache } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { PublicLanguage } from '@/lib/public-language'
 import { getPublicPlatformTranslations } from '@/lib/public-platform-translations'
+import { getPublicPlatformDetailTranslations } from '@/lib/public-platform-detail-translations'
 
 export type PublicBroker = {
   id: string
@@ -43,9 +44,10 @@ async function queryBrokers(language: PublicLanguage): Promise<PublicBroker[]> {
   const ids = (platforms.data ?? []).map((row) => row.id)
   if (!ids.length) return []
 
-  const [details, translations, markets, tradingPlatforms, countries, offers] = await Promise.all([
+  const [details, translations, specializedTranslations, markets, tradingPlatforms, countries, offers] = await Promise.all([
     db.from('broker_details').select('platform_id, founded_year, minimum_deposit, minimum_deposit_currency, regulation_summary, regulation_source_url, is_featured, display_order').in('platform_id', ids),
     getPublicPlatformTranslations(ids, language),
+    getPublicPlatformDetailTranslations(ids, language),
     db.from('platform_markets').select('platform_id, market').in('platform_id', ids),
     db.from('platform_trading_platforms').select('platform_id, catalog:trading_platform_id(name, status)').in('platform_id', ids),
     db.from('countries').select('code, name'),
@@ -91,7 +93,7 @@ async function queryBrokers(language: PublicLanguage): Promise<PublicBroker[]> {
       foundedYear: detailsRow?.founded_year ?? null,
       minimumDeposit: detailsRow?.minimum_deposit === null || detailsRow?.minimum_deposit === undefined ? null : Number(detailsRow.minimum_deposit),
       minimumDepositCurrency: detailsRow?.minimum_deposit_currency ?? null,
-      regulationSummary: detailsRow?.regulation_summary ?? null,
+      regulationSummary: specializedTranslations.brokers.get(row.id)?.regulationSummary ?? detailsRow?.regulation_summary ?? null,
       regulationSourceUrl: detailsRow?.regulation_source_url ?? null,
       isFeatured: detailsRow?.is_featured ?? false,
       displayOrder: detailsRow?.display_order ?? 100,
