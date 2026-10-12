@@ -16,14 +16,14 @@ export async function generateMetadata({ params, searchParams }: { params: Promi
   const [{ slug }, query] = await Promise.all([params, searchParams])
   const language = await resolvePublicLanguage(query.lang)
   const text = publicCalculatorCopy[publicUiLanguage(language)]
-  const tool = await getPublishedTool(slug)
-  return tool ? { title: `${tool.name} | Tradagora`, description: tool.short_description || undefined, alternates: { canonical: `/calculadoras/${tool.slug}` } } : { title: `${text.notFound} | Tradagora` }
+  const tool = await getPublishedTool(slug, language)
+  return tool ? { title: `${tool.seo_title || tool.name} | Tradagora`, description: tool.seo_description || tool.short_description || undefined, alternates: { canonical: `/calculadoras/${tool.slug}` } } : { title: `${text.notFound} | Tradagora` }
 }
 
 export default async function CalculatorPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ lang?: string | string[] }> }) {
   const [{ slug }, query] = await Promise.all([params, searchParams])
   const language = await resolvePublicLanguage(query.lang)
-  const tool = await getPublishedTool(slug)
+  const tool = await getPublishedTool(slug, language)
   if (!tool) notFound()
   if (tool.tool_type !== 'internal') redirect(publicPath('/herramientas', language))
   const Calculator = REGISTRY[slug as keyof typeof REGISTRY]
