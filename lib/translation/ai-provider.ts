@@ -25,7 +25,7 @@ export class LibreTranslateLocalProvider implements LocalTranslationProvider {
     const response = await fetch(`${this.url.replace(/\/+$/, '')}/translate`, {
       method: 'POST', signal, cache: 'no-store', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ q: values.length === 1 ? values[0] : values, source: request.sourceLanguage,
-        target: request.targetLanguage, format: 'text', api_key: this.apiKey || undefined }),
+        target: request.targetLanguage, format: 'html', api_key: this.apiKey || undefined }),
     })
     const payload = await response.json().catch(() => ({})) as { translatedText?: string|string[]; error?: string }
     if (!response.ok) throw new Error(payload.error ?? 'LibreTranslate local no pudo completar la traducción.')

@@ -42,6 +42,52 @@ test('rechaza respuestas que pierden marcadores protegidos', () => {
   assert.throws(() => restoreAndValidateAiValue('Visit the site', protectedValue), /alteró código/)
 })
 
+test('usa marcadores HTML no traducibles y restaura exactamente enlaces, HTML, código y variables', () => {
+  const source = 'Visita [Tradagora](https://tradagora.com/go/ftmo), <strong>ahora</strong>, usa `npm run build` y ${ACCOUNT_ID}.'
+  const protectedValue = protectAiValue(source)
+  assert.match(protectedValue.value as string, /<span translate="no" data-trgd-token="TRGDPROTECTED_0000">/)
+  const translated = (protectedValue.value as string).replace('Visita ', 'Visit ').replace(', usa ', ', use ')
+  assert.equal(restoreAndValidateAiValue(translated, protectedValue), 'Visit [Tradagora](https://tradagora.com/go/ftmo), <strong>ahora</strong>, use `npm run build` y ${ACCOUNT_ID}.')
+})
+
+test('un enlace Markdown completo permanece intacto y no genera tokens solapados para su URL', () => {
+  const source = 'Abre [la guía](https://tradagora.com/docs?q=1) hoy.'
+  const protectedValue = protectAiValue(source)
+  assert.equal(protectedValue.tokens.length, 1)
+  assert.equal(restoreAndValidateAiValue(protectedValue.value, protectedValue), source)
+})
+
+test('acepta reserialización HTML inocua sin debilitar la identidad del marcador', () => {
+  const source = 'Visita https://tradagora.com'
+  const protectedValue = protectAiValue(source)
+  const serialized = (protectedValue.value as string).replace(
+    /<span translate="no" data-trgd-token="([^"]+)">([^<]+)<\/span>/,
+    '<span data-trgd-token="$1" translate="no">$2</span>',
+  )
+  assert.equal(restoreAndValidateAiValue(serialized, protectedValue), source)
+})
+
+test('rechaza marcadores perdidos, duplicados, alterados o movidos entre elementos', () => {
+  const protectedValue = protectAiValue(['Visita https://tradagora.com', 'Usa {{code}}'])
+  const values = protectedValue.value as string[]
+  assert.throws(() => restoreAndValidateAiValue([values[0].replace('TRGDPROTECTED', 'TRGDPROTECT'), values[1]], protectedValue), /alteró código/)
+  assert.throws(() => restoreAndValidateAiValue([`${values[0]} ${protectedValue.tokens[0].marker}`, values[1]], protectedValue), /alteró código/)
+  assert.throws(() => restoreAndValidateAiValue([values[0].replace(protectedValue.tokens[0].marker, ''), `${values[1]} ${protectedValue.tokens[0].marker}`], protectedValue), /alteró código/)
+})
+
+test('evita colisiones con texto que ya contiene el namespace de marcadores', () => {
+  const source = 'TRGDPROTECTED: visita https://tradagora.com'
+  const protectedValue = protectAiValue(source)
+  assert.equal(protectedValue.markerNamespace, 'TRGDPROTECTEDX')
+  assert.equal(restoreAndValidateAiValue(protectedValue.value, protectedValue), source)
+})
+
+test('LibreTranslate recibe HTML para preservar los nodos translate=no', () => {
+  const provider = readFileSync('lib/translation/ai-provider.ts', 'utf8')
+  assert.match(provider, /format:\s*'html'/)
+  assert.doesNotMatch(provider, /format:\s*'text'/)
+})
+
 test('la migración guarda borradores y restringe RPC sensibles', () => {
   const sql = readFileSync('supabase/migrations/202610130001_translation_ai_draft_engine.sql', 'utf8')
   assert.match(sql, /create or replace function public\.translation_request_ai_draft/)
