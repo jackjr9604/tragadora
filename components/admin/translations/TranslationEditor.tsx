@@ -2,7 +2,8 @@
 
 import { useActionState } from 'react'
 import { useFormStatus } from 'react-dom'
-import { INITIAL_TRANSLATION_ACTION_STATE, updateTranslationWorkflow } from '@/app/admin/translations/actions'
+import { updateTranslationWorkflow } from '@/app/admin/translations/actions'
+import { INITIAL_TRANSLATION_ACTION_STATE } from '@/lib/admin-translation-action-state'
 
 type Props = {
   stateId: string

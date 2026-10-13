@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { loadEnvConfig } from '@next/env'
 import { randomUUID } from 'node:crypto'
 import { LibreTranslateLocalProvider, translateLocally } from '../lib/translation/ai-provider'
@@ -11,34 +11,55 @@ type TranslationJob = {
   max_attempts: number
 }
 
-loadEnvConfig(process.cwd())
-const config = loadConfig()
-const supabase = createClient(config.supabaseUrl, config.serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } })
-const provider = new LibreTranslateLocalProvider(config.libreTranslateUrl, config.libreTranslateApiKey)
-const workerId = process.env.TRANSLATION_WORKER_ID?.trim() || `windows-${randomUUID()}`
-let stopping = false
+type WorkerContext = {
+  config: ReturnType<typeof loadConfig>
+  supabase: SupabaseClient
+  provider: LibreTranslateLocalProvider
+  workerId: string
+}
 
-process.on('SIGINT', () => { stopping = true })
-process.on('SIGTERM', () => { stopping = true })
+void main().catch((error) => {
+  console.error(`[translation-worker] inicio fallido: ${safeError(error)}`)
+  process.exitCode = 1
+})
 
-do {
-  const processed = await runCycle()
-  if (config.runOnce || stopping) break
-  if (!processed) await wait(config.pollMs)
-} while (!stopping)
+async function main() {
+  loadEnvConfig(process.cwd())
+  const config = loadConfig()
+  const context: WorkerContext = {
+    config,
+    supabase: createClient(config.supabaseUrl, config.serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } }),
+    provider: new LibreTranslateLocalProvider(config.libreTranslateUrl, config.libreTranslateApiKey),
+    workerId: process.env.TRANSLATION_WORKER_ID?.trim() || `windows-${randomUUID()}`,
+  }
+  let stopping = false
+  const stop = () => { stopping = true }
+  process.once('SIGINT', stop)
+  process.once('SIGTERM', stop)
+  try {
+    do {
+      const processed = await runCycle(context)
+      if (config.runOnce || stopping) break
+      if (!processed) await wait(config.pollMs)
+    } while (!stopping)
+  } finally {
+    process.off('SIGINT', stop)
+    process.off('SIGTERM', stop)
+  }
+}
 
-async function runCycle() {
+async function runCycle({ config, supabase, provider, workerId }: WorkerContext) {
   const claim = await supabase.rpc('translation_claim_ai_jobs', {
     p_worker_id: workerId, p_limit: config.batchSize, p_lease_seconds: config.leaseSeconds,
   })
   if (claim.error) throw new Error(`No se pudo reclamar la cola: ${claim.error.message}`)
   const jobs = (claim.data ?? []) as TranslationJob[]
-  for (const job of jobs) await processJob(job)
+  for (const job of jobs) await processJob(job, { config, supabase, provider, workerId })
   if (jobs.length) console.log(`[translation-worker] procesados ${jobs.length} trabajo(s)`) // Nunca imprime contenido.
   return jobs.length
 }
 
-async function processJob(job: TranslationJob) {
+async function processJob(job: TranslationJob, { config, supabase, provider, workerId }: WorkerContext) {
   try {
     const source = await supabase.rpc('translation_read_ai_job_source', { p_job_id: job.id, p_worker_id: workerId })
     if (source.error) throw new Error(source.error.message)

@@ -5,6 +5,13 @@ import test from 'node:test'
 import { canRunTranslationAction, parseTranslationEditorValue } from './admin-translation-editor-policy'
 
 const sql = readFileSync(path.join(process.cwd(), 'supabase', 'migrations', '202610120003_translation_editorial_workflow.sql'), 'utf8')
+const actions = readFileSync(path.join(process.cwd(), 'app', 'admin', 'translations', 'actions.ts'), 'utf8')
+
+test('el módulo use server de traducciones solo exporta acciones async', () => {
+  assert.match(actions, /^'use server'/)
+  assert.match(actions, /export async function updateTranslationWorkflow/)
+  assert.doesNotMatch(actions, /export\s+(?:const|let|var|class|type|interface)\b/)
+})
 
 test('separa borrador y publicación sin modificar el valor funcional al guardar', () => {
   const save = sql.slice(sql.indexOf('create or replace function public.translation_save_draft'), sql.indexOf('create or replace function public.translation_submit_review'))

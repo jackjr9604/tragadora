@@ -8,9 +8,7 @@ import { TRANSLATION_RESOURCES, type TranslationResourceType } from '@/lib/admin
 import { parseTranslationEditorValue, TRANSLATION_EDITOR_ACTIONS, type TranslationEditorAction } from '@/lib/admin-translation-editor-policy'
 import { getTranslationDetail } from '@/lib/admin-translation-inventory'
 import { requestIndividualAiDraft } from '@/lib/admin-translation-ai'
-
-export type TranslationActionState = { ok: boolean; message: string }
-export const INITIAL_TRANSLATION_ACTION_STATE: TranslationActionState = { ok: false, message: '' }
+import type { TranslationActionState } from '@/lib/admin-translation-action-state'
 
 const RPC_BY_ACTION = {
   save_draft: 'translation_save_draft',
