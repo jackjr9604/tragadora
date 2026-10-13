@@ -1,5 +1,6 @@
 import 'server-only'
 import { protectTranslationItems, restoreProtectedTerms } from '@/lib/translation/protected-terms'
+import { isLocalLibreTranslateUrl } from '@/lib/translation/ai-provider'
 
 export type TranslationRequest = { text: string; sourceLanguage: string; targetLanguage: string; context?: string }
 export type TranslationItem = { key: string; value: string; context?: string }
@@ -25,12 +26,12 @@ type LibreResponse = { translatedText?: string | string[]; error?: string }
 
 export class LibreTranslateProvider implements TranslationProvider {
   readonly name = 'libretranslate'
-  private readonly url = normalizeUrl(process.env.LIBRETRANSLATE_URL ?? 'http://127.0.0.1:5000')
+  private readonly url = normalizeUrl(process.env.LIBRETRANSLATE_URL ?? '')
 
-  isConfigured() { return !isBlockedLocalProductionUrl(this.url) }
+  isConfigured() { return process.env.NODE_ENV !== 'production' && isLocalLibreTranslateUrl(this.url) }
 
   async getStatus(sourceLanguage?: string, targetLanguage?: string, targetName?: string): Promise<TranslationProviderStatus> {
-    if (isBlockedLocalProductionUrl(this.url)) return localOnlyStatus()
+    if (!this.isConfigured()) return localOnlyStatus()
     try {
       const response = await fetch(`${this.url}/languages`, {
         cache: 'no-store',
@@ -109,46 +110,9 @@ export class LibreTranslateProvider implements TranslationProvider {
   }
 }
 
-type OpenAIResponse = { output_text?: string; output?: Array<{ content?: Array<{ type?: string; text?: string }> }>; error?: { message?: string } }
-type ModelTranslation = { key?: unknown; translatedValue?: unknown }
-
-export class OpenAITranslationProvider implements TranslationProvider {
-  readonly name = 'openai'
-  isConfigured() { return Boolean(process.env.OPENAI_API_KEY) }
-  async getStatus(): Promise<TranslationProviderStatus> {
-    return this.isConfigured()
-      ? { provider: this.name, available: true, mode: 'available', message: 'OpenAI disponible' }
-      : { provider: this.name, available: false, mode: 'not_configured', message: 'Proveedor de traducción no configurado.' }
-  }
-  async translate(request: TranslationRequest) {
-    const [result] = await this.translateBatch({ items: [{ key: 'translation', value: request.text, context: request.context }], sourceLanguage: request.sourceLanguage, targetLanguage: request.targetLanguage })
-    return result?.translatedValue ?? ''
-  }
-  async translateBatch({ items, sourceLanguage, targetLanguage }: { items: TranslationItem[]; sourceLanguage: string; targetLanguage: string }) {
-    const apiKey = process.env.OPENAI_API_KEY
-    if (!apiKey) throw new Error('Proveedor de traducción no configurado.')
-    const response = await fetch('https://api.openai.com/v1/responses', {
-      method: 'POST', headers: { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' }, cache: 'no-store',
-      body: JSON.stringify({ model: process.env.OPENAI_TRANSLATION_MODEL ?? 'gpt-5.4-mini', store: false, temperature: 0.2, max_output_tokens: 8000, instructions: TRANSLATION_INSTRUCTIONS, input: JSON.stringify({ sourceLanguage, targetLanguage, items }) }),
-    })
-    const payload = await response.json() as OpenAIResponse
-    if (!response.ok) throw new Error(payload.error?.message ?? 'El proveedor de traducción no respondió correctamente.')
-    const output = payload.output_text ?? payload.output?.flatMap((item) => item.content ?? []).find((item) => item.type === 'output_text')?.text
-    if (!output) throw new Error('El proveedor de traducción devolvió una respuesta vacía.')
-    const byKey = new Map(parseJsonOutput(output).map((item) => [item.key, item.translatedValue]))
-    return items.map((item) => {
-      const translatedValue = byKey.get(item.key)?.trim()
-      if (!translatedValue) throw new Error(`No se recibió traducción para ${item.key}.`)
-      return { key: item.key, translatedValue }
-    })
-  }
-}
-
-const TRANSLATION_INSTRUCTIONS = `Translate CMS copy for Tradagora, a LATAM comparison platform for Prop Firms, brokers and trading products. Preserve company names, brands, URLs, slugs, identifiers, codes and common trading terms. Return only valid JSON: an array with the keys "key" and "translatedValue".`
-
 export function getTranslationProvider(): TranslationProvider | null {
   const selected = selectedProviderName()
-  const provider = selected === 'openai' ? new OpenAITranslationProvider() : selected === 'libretranslate' ? new LibreTranslateProvider() : null
+  const provider = selected === 'libretranslate' ? new LibreTranslateProvider() : null
   return provider?.isConfigured() ? provider : null
 }
 
@@ -156,7 +120,7 @@ export function isTranslationProviderConfigured() { return getTranslationProvide
 export async function getTranslationProviderStatus(sourceLanguage?: string, targetLanguage?: string, targetName?: string) {
   const selected = selectedProviderName()
   if (!selected) return localOnlyStatus()
-  const provider = selected === 'openai' ? new OpenAITranslationProvider() : selected === 'libretranslate' ? new LibreTranslateProvider() : null
+  const provider = selected === 'libretranslate' ? new LibreTranslateProvider() : null
   if (!provider) return { provider: selected, available: false, mode: 'not_configured' as const, message: 'Proveedor de traducción no configurado.' }
   return provider.getStatus(sourceLanguage, targetLanguage, targetName)
 }
@@ -166,9 +130,8 @@ export async function translateContent(text: string, sourceLanguage: string, tar
   return configured.translate({ text, sourceLanguage, targetLanguage, context })
 }
 
-function selectedProviderName() { return process.env.TRANSLATION_PROVIDER?.trim().toLowerCase() || (process.env.NODE_ENV === 'development' ? 'libretranslate' : '') }
+function selectedProviderName() { return process.env.LIBRETRANSLATE_URL?.trim() ? 'libretranslate' : '' }
 function normalizeUrl(url: string) { return url.trim().replace(/\/+$/, '') }
-function isBlockedLocalProductionUrl(url: string) { try { const host = new URL(url).hostname; return process.env.NODE_ENV === 'production' && ['127.0.0.1', 'localhost', '::1'].includes(host) } catch { return true } }
 function libreHeaders(): Record<string, string> { return process.env.LIBRETRANSLATE_API_KEY ? { authorization: `Bearer ${process.env.LIBRETRANSLATE_API_KEY}` } : {} }
 function isLibreLanguage(value: LibreLanguage): value is { code: string; name: string; targets: string[] } { return Boolean(value && typeof value.code === 'string' && typeof value.name === 'string' && Array.isArray(value.targets) && value.targets.every((target) => typeof target === 'string')) }
 function localOnlyStatus(): TranslationProviderStatus { return { provider: 'libretranslate', available: false, mode: 'local_only', message: 'Traducción automática disponible desde el entorno local.' } }
@@ -176,4 +139,3 @@ function unavailableLibreStatus(): TranslationProviderStatus { return { provider
 function unsupportedLanguageStatus(language: string): TranslationProviderStatus { return { provider: 'libretranslate', available: false, mode: 'unavailable', message: `${language} no está disponible en el servidor de traducción.` } }
 function friendlyLibreError(message?: string) { if (!message) return 'LibreTranslate no pudo completar la traducción.'; if (/language|target|source|not supported/i.test(message)) return 'El idioma seleccionado no está disponible en el servidor de traducción.'; return 'LibreTranslate no pudo completar la traducción.' }
 function safeErrorName(error: unknown) { return error instanceof Error ? error.name : 'UnknownError' }
-function parseJsonOutput(output: string): Array<{ key: string; translatedValue: string }> { const normalized = output.trim().replace(/^```json\s*/i, '').replace(/\s*```$/, ''); let value: unknown; try { value = JSON.parse(normalized) } catch { throw new Error('El proveedor devolvió una traducción con formato inválido.') }; if (!Array.isArray(value)) throw new Error('El proveedor devolvió una traducción con formato inválido.'); return value.map((item: ModelTranslation) => { if (!item || typeof item.key !== 'string' || typeof item.translatedValue !== 'string') throw new Error('El proveedor devolvió una traducción incompleta.'); return { key: item.key, translatedValue: item.translatedValue } }) }

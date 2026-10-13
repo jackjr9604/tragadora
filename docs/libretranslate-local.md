@@ -50,7 +50,6 @@ La respuesta debe incluir `es`, `en`, `pt` y `fr`.
 Agrega a `.env.local`:
 
 ```env
-TRANSLATION_PROVIDER=libretranslate
 LIBRETRANSLATE_URL=http://127.0.0.1:5000
 ```
 
@@ -70,4 +69,4 @@ En `/admin/content/[page]` debe aparecer `LibreTranslate disponible`. Selecciona
 
 ## Producción y Vercel
 
-No configures una URL `127.0.0.1` como servicio remoto esperando que Vercel llegue a tu PC. En producción, una URL loopback se bloquea expresamente y el CMS muestra que la traducción automática está disponible desde el entorno local. La edición manual, el selector público y todas las traducciones ya guardadas continúan funcionando sin LibreTranslate.
+No configures `LIBRETRANSLATE_URL` en Vercel esperando que llegue a tu PC. El flujo persistente usa el worker saliente documentado en `translation-ai-engine.md`; LibreTranslate permanece privado en la máquina local. La edición manual, el selector público y todas las traducciones guardadas siguen funcionando con el PC apagado.

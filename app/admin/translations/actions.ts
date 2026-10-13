@@ -6,6 +6,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCurrentAdminPermissions } from '@/lib/admin-permissions-server'
 import { TRANSLATION_RESOURCES, type TranslationResourceType } from '@/lib/admin-translation-inventory-policy'
 import { parseTranslationEditorValue, TRANSLATION_EDITOR_ACTIONS, type TranslationEditorAction } from '@/lib/admin-translation-editor-policy'
+import { getTranslationDetail } from '@/lib/admin-translation-inventory'
+import { requestIndividualAiDraft } from '@/lib/admin-translation-ai'
 
 export type TranslationActionState = { ok: boolean; message: string }
 export const INITIAL_TRANSLATION_ACTION_STATE: TranslationActionState = { ok: false, message: '' }
@@ -35,6 +37,19 @@ export async function updateTranslationWorkflow(_previous: TranslationActionStat
   const resource = TRANSLATION_RESOURCES[resourceType]
   if (!resource || !access.permissions.has(resource.updatePermission)) return { ok: false, message: 'No tienes permiso para modificar este módulo.' }
 
+  if (action === 'generate_ai') {
+    const detail = await getTranslationDetail(stateId, access.permissions)
+    if (!detail || !detail.canEdit) return { ok: false, message: 'No tienes permiso para traducir este campo.' }
+    if (detail.state.is_protected) return { ok: false, message: 'La traducción está protegida y no puede sobrescribirse automáticamente.' }
+    try {
+      await requestIndividualAiDraft({ stateId, expectedLockVersion, sourceValue: detail.sourceValue })
+      revalidatePath('/admin/translations')
+      return { ok: true, message: 'Trabajo en cola. El worker local creará un borrador cuando esté disponible.' }
+    } catch (error) {
+      return { ok: false, message: error instanceof Error ? error.message : 'No se pudo generar el borrador.' }
+    }
+  }
+
   const session = await createClient()
   const rpc = RPC_BY_ACTION[action]
   const args: Record<string, unknown> = { p_state_id: stateId, p_expected_lock_version: expectedLockVersion }
@@ -55,6 +70,7 @@ export async function updateTranslationWorkflow(_previous: TranslationActionStat
 }
 
 function actionMessage(action: TranslationEditorAction) {
+  if (action === 'generate_ai') return 'Trabajo añadido a la cola local.'
   if (action === 'save_draft') return 'Borrador guardado. El contenido público no cambió.'
   if (action === 'submit_review') return 'Borrador enviado a revisión.'
   if (action === 'approve') return 'Traducción aprobada. Aún no está publicada.'

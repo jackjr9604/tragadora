@@ -1,4 +1,4 @@
-export const TRANSLATION_EDITOR_ACTIONS = ['save_draft', 'submit_review', 'approve', 'publish', 'withdraw'] as const
+export const TRANSLATION_EDITOR_ACTIONS = ['generate_ai', 'save_draft', 'submit_review', 'approve', 'publish', 'withdraw'] as const
 export type TranslationEditorAction = (typeof TRANSLATION_EDITOR_ACTIONS)[number]
 
 export function parseTranslationEditorValue(value: FormDataEntryValue | null, valueKind: string) {
@@ -14,6 +14,7 @@ export function parseTranslationEditorValue(value: FormDataEntryValue | null, va
 }
 
 export function canRunTranslationAction(action: TranslationEditorAction, workflowStatus: string, publicationStatus: string) {
+  if (action === 'generate_ai') return workflowStatus === 'none'
   if (action === 'save_draft') return true
   if (action === 'submit_review') return workflowStatus === 'draft'
   if (action === 'approve') return workflowStatus === 'in_review'

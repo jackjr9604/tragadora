@@ -78,11 +78,11 @@ export async function getTranslationDetail(id: string | undefined, permissions: 
   }
   if (stateResult.error || !stateResult.data) return null
   const state = stateResult.data as TranslationStateRow
-  const [source, translated, origin, field] = await Promise.all([
-    readValue(state, state.source_language), readValue(state, state.target_language), readOrigin(state),
+  const [sourceValue, translatedValue, origin, field] = await Promise.all([
+    readRawValue(state, state.source_language), readRawValue(state, state.target_language), readOrigin(state),
     db.from('translation_resource_fields').select('value_kind,max_characters').eq('resource_type', state.resource_type).eq('field_name', state.field_name).maybeSingle(),
   ])
-  return { state, source, translated, origin, workflowAvailable, canEdit: permissions.has(TRANSLATION_RESOURCES[state.resource_type].updatePermission), valueKind: field.data?.value_kind ?? 'text', maxCharacters: field.data?.max_characters ?? null }
+  return { state, source: displayValue(sourceValue), translated: displayValue(translatedValue), sourceValue, translatedValue, origin, workflowAvailable, canEdit: permissions.has(TRANSLATION_RESOURCES[state.resource_type].updatePermission), valueKind: field.data?.value_kind ?? 'text', maxCharacters: field.data?.max_characters ?? null }
 }
 
 type Adapter = { sourceTable: string; translationTable: string; sourceId: string; translationId: string; sourceField?: string; translationField?: string }
@@ -103,7 +103,7 @@ const ADAPTERS: Record<TranslationResourceType, Adapter> = {
   blog_post_translation: { sourceTable: 'blog_posts', translationTable: 'blog_post_translations', sourceId: 'id', translationId: 'blog_post_id' },
 }
 
-async function readValue(state: TranslationStateRow, language: string) {
+async function readRawValue(state: TranslationStateRow, language: string) {
   const db = createAdminClient(), adapter = ADAPTERS[state.resource_type]
   const source = language === state.source_language
   const table = source ? adapter.sourceTable : adapter.translationTable
@@ -113,7 +113,7 @@ async function readValue(state: TranslationStateRow, language: string) {
   if (table.includes('translation') || table === 'site_content') query = query.eq('language', language)
   const result = await query.maybeSingle()
   if (result.error || !result.data) return null
-  return displayValue((result.data as unknown as Record<string, unknown>)[field])
+  return (result.data as unknown as Record<string, unknown>)[field] ?? null
 }
 
 function sourceField(state: TranslationStateRow, adapter: Adapter) {

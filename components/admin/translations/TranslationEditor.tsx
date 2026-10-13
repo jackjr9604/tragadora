@@ -19,6 +19,10 @@ type Props = {
   canEdit: boolean
   workflowAvailable: boolean
   sourceChanged: boolean
+  isProtected: boolean
+  aiEnabled: boolean
+  aiProvider: string
+  aiMessage: string
 }
 
 export function TranslationEditor(props: Props) {
@@ -35,6 +39,10 @@ export function TranslationEditor(props: Props) {
     </div>
     <p id="translation-help" className="text-xs text-slate-500">{props.valueKind === 'text_array' ? 'Un elemento por línea.' : props.maxCharacters ? `Máximo ${props.maxCharacters.toLocaleString('es-CO')} caracteres.` : 'El borrador no sustituye el contenido publicado.'}</p>
     {props.sourceChanged && <p className="rounded-lg bg-orange-50 p-3 text-sm text-orange-900">La fuente cambió después de crear el borrador. Guárdalo nuevamente sobre la versión actual antes de revisarlo.</p>}
+    <div className="rounded-xl border border-violet-200 bg-violet-50 p-3 text-sm text-violet-900">
+      <div className="flex flex-wrap items-center justify-between gap-3"><div><strong>Asistente de traducción</strong><p className="mt-1 text-xs">{props.aiMessage} El resultado siempre se guarda como borrador sin publicar.</p></div>
+      {props.canEdit && <ActionButton intent="generate_ai" label={`Enviar a ${props.aiProvider}`} secondary disabled={!props.aiEnabled || props.isProtected || props.workflowStatus !== 'none'} confirm="¿Añadir esta traducción a la cola del worker local?" />}</div>
+    </div>
     {!props.canEdit && <p className="rounded-lg bg-slate-100 p-3 text-sm text-slate-700">Tienes acceso de lectura, pero no permiso de actualización para este módulo.</p>}
     {result.message && <p aria-live="polite" className={`rounded-lg p-3 text-sm ${result.ok ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800'}`}>{result.message}</p>}
     {props.canEdit && <div className="flex flex-wrap gap-2">
@@ -47,9 +55,9 @@ export function TranslationEditor(props: Props) {
   </form>
 }
 
-function ActionButton({ intent, label, secondary = false, danger = false, confirm }: { intent: string; label: string; secondary?: boolean; danger?: boolean; confirm?: string }) {
+function ActionButton({ intent, label, secondary = false, danger = false, disabled = false, confirm }: { intent: string; label: string; secondary?: boolean; danger?: boolean; disabled?: boolean; confirm?: string }) {
   const { pending } = useFormStatus()
-  return <button type="submit" name="intent" value={intent} disabled={pending} onClick={(event) => { if (confirm && !window.confirm(confirm)) event.preventDefault() }} className={`${danger ? 'border border-red-200 bg-red-50 text-red-800' : secondary ? 'admin-secondary-button' : 'admin-primary-button'} rounded-lg px-4 py-2.5 text-sm font-semibold disabled:opacity-50`}>{pending ? 'Procesando…' : label}</button>
+  return <button type="submit" name="intent" value={intent} disabled={pending || disabled} onClick={(event) => { if (confirm && !window.confirm(confirm)) event.preventDefault() }} className={`${danger ? 'border border-red-200 bg-red-50 text-red-800' : secondary ? 'admin-secondary-button' : 'admin-primary-button'} rounded-lg px-4 py-2.5 text-sm font-semibold disabled:opacity-50`}>{pending ? 'Procesando…' : label}</button>
 }
 
 function EditorBlock({ label, value, readOnly }: { label: string; value: string; readOnly?: boolean }) {

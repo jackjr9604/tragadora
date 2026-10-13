@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "translation:worker": "tsx scripts/translation-worker.ts",
     "collect:official": "tsx scripts/collect-official-pages.ts",
     "test:official": "node --test scripts/official-page-collector.test.ts",
     "collect:mondo": "tsx scripts/collect-mondotraders.ts",
