@@ -49,6 +49,8 @@ test('acepta importadas protegidas y rechaza importadas desprotegidas o revision
   assert.equal(isPublishableTranslationState(state('description', { status: 'imported_unreviewed', is_protected: false })), false)
   assert.equal(isPublishableTranslationState(state('description', { translated_revision: 1, source_revision: 2 })), false)
   assert.equal(isPublishableTranslationState(state('description', { translated_source_hash: 'old' })), false)
+  assert.equal(isPublishableTranslationState(state('description', { publication_status: 'unpublished' })), false)
+  assert.equal(isPublishableTranslationState(state('description', { publication_status: 'published' })), true)
 })
 
 test('un idioma no publicado cae al idioma base', () => {

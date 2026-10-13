@@ -3,6 +3,7 @@ import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveOfferTranslations, type OfferSourceText, type OfferTranslationRow } from './public-offer-translation-policy'
 import type { TranslationFieldState, TranslationLanguage } from './public-platform-translation-policy'
+import { getPublicTranslationStates } from './public-translation-states'
 
 export async function getPublicOfferTranslations(offers: OfferSourceText[], requestedLanguage: string) {
   if (!offers.length) return new Map()
@@ -14,7 +15,7 @@ export async function getPublicOfferTranslations(offers: OfferSourceText[], requ
   const defaultLanguage = languages.find((item) => item.is_default)?.code ?? 'es'
   const [translationsResult, statesResult] = await Promise.all([
     db.from('offer_translations').select('offer_id, language, title, description, free_account_label, hot_badge, short_highlight').in('offer_id', ids),
-    db.from('translation_field_state').select('resource_id, field_name, target_language, source_hash, translated_source_hash, source_revision, translated_revision, status, is_protected').eq('resource_type', 'offer_translation').in('resource_id', ids),
+    getPublicTranslationStates({ resourceTypes: ['offer_translation'], resourceIds: ids }),
   ])
   // Compatibilidad antes de aplicar la migración: nunca rompe las ofertas actuales.
   if (translationsResult.error || statesResult.error) {

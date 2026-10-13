@@ -4,21 +4,21 @@ export const TRANSLATION_STATUSES = ['missing', 'queued', 'machine_translated', 
 export type TranslationStatus = (typeof TRANSLATION_STATUSES)[number]
 
 export const TRANSLATION_RESOURCES = {
-  site_content: { label: 'Contenido editorial', permission: 'content.view', path: '/admin/content' },
-  platform_translation: { label: 'Prop Firms', permission: 'platforms.view', path: '/admin/platforms' },
-  broker_detail_translation: { label: 'Brokers', permission: 'platforms.view', path: '/admin/brokers' },
-  exchange_detail_translation: { label: 'Exchanges', permission: 'platforms.view', path: '/admin/exchanges' },
-  offer_translation: { label: 'Ofertas', permission: 'offers.view', path: '/admin/offers' },
-  challenge_phase_translation: { label: 'Fases', permission: 'challenges.view', path: '/admin/challenges' },
-  challenge_variant_translation: { label: 'Variantes', permission: 'challenges.view', path: '/admin/challenges' },
-  challenge_variant_phase_translation: { label: 'Overrides de fase', permission: 'challenges.view', path: '/admin/challenges' },
-  account_plan_translation: { label: 'Planes de cuenta', permission: 'challenges.view', path: '/admin/challenges' },
-  challenge_reward_translation: { label: 'Reward options', permission: 'challenges.view', path: '/admin/challenges' },
-  tool_translation: { label: 'Herramientas y calculadoras', permission: 'tools.view', path: '/admin/tools' },
-  community_translation: { label: 'Comunidades', permission: 'communities.view', path: '/admin/communities' },
-  giveaway_translation: { label: 'Giveaways', permission: 'giveaways.view', path: '/admin/giveaways' },
-  blog_post_translation: { label: 'Blog', permission: 'blog.view', path: '/admin/blog' },
-} as const satisfies Record<string, { label: string; permission: PermissionKey; path: string }>
+  site_content: { label: 'Contenido editorial', permission: 'content.view', updatePermission: 'content.update', path: '/admin/content' },
+  platform_translation: { label: 'Prop Firms', permission: 'platforms.view', updatePermission: 'platforms.update', path: '/admin/platforms' },
+  broker_detail_translation: { label: 'Brokers', permission: 'platforms.view', updatePermission: 'platforms.update', path: '/admin/brokers' },
+  exchange_detail_translation: { label: 'Exchanges', permission: 'platforms.view', updatePermission: 'platforms.update', path: '/admin/exchanges' },
+  offer_translation: { label: 'Ofertas', permission: 'offers.view', updatePermission: 'offers.update', path: '/admin/offers' },
+  challenge_phase_translation: { label: 'Fases', permission: 'challenges.view', updatePermission: 'challenges.update', path: '/admin/challenges' },
+  challenge_variant_translation: { label: 'Variantes', permission: 'challenges.view', updatePermission: 'challenges.update', path: '/admin/challenges' },
+  challenge_variant_phase_translation: { label: 'Overrides de fase', permission: 'challenges.view', updatePermission: 'challenges.update', path: '/admin/challenges' },
+  account_plan_translation: { label: 'Planes de cuenta', permission: 'challenges.view', updatePermission: 'challenges.update', path: '/admin/challenges' },
+  challenge_reward_translation: { label: 'Reward options', permission: 'challenges.view', updatePermission: 'challenges.update', path: '/admin/challenges' },
+  tool_translation: { label: 'Herramientas y calculadoras', permission: 'tools.view', updatePermission: 'tools.update', path: '/admin/tools' },
+  community_translation: { label: 'Comunidades', permission: 'communities.view', updatePermission: 'communities.update', path: '/admin/communities' },
+  giveaway_translation: { label: 'Giveaways', permission: 'giveaways.view', updatePermission: 'giveaways.update', path: '/admin/giveaways' },
+  blog_post_translation: { label: 'Blog', permission: 'blog.view', updatePermission: 'blog.update', path: '/admin/blog' },
+} as const satisfies Record<string, { label: string; permission: PermissionKey; updatePermission: PermissionKey; path: string }>
 
 export type TranslationResourceType = keyof typeof TRANSLATION_RESOURCES
 export type InventoryFilters = { page: number; pageSize: number; resourceType?: string; language?: string; status?: string; protection?: string; query?: string; selected?: string }

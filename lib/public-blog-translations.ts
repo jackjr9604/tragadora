@@ -2,6 +2,7 @@ import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveBlogTranslations, type BlogSource, type BlogTranslationRow } from './public-blog-translation-policy'
 import type { TranslationFieldState, TranslationLanguage } from './public-platform-translation-policy'
+import { getPublicTranslationStates } from './public-translation-states'
 
 export async function getPublicBlogTranslations(posts: BlogSource[], requestedLanguage: string) {
   if (!posts.length) return new Map()
@@ -15,7 +16,7 @@ export async function getPublicBlogTranslations(posts: BlogSource[], requestedLa
   const ids = posts.map((item) => item.id)
   const [translationsResult, statesResult] = await Promise.all([
     db.from('blog_post_translations').select('blog_post_id,language,title,excerpt,body_markdown,category,tags').in('blog_post_id', ids).eq('language', effectiveLanguage),
-    db.from('translation_field_state').select('resource_type,resource_id,field_name,target_language,source_hash,translated_source_hash,source_revision,translated_revision,status,is_protected').eq('resource_type', 'blog_post_translation').in('resource_id', ids).eq('target_language', effectiveLanguage),
+    getPublicTranslationStates({ resourceTypes: ['blog_post_translation'], resourceIds: ids, targetLanguages: [effectiveLanguage] }),
   ])
   // Compatibilidad antes de aplicar 3D.5: cualquier ausencia conserva el contenido fuente.
   if (translationsResult.error || statesResult.error) return new Map()

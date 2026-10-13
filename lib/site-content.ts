@@ -3,6 +3,7 @@ import 'server-only'
 import { unstable_cache } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { visibleBrandText, type PublicLanguageOption } from '@/lib/public-language'
+import { isPublishableTranslationState, type TranslationFieldState } from '@/lib/public-platform-translation-policy'
 
 export type SiteLanguage = string
 export type SiteContent = Record<string, string>
@@ -22,14 +23,21 @@ async function getSiteContentUncached(
 
   const defaultLanguage = languageRows?.[0]?.code ?? 'es'
   const languages = [...new Set(['global', defaultLanguage, language])]
-  const { data } = await supabase
-    .from('site_content')
-    .select('key, value, language')
-    .in('language', languages)
+  const [contentResult, statesResult] = await Promise.all([
+    supabase.from('site_content').select('key, value, language').in('language', languages),
+    language !== defaultLanguage && language !== 'global'
+      ? supabase.from('translation_field_state').select('resource_id,field_name,target_language,source_hash,translated_source_hash,source_revision,translated_revision,status,is_protected,publication_status').eq('resource_type', 'site_content').eq('target_language', language)
+      : Promise.resolve({ data: [], error: null }),
+  ])
 
-  const rows = data ?? []
+  const rows = contentResult.data ?? []
   const fallback = rows.filter((row) => row.language === defaultLanguage)
-  const localized = rows.filter((row) => row.language === language)
+  const stateMap = new Map(((statesResult.data ?? []) as TranslationFieldState[]).map((state) => [state.resource_id, state]))
+  // Before migration 3E.2 the new column is absent: preserve the legacy CMS
+  // behavior until the schema and code are deployed together.
+  const localized = rows.filter((row) => row.language === language && (
+    language === defaultLanguage || language === 'global' || statesResult.error || isPublishableTranslationState(stateMap.get(row.key))
+  ))
   const global = rows.filter((row) => row.language === 'global')
 
   const content = global.reduce<SiteContent>((result, row) => {

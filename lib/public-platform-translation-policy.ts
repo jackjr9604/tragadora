@@ -2,7 +2,7 @@ export const PLATFORM_TRANSLATION_FIELDS = ['short_description', 'description', 
 export type PlatformTranslationField = (typeof PLATFORM_TRANSLATION_FIELDS)[number]
 export type PlatformTranslation = { shortDescription: string | null; description: string | null; pros: string[]; cons: string[]; seoTitle: string | null; seoDescription: string | null }
 export type PlatformTranslationRow = { platform_id: string; language: string; short_description: string | null; description: string | null; pros: unknown; cons: unknown; seo_title: string | null; seo_description: string | null }
-export type TranslationFieldState = { resource_type?: string; resource_id: string; field_name: string; target_language: string; source_hash: string; translated_source_hash: string | null; source_revision: number; translated_revision: number | null; status: string; is_protected: boolean }
+export type TranslationFieldState = { resource_type?: string; resource_id: string; field_name: string; target_language: string; source_hash: string; translated_source_hash: string | null; source_revision: number; translated_revision: number | null; status: string; is_protected: boolean; publication_status?: string }
 export type TranslationLanguage = { code: string; is_active: boolean; is_default: boolean; publication_status: string }
 
 const EMPTY_TRANSLATION: PlatformTranslation = { shortDescription: null, description: null, pros: [], cons: [], seoTitle: null, seoDescription: null }
@@ -32,6 +32,8 @@ export function resolvePlatformTranslations({ platformIds, requestedLanguage, de
 
 export function isPublishableTranslationState(state: TranslationFieldState | undefined) {
   if (!state) return false
+  // Optional preserves compatibility while migration 3E.2 is not installed.
+  if (state.publication_status !== undefined && state.publication_status !== 'published') return false
   const statusAllowed = state.status === 'reviewed' || state.status === 'machine_translated' || (state.status === 'imported_unreviewed' && state.is_protected)
   return statusAllowed && state.translated_source_hash === state.source_hash && state.translated_revision === state.source_revision
 }

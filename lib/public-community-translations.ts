@@ -2,6 +2,7 @@ import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveCommunityTranslations,type CommunitySource,type CommunityTranslationRow } from './public-community-translation-policy'
 import type { TranslationFieldState,TranslationLanguage } from './public-platform-translation-policy'
+import { getPublicTranslationStates } from './public-translation-states'
 
 export async function getPublicCommunityTranslations(communities:CommunitySource[],requestedLanguage:string){
   if(!communities.length)return new Map()
@@ -15,7 +16,7 @@ export async function getPublicCommunityTranslations(communities:CommunitySource
   const ids=communities.map((item)=>item.id)
   const [translationsResult,statesResult]=await Promise.all([
     db.from('community_translations').select('community_id,language,short_description,category_label,region_label,badge').in('community_id',ids).eq('language',effectiveLanguage),
-    db.from('translation_field_state').select('resource_type,resource_id,field_name,target_language,source_hash,translated_source_hash,source_revision,translated_revision,status,is_protected').eq('resource_type','community_translation').in('resource_id',ids).eq('target_language',effectiveLanguage),
+    getPublicTranslationStates({resourceTypes:['community_translation'],resourceIds:ids,targetLanguages:[effectiveLanguage]}),
   ])
   // Compatibilidad previa a 3D.3: conserva íntegramente el contenido fuente.
   if(translationsResult.error||statesResult.error)return new Map()

@@ -9,6 +9,7 @@ import {
   type ChallengeTranslationRow,
 } from './public-challenge-translation-policy'
 import type { TranslationFieldState, TranslationLanguage } from './public-platform-translation-policy'
+import { getPublicTranslationStates } from './public-translation-states'
 
 const TABLES: Record<ChallengeTranslationResource, { table: string; id: string }> = {
   challenge_phase_translation: { table: 'challenge_phase_translations', id: 'phase_id' },
@@ -62,11 +63,7 @@ export async function getPublicChallengeTranslations(
   try {
     const [translationGroups, statesResult] = await Promise.all([
       Promise.all(translationQueries),
-      db.from('translation_field_state')
-        .select('resource_type, resource_id, field_name, target_language, source_hash, translated_source_hash, source_revision, translated_revision, status, is_protected')
-        .in('resource_type', Object.keys(CHALLENGE_TRANSLATION_RESOURCES))
-        .in('resource_id', allIds)
-        .eq('target_language', effectiveLanguage),
+      getPublicTranslationStates({ resourceTypes: Object.keys(CHALLENGE_TRANSLATION_RESOURCES), resourceIds: allIds, targetLanguages: [effectiveLanguage] }),
     ])
     if (statesResult.error) return collections
     return resolveChallengeTranslations({

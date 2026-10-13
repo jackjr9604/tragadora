@@ -8,6 +8,7 @@ import {
   type PlatformDetailTranslationRow,
 } from './public-platform-detail-translation-policy'
 import type { TranslationFieldState, TranslationLanguage } from './public-platform-translation-policy'
+import { getPublicTranslationStates } from './public-translation-states'
 
 type DetailTranslations = {
   brokers: Map<string, BrokerDetailTranslation>
@@ -34,11 +35,7 @@ export async function getPublicPlatformDetailTranslations(platformIds: string[],
   const [brokersResult, exchangesResult, statesResult] = await Promise.all([
     db.from('broker_detail_translations').select('platform_id, language, regulation_summary').in('platform_id', ids).eq('language', effectiveLanguage),
     db.from('exchange_detail_translations').select('platform_id, language, product_summary, regulation_summary').in('platform_id', ids).eq('language', effectiveLanguage),
-    db.from('translation_field_state')
-      .select('resource_type, resource_id, field_name, target_language, source_hash, translated_source_hash, source_revision, translated_revision, status, is_protected')
-      .in('resource_type', ['broker_detail_translation', 'exchange_detail_translation'])
-      .in('resource_id', ids)
-      .eq('target_language', effectiveLanguage),
+    getPublicTranslationStates({ resourceTypes: ['broker_detail_translation', 'exchange_detail_translation'], resourceIds: ids, targetLanguages: [effectiveLanguage] }),
   ])
   if (brokersResult.error || exchangesResult.error || statesResult.error) return empty()
   const translations: PlatformDetailTranslationRow[] = [

@@ -9,15 +9,23 @@ export type { InventoryFilters, TranslationResourceType, TranslationStatus } fro
 export type TranslationStateRow = {
   id: string; resource_type: TranslationResourceType; resource_id: string; field_name: string
   source_language: string; target_language: string; status: TranslationStatus; translation_method: string | null
+  source_hash: string; translated_source_hash: string | null; source_revision: number; translated_revision: number | null
   provider: string | null; is_protected: boolean; protection_reason: string | null; translated_at: string | null
   reviewed_at: string | null; updated_at: string; last_error_code: string | null; last_error: string | null
+  publication_status?: 'unpublished' | 'published'; workflow_status?: 'none' | 'draft' | 'in_review' | 'approved'
+  draft_value?: unknown; draft_source_hash?: string | null; draft_source_revision?: number | null; lock_version?: number
+  draft_updated_at?: string | null; submitted_at?: string | null; approved_at?: string | null; published_at?: string | null; withdrawn_at?: string | null
 }
+
+const STATE_BASE_FIELDS = 'id,resource_type,resource_id,field_name,source_language,target_language,source_hash,translated_source_hash,source_revision,translated_revision,status,translation_method,provider,is_protected,protection_reason,translated_at,reviewed_at,updated_at,last_error_code,last_error'
+const STATE_EDITORIAL_FIELDS = `${STATE_BASE_FIELDS},publication_status,workflow_status,draft_value,draft_source_hash,draft_source_revision,lock_version,draft_updated_at,submitted_at,approved_at,published_at,withdrawn_at`
 
 export async function getTranslationInventory(filters: InventoryFilters, permissions: ReadonlySet<PermissionKey>) {
   const allowed = allowedTranslationResources(permissions)
   if (!allowed.length) return { rows: [] as TranslationStateRow[], total: 0, pages: 0, languages: [], resources: [], summary: summarizeStatuses({}, 0) }
   const db = createAdminClient()
-  let query = db.from('translation_field_state').select('id,resource_type,resource_id,field_name,source_language,target_language,status,translation_method,provider,is_protected,protection_reason,translated_at,reviewed_at,updated_at,last_error_code,last_error', { count: 'exact' }).in('resource_type', allowed)
+  const buildQuery = (fields: string) => db.from('translation_field_state').select(fields, { count: 'exact' }).in('resource_type', allowed)
+  let query = buildQuery(STATE_EDITORIAL_FIELDS)
   if (filters.resourceType && allowed.includes(filters.resourceType as TranslationResourceType)) query = query.eq('resource_type', filters.resourceType)
   if (filters.language) query = query.eq('target_language', filters.language)
   if (filters.status && TRANSLATION_STATUSES.includes(filters.status as TranslationStatus)) query = query.eq('status', filters.status)
@@ -28,19 +36,30 @@ export async function getTranslationInventory(filters: InventoryFilters, permiss
     if (value) query = query.or(`resource_id.ilike.%${value}%,field_name.ilike.%${value}%,resource_type.ilike.%${value}%`)
   }
   const from = (filters.page - 1) * filters.pageSize
-  const [pageResult, languageResult, resourceResult, ...countResults] = await Promise.all([
+  const [initialPageResult, languageResult, resourceResult, ...countResults] = await Promise.all([
     query.order('updated_at', { ascending: false }).range(from, from + filters.pageSize - 1),
     db.from('languages').select('code,native_name,is_default,publication_status').eq('is_active', true).order('sort_order'),
     db.from('translation_resource_types').select('resource_type,description').in('resource_type', allowed).eq('enabled', true).order('resource_type'),
     ...TRANSLATION_STATUSES.map((status) => db.from('translation_field_state').select('id', { count: 'exact', head: true }).in('resource_type', allowed).eq('status', status)),
     db.from('translation_field_state').select('id', { count: 'exact', head: true }).in('resource_type', allowed).eq('is_protected', true),
   ])
+  let pageResult = initialPageResult
+  if (pageResult.error?.code === '42703') {
+    let legacyQuery = buildQuery(STATE_BASE_FIELDS)
+    if (filters.resourceType && allowed.includes(filters.resourceType as TranslationResourceType)) legacyQuery = legacyQuery.eq('resource_type', filters.resourceType)
+    if (filters.language) legacyQuery = legacyQuery.eq('target_language', filters.language)
+    if (filters.status && TRANSLATION_STATUSES.includes(filters.status as TranslationStatus)) legacyQuery = legacyQuery.eq('status', filters.status)
+    if (filters.protection === 'protected') legacyQuery = legacyQuery.eq('is_protected', true)
+    if (filters.protection === 'unprotected') legacyQuery = legacyQuery.eq('is_protected', false)
+    if (filters.query) { const value = filters.query.replace(/[%_,().]/g, ' ').trim(); if (value) legacyQuery = legacyQuery.or(`resource_id.ilike.%${value}%,field_name.ilike.%${value}%,resource_type.ilike.%${value}%`) }
+    pageResult = await legacyQuery.order('updated_at', { ascending: false }).range(from, from + filters.pageSize - 1)
+  }
   const error = pageResult.error ?? languageResult.error ?? resourceResult.error ?? countResults.find((item) => item.error)?.error
   if (error) throw new Error(error.message)
   const counts = Object.fromEntries(TRANSLATION_STATUSES.map((status, index) => [status, countResults[index].count ?? 0]))
   const total = pageResult.count ?? 0
   return {
-    rows: (pageResult.data ?? []) as TranslationStateRow[], total, pages: Math.ceil(total / filters.pageSize),
+    rows: (pageResult.data ?? []) as unknown as TranslationStateRow[], total, pages: Math.ceil(total / filters.pageSize),
     languages: languageResult.data ?? [], resources: resourceResult.data ?? [],
     summary: summarizeStatuses(counts, countResults.at(-1)?.count ?? 0),
   }
@@ -51,13 +70,19 @@ export async function getTranslationDetail(id: string | undefined, permissions: 
   const allowed = allowedTranslationResources(permissions)
   if (!allowed.length) return null
   const db = createAdminClient()
-  const stateResult = await db.from('translation_field_state').select('id,resource_type,resource_id,field_name,source_language,target_language,status,translation_method,provider,is_protected,protection_reason,translated_at,reviewed_at,updated_at,last_error_code,last_error').eq('id', id).in('resource_type', allowed).maybeSingle()
+  let stateResult = await db.from('translation_field_state').select(STATE_EDITORIAL_FIELDS).eq('id', id).in('resource_type', allowed).maybeSingle()
+  let workflowAvailable = true
+  if (stateResult.error?.code === '42703') {
+    workflowAvailable = false
+    stateResult = await db.from('translation_field_state').select(STATE_BASE_FIELDS).eq('id', id).in('resource_type', allowed).maybeSingle()
+  }
   if (stateResult.error || !stateResult.data) return null
   const state = stateResult.data as TranslationStateRow
-  const [source, translated, origin] = await Promise.all([
+  const [source, translated, origin, field] = await Promise.all([
     readValue(state, state.source_language), readValue(state, state.target_language), readOrigin(state),
+    db.from('translation_resource_fields').select('value_kind,max_characters').eq('resource_type', state.resource_type).eq('field_name', state.field_name).maybeSingle(),
   ])
-  return { state, source, translated, origin }
+  return { state, source, translated, origin, workflowAvailable, canEdit: permissions.has(TRANSLATION_RESOURCES[state.resource_type].updatePermission), valueKind: field.data?.value_kind ?? 'text', maxCharacters: field.data?.max_characters ?? null }
 }
 
 type Adapter = { sourceTable: string; translationTable: string; sourceId: string; translationId: string; sourceField?: string; translationField?: string }
