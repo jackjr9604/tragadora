@@ -4,16 +4,40 @@ import { readFileSync } from 'node:fs'
 import { protectAiValue, restoreAndValidateAiValue } from './translation/ai-content'
 import { isLocalLibreTranslateUrl, MockLocalTranslationProvider, translateLocally } from './translation/ai-provider'
 
-test('el proveedor simulado preserva Markdown, código, URLs, variables y términos técnicos', () => {
-  const source = '# Título\n\nVisita [Tradagora](https://tradagora.com/go/ftmo) con `const x = 1` y {{name}}.\n```ts\nconsole.log("CFD")\n```'
+test('preserva el caso real de encabezado y párrafo sin convertir # ni colapsar saltos', () => {
+  const source = '# Profit Split\n\nEl profit split representa qué porcentaje de una ganancia elegible corresponde al trader.'
   const protectedValue = protectAiValue(source)
-  const translated = `${protectedValue.value} translated`
-  const restored = restoreAndValidateAiValue(translated, protectedValue)
-  assert.equal(typeof restored, 'string')
-  assert.match(restored as string, /https:\/\/tradagora\.com\/go\/ftmo/)
-  assert.match(restored as string, /`const x = 1`/)
-  assert.match(restored as string, /\{\{name\}\}/)
-  assert.match(restored as string, /console\.log\("CFD"\)/)
+  const output = [
+    protectedValue.value[0],
+    protectedValue.value[1]
+      .replace('El ', 'The ')
+      .replace(' representa qué porcentaje de una ganancia elegible corresponde al trader.', ' represents what percentage of an eligible profit corresponds to the trader.'),
+  ]
+  assert.equal(restoreAndValidateAiValue(output, protectedValue), '# Profit Split\n\nThe profit split represents what percentage of an eligible profit corresponds to the trader.')
+})
+
+test('preserva listas, citas, tablas, enlaces, imágenes, HTML y bloques de código', () => {
+  const source = [
+    '> Nota importante',
+    '',
+    '- Primer punto',
+    '- [ ] Tarea pendiente',
+    '',
+    '| Nombre | Estado |',
+    '| :--- | ---: |',
+    '| FTMO | Activo |',
+    '',
+    'Consulta [la guía](https://tradagora.com/guia) y ![Logo](https://tradagora.com/logo.png).',
+    '',
+    '<strong>Atención</strong>',
+    '',
+    '```ts',
+    'const url = "https://tradagora.com"',
+    '```',
+  ].join('\n')
+  const protectedValue = protectAiValue(source)
+  const restored = restoreAndValidateAiValue(protectedValue.value, protectedValue)
+  assert.equal(restored, source)
 })
 
 test('mock genera un borrador validable con costo cero', async () => {
@@ -30,63 +54,70 @@ test('LibreTranslate solo acepta loopback o redes privadas sin credenciales embe
   assert.equal(isLocalLibreTranslateUrl('http://user:pass@localhost:5000'), false)
 })
 
-test('conserva forma y cardinalidad de arrays', () => {
+test('conserva forma y cardinalidad de arrays de campos', () => {
   const protectedValue = protectAiValue(['Profit Split alto', 'Payout rápido'])
   const restored = restoreAndValidateAiValue(protectedValue.value, protectedValue)
   assert.deepEqual(restored, ['Profit Split alto', 'Payout rápido'])
   assert.throws(() => restoreAndValidateAiValue(['solo uno'], protectedValue), /lista incompatible/)
 })
 
-test('rechaza respuestas que pierden marcadores protegidos', () => {
-  const protectedValue = protectAiValue('Visita https://tradagora.com y usa {{code}}')
-  assert.throws(() => restoreAndValidateAiValue('Visit the site', protectedValue), /alteró código/)
-})
-
-test('usa marcadores HTML no traducibles y restaura exactamente enlaces, HTML, código y variables', () => {
-  const source = 'Visita [Tradagora](https://tradagora.com/go/ftmo), <strong>ahora</strong>, usa `npm run build` y ${ACCOUNT_ID}.'
+test('traduce etiquetas de enlaces e imágenes pero restaura exactamente URLs, código y variables', () => {
+  const source = 'Visita [la guía](https://tradagora.com/go/ftmo), usa `npm run build` y ${ACCOUNT_ID}.'
   const protectedValue = protectAiValue(source)
-  assert.match(protectedValue.value as string, /<span translate="no" data-trgd-token="TRGDPROTECTED_0000">/)
-  const translated = (protectedValue.value as string).replace('Visita ', 'Visit ').replace(', usa ', ', use ')
-  assert.equal(restoreAndValidateAiValue(translated, protectedValue), 'Visit [Tradagora](https://tradagora.com/go/ftmo), <strong>ahora</strong>, use `npm run build` y ${ACCOUNT_ID}.')
+  const output = protectedValue.value.map((value) => value
+    .replace('>Visita<', '>Visit<')
+    .replace('>la guía<', '>the guide<')
+    .replace('>, usa<', '>, use<')
+    .replace('>y<', '>and<')
+    .replace('>y <span', '>and <span'))
+  assert.equal(restoreAndValidateAiValue(output, protectedValue), 'Visit [the guide](https://tradagora.com/go/ftmo), use `npm run build` y ${ACCOUNT_ID}.')
 })
 
-test('un enlace Markdown completo permanece intacto y no genera tokens solapados para su URL', () => {
-  const source = 'Abre [la guía](https://tradagora.com/docs?q=1) hoy.'
+test('rechaza estructura Markdown añadida, eliminada o alterada', () => {
+  const source = '# Título\n\nTexto normal.'
   const protectedValue = protectAiValue(source)
-  assert.equal(protectedValue.tokens.length, 1)
-  assert.equal(restoreAndValidateAiValue(protectedValue.value, protectedValue), source)
+  const output = [protectedValue.value[0], protectedValue.value[1].replace('>Texto normal.<', '># Altered text.<')]
+  assert.throws(() => restoreAndValidateAiValue(output, protectedValue), /estructura Markdown/)
 })
 
-test('acepta reserialización HTML inocua sin debilitar la identidad del marcador', () => {
+test('acepta reserialización HTML inocua del contenedor de fragmento', () => {
   const source = 'Visita https://tradagora.com'
   const protectedValue = protectAiValue(source)
-  const serialized = (protectedValue.value as string).replace(
-    /<span translate="no" data-trgd-token="([^"]+)">([^<]+)<\/span>/,
-    '<span data-trgd-token="$1" translate="no">$2</span>',
-  )
+  const serialized = protectedValue.value.map((value) => value.replace(/<div data-trgd-segment="([^"]+)">/, '<div class="translated" data-trgd-segment="$1">'))
   assert.equal(restoreAndValidateAiValue(serialized, protectedValue), source)
 })
 
-test('rechaza marcadores perdidos, duplicados, alterados o movidos entre elementos', () => {
-  const protectedValue = protectAiValue(['Visita https://tradagora.com', 'Usa {{code}}'])
-  const values = protectedValue.value as string[]
-  assert.throws(() => restoreAndValidateAiValue([values[0].replace('TRGDPROTECTED', 'TRGDPROTECT'), values[1]], protectedValue), /alteró código/)
-  assert.throws(() => restoreAndValidateAiValue([`${values[0]} ${protectedValue.tokens[0].marker}`, values[1]], protectedValue), /alteró código/)
-  assert.throws(() => restoreAndValidateAiValue([values[0].replace(protectedValue.tokens[0].marker, ''), `${values[1]} ${protectedValue.tokens[0].marker}`], protectedValue), /alteró código/)
+test('rechaza fragmentos perdidos, duplicados, alterados o con contenido activo', () => {
+  const protectedValue = protectAiValue('Visita https://tradagora.com y usa {{code}}')
+  const [value] = protectedValue.value
+  assert.throws(() => restoreAndValidateAiValue([], protectedValue), /lista incompatible/)
+  assert.throws(() => restoreAndValidateAiValue([`${value}${value}`], protectedValue), /alteró, perdió o duplicó/)
+  assert.throws(() => restoreAndValidateAiValue([value.replace('data-trgd-segment', 'data-broken-segment')], protectedValue), /alteró, perdió o duplicó/)
+  assert.throws(() => restoreAndValidateAiValue([value.replace('</div>', '<script>alert(1)</script></div>')], protectedValue), /contenido inseguro/)
 })
 
-test('evita colisiones con texto que ya contiene el namespace de marcadores', () => {
-  const source = 'TRGDPROTECTED: visita https://tradagora.com'
+test('rechaza marcadores inline perdidos, duplicados o alterados', () => {
+  const source = 'Visita https://tradagora.com con {{code}}'
   const protectedValue = protectAiValue(source)
-  assert.equal(protectedValue.markerNamespace, 'TRGDPROTECTEDX')
+  const [value] = protectedValue.value
+  assert.throws(() => restoreAndValidateAiValue([value.replace(/<span[\s\S]*?<\/span>/, '')], protectedValue), /alteró código/)
+  assert.throws(() => restoreAndValidateAiValue([value.replace(/(<span[\s\S]*?<\/span>)/, '$1$1')], protectedValue), /alteró código/)
+  assert.throws(() => restoreAndValidateAiValue([value.replace('data-trgd-token', 'data-unknown-token')], protectedValue), /alteró código/)
+})
+
+test('evita colisiones con texto que ya contiene el namespace de fragmentos', () => {
+  const source = 'TRGDSEGMENT: visita https://tradagora.com'
+  const protectedValue = protectAiValue(source)
+  assert.equal(protectedValue.markerNamespace, 'TRGDSEGMENTX')
   assert.equal(restoreAndValidateAiValue(protectedValue.value, protectedValue), source)
 })
 
-test('LibreTranslate recibe HTML para preservar los nodos translate=no', () => {
+test('LibreTranslate recibe HTML para preservar contenedores y nodos translate=no', () => {
   const provider = readFileSync('lib/translation/ai-provider.ts', 'utf8')
   assert.match(provider, /format:\s*'html'/)
   assert.doesNotMatch(provider, /format:\s*'text'/)
 })
+
 
 test('la migración guarda borradores y restringe RPC sensibles', () => {
   const sql = readFileSync('supabase/migrations/202610130001_translation_ai_draft_engine.sql', 'utf8')

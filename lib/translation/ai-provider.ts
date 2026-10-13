@@ -38,8 +38,9 @@ export class MockLocalTranslationProvider implements LocalTranslationProvider {
   readonly name = 'mock' as const
   readonly model = 'deterministic-test-v1'
   async translate(request: LocalTranslationRequest) {
-    const prefix = `[${request.targetLanguage.toUpperCase()}] `
-    return Array.isArray(request.value) ? request.value.map((item) => `${prefix}${item}`) : `${prefix}${request.value}`
+    const prefix = `${request.targetLanguage.toUpperCase()}: `
+    const translate = (item: string) => item.replace(/(<div\b[^>]*>)/i, `$1${prefix}`)
+    return Array.isArray(request.value) ? request.value.map(translate) : translate(request.value)
   }
 }
 
@@ -48,7 +49,9 @@ export async function translateLocally(request: LocalTranslationRequest, provide
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), timeoutMs)
   try {
-    const output = await provider.translate({ ...request, value: protectedValue.value }, controller.signal)
+    const output = protectedValue.value.length
+      ? await provider.translate({ ...request, value: protectedValue.value }, controller.signal)
+      : []
     const value = restoreAndValidateAiValue(output, protectedValue)
     const inputCharacters = countValueCharacters(request.value), outputCharacters = countValueCharacters(value)
     return { value, provider: provider.name, model: provider.model,
