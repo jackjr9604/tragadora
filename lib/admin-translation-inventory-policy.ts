@@ -21,7 +21,7 @@ export const TRANSLATION_RESOURCES = {
 } as const satisfies Record<string, { label: string; permission: PermissionKey; updatePermission: PermissionKey; path: string }>
 
 export type TranslationResourceType = keyof typeof TRANSLATION_RESOURCES
-export type InventoryFilters = { page: number; pageSize: number; resourceType?: string; language?: string; status?: string; protection?: string; query?: string; selected?: string }
+export type InventoryFilters = { page: number; pageSize: number; resourceType?: string; language?: string; status?: string; protection?: string; query?: string; selected?: string; sort: 'updated_desc' | 'updated_asc' | 'name_asc' | 'progress_asc' }
 
 export function allowedTranslationResources(permissions: ReadonlySet<PermissionKey>) {
   return (Object.keys(TRANSLATION_RESOURCES) as TranslationResourceType[]).filter((key) => permissions.has(TRANSLATION_RESOURCES[key].permission))
@@ -35,7 +35,10 @@ export function normalizeInventoryFilters(input: Record<string, string | string[
     pageSize: [25, 50, 100].includes(parsedSize) ? parsedSize : 25,
     resourceType: clean(one(input.module), 80), language: clean(one(input.language), 20),
     status: clean(one(input.status), 40), protection: clean(one(input.protection), 20),
-    query: clean(one(input.q), 100), selected: clean(one(input.selected), 80),
+    query: clean(one(input.q), 100), selected: clean(one(input.selected), 180),
+    sort: ['updated_asc', 'name_asc', 'progress_asc'].includes(one(input.sort) ?? '')
+      ? one(input.sort) as InventoryFilters['sort']
+      : 'updated_desc',
   }
 }
 

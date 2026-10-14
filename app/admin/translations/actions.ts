@@ -6,9 +6,11 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCurrentAdminPermissions } from '@/lib/admin-permissions-server'
 import { TRANSLATION_RESOURCES, type TranslationResourceType } from '@/lib/admin-translation-inventory-policy'
 import { parseTranslationEditorValue, TRANSLATION_EDITOR_ACTIONS, type TranslationEditorAction } from '@/lib/admin-translation-editor-policy'
-import { getTranslationDetail } from '@/lib/admin-translation-inventory'
+import { getTranslationDetail, getTranslationResourceDetail, parseResourceKey } from '@/lib/admin-translation-inventory'
 import { requestIndividualAiDraft } from '@/lib/admin-translation-ai'
 import type { TranslationActionState } from '@/lib/admin-translation-action-state'
+import type { TranslationBulkResult } from '@/lib/admin-translation-bulk-state'
+import { isEligibleForBulkAction, isResourceBulkAction } from '@/lib/admin-translation-resource-policy'
 
 const RPC_BY_ACTION = {
   save_draft: 'translation_save_draft',
@@ -67,6 +69,46 @@ export async function updateTranslationWorkflow(_previous: TranslationActionStat
   return { ok: true, message: actionMessage(action) }
 }
 
+export async function updateTranslationResourceWorkflow(_previous: TranslationBulkResult, formData: FormData): Promise<TranslationBulkResult> {
+  const parsed = parseResourceKey(String(formData.get('resourceKey') ?? ''))
+  const intent = String(formData.get('intent') ?? '')
+  const requestedLanguages = formData.getAll('languages').map(String).filter((language): language is 'en' | 'pt' => language === 'en' || language === 'pt')
+  if (!parsed || !isResourceBulkAction(intent) || !requestedLanguages.length) return bulkError('La solicitud agrupada no es válida.')
+
+  const access = await getCurrentAdminPermissions()
+  const resource = TRANSLATION_RESOURCES[parsed.resourceType]
+  if (!access.userId) return bulkError('La sesión expiró. Vuelve a iniciar sesión.')
+  if (!resource || !access.permissions.has(resource.updatePermission)) return bulkError('No tienes permiso para modificar este módulo.')
+  const detail = await getTranslationResourceDetail(String(formData.get('resourceKey')), access.permissions)
+  if (!detail?.workflowAvailable || !detail.canEdit) return bulkError('El flujo editorial no está disponible para este recurso.')
+
+  const requestedLanguageSet = new Set<string>(requestedLanguages)
+  const eligible = detail.fields.filter(({ state }) => requestedLanguageSet.has(state.target_language) && isEligibleForBulkAction(state, intent))
+  if (!eligible.length) return bulkError('No hay campos elegibles para esta acción.')
+  if (eligible.length > 50) return bulkError('La acción supera el límite seguro de 50 campos. Reduce los idiomas seleccionados.')
+
+  const session = await createClient()
+  const items: TranslationBulkResult['items'] = []
+  for (const field of eligible) {
+    try {
+      if (intent === 'generate_pending' || intent === 'regenerate_stale') {
+        await requestIndividualAiDraft({ stateId: field.state.id, expectedLockVersion: field.state.lock_version ?? 1, sourceValue: field.sourceValue, force: intent === 'regenerate_stale' })
+      } else {
+        const rpc = RPC_BY_ACTION[intent]
+        const result = await session.rpc(rpc, { p_state_id: field.state.id, p_expected_lock_version: field.state.lock_version ?? 1 })
+        if (result.error) throw new Error(result.error.message)
+      }
+      items.push({ stateId: field.state.id, fieldName: field.state.field_name, language: field.state.target_language, ok: true, message: bulkSuccessMessage(intent) })
+    } catch (error) {
+      items.push({ stateId: field.state.id, fieldName: field.state.field_name, language: field.state.target_language, ok: false, message: error instanceof Error ? error.message : 'Error desconocido' })
+    }
+  }
+  revalidatePath('/admin/translations')
+  if (intent === 'publish') revalidatePath('/', 'layout')
+  const succeeded = items.filter((item) => item.ok).length, failed = items.length - succeeded
+  return { ok: failed === 0, requested: items.length, succeeded, failed, items, message: failed ? `${succeeded} campos completados y ${failed} con error.` : `${succeeded} campos completados correctamente.` }
+}
+
 function actionMessage(action: TranslationEditorAction) {
   if (action === 'generate_ai') return 'Trabajo añadido a la cola local.'
   if (action === 'save_draft') return 'Borrador guardado. El contenido público no cambió.'
@@ -74,4 +116,12 @@ function actionMessage(action: TranslationEditorAction) {
   if (action === 'approve') return 'Traducción aprobada. Aún no está publicada.'
   if (action === 'publish') return 'Traducción publicada.'
   return 'La traducción fue retirada de la web pública.'
+}
+
+function bulkError(message: string): TranslationBulkResult { return { ok: false, message, requested: 0, succeeded: 0, failed: 0, items: [] } }
+function bulkSuccessMessage(action: string) {
+  if (action === 'generate_pending' || action === 'regenerate_stale') return 'Trabajo en cola'
+  if (action === 'submit_review') return 'En revisión'
+  if (action === 'approve') return 'Aprobada'
+  return 'Publicada'
 }
