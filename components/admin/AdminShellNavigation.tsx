@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { BadgeDollarSign, BookOpen, BriefcaseBusiness, Building2, Calculator, FileText, Gift, Home, Image, Languages, LayoutDashboard, Link2, Mail, Newspaper, Palette, Search, Settings2, ShieldCheck, Tags, Users, Wrench } from 'lucide-react'
+import { BadgeDollarSign, BookOpen, BriefcaseBusiness, Building2, Calculator, FileStack, FileText, Gift, Home, Image, Languages, LayoutDashboard, Link2, Mail, Newspaper, Palette, Search, Settings2, ShieldCheck, Tags, Users, Wrench } from 'lucide-react'
 
 type AdminLink = { label: string; href: string }
 
@@ -16,6 +16,7 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   '/admin/offers': Tags,
   '/admin/affiliate-links': Link2,
   '/admin/content': FileText,
+  '/admin/content-center': FileStack,
   '/admin/translations': Languages,
   '/admin/media': Image,
   '/admin/branding': Palette,
@@ -37,7 +38,7 @@ export function AdminShellNavigation({ links, mobile = false }: { links: AdminLi
   if (mobile) return <nav className="admin-mobile-nav" aria-label="Administración móvil">{links.map((link) => <NavItem key={link.href} link={link} pathname={pathname} mobile />)}</nav>
 
   const management = links.filter((link) => ['/admin', '/admin/home', '/admin/platforms', '/admin/brokers', '/admin/exchanges', '/admin/challenges', '/admin/payouts', '/admin/offers', '/admin/affiliate-links'].includes(link.href))
-  const content = links.filter((link) => ['/admin/content', '/admin/translations', '/admin/media', '/admin/branding', '/admin/correo', '/admin/tools', '/admin/calculators', '/admin/communities', '/admin/blog', '/admin/giveaways', '/admin/docs'].includes(link.href))
+  const content = links.filter((link) => ['/admin/content-center', '/admin/content', '/admin/translations', '/admin/media', '/admin/branding', '/admin/correo', '/admin/tools', '/admin/calculators', '/admin/communities', '/admin/blog', '/admin/giveaways', '/admin/docs'].includes(link.href))
   const system = links.filter((link) => !management.includes(link) && !content.includes(link))
   return <nav className="admin-sidebar-nav" aria-label="Administración"><NavGroup title="Gestión" links={management} pathname={pathname} /><NavGroup title="Contenido" links={content} pathname={pathname} />{system.length > 0 && <NavGroup title="Sistema" links={system} pathname={pathname} />}</nav>
 }

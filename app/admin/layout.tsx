@@ -15,7 +15,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const navigationLinks = links.flatMap((link) => {
     if (link.href === '/admin/platforms') return [link, { label: 'Brokers', href: '/admin/brokers' }, { label: 'Exchanges', href: '/admin/exchanges' }]
     if (link.href === '/admin/tools') return [link, { label: 'Calculadoras', href: '/admin/calculators' }]
-    if (link.href === '/admin/content') return [link, { label: 'Traducciones', href: '/admin/translations' }]
+    if (link.href === '/admin/content') return [{ label: 'Centro de contenido', href: '/admin/content-center' }, link, { label: 'Traducciones', href: '/admin/translations' }]
     return [link]
   })
   if (!links.length) redirect('/')

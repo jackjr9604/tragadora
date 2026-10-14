@@ -49,6 +49,7 @@ export function permissionForAdminPath(pathname: string): PermissionKey {
   if (path.startsWith('/admin/offers')) return 'offers.view'
   if (path === '/admin/affiliate-links/new') return 'affiliate_links.create'
   if (path.startsWith('/admin/affiliate-links')) return 'affiliate_links.view'
+  if (path.startsWith('/admin/content-center')) return 'content.view'
   if (path.startsWith('/admin/translations')) return 'content.view'
   if (path.startsWith('/admin/content')) return 'content.view'
   if (path.startsWith('/admin/media')) return 'media.view'
