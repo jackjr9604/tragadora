@@ -5,6 +5,8 @@ import { CONTENT_CENTER_BUCKETS, CONTENT_CENTER_BUCKET_LABELS, bucketCount, norm
 import { getContentCenterData, getRecentTranslationJobs, resourceEditorHref, resourceModuleLabel, type ContentCenterResourceRow } from '@/lib/admin-content-center'
 import { TRANSLATION_RESOURCES } from '@/lib/admin-translation-inventory-policy'
 import { publicAiEngineStatus } from '@/lib/admin-translation-ai'
+import { getAdminLanguages } from '@/lib/admin-languages'
+import { ContentCenterLanguages } from '@/components/admin/content/ContentCenterLanguages'
 
 type SearchParams = Record<string, string | string[] | undefined>
 
@@ -14,6 +16,7 @@ export default async function ContentCenterPage({ searchParams }: { searchParams
   const access = await getCurrentAdminPermissions()
   const data = await getContentCenterData(filters, access.permissions)
   const jobs = filters.view === 'jobs' ? await getRecentTranslationJobs(access.permissions) : []
+  const languageData = filters.view === 'languages' ? await getAdminLanguages() : null
   const ai = publicAiEngineStatus()
   const query = Object.fromEntries(Object.entries(raw).flatMap(([key, value]) => typeof value === 'string' ? [[key, value]] : []))
 
@@ -30,7 +33,7 @@ export default async function ContentCenterPage({ searchParams }: { searchParams
     {filters.view === 'summary' && <>
       <section className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="Resumen global"><Metric title="Recursos" value={data.summary.resources} icon={BriefcaseBusiness} /><Metric title="Campos traducibles" value={data.summary.fields} icon={FileText} /><Metric title="Listos y publicados" value={data.summary.published} icon={CheckCircle2} tone="green" /><Metric title="Trabajos esperando" value={data.summary.queued_jobs + data.summary.retry_jobs} icon={Clock3} tone="amber" /></section>
       <BucketGrid summary={data.summary} />
-      <section className="mt-8 grid gap-4 lg:grid-cols-3"><QuickLink title="Editar contenido" description="Abre páginas y secciones de site_content." href="/admin/content" icon={FileText} /><QuickLink title="Gestionar traducciones" description="Abre el inventario y editor integral 3E.4." href="/admin/translations" icon={Languages} /><QuickLink title="Configurar idiomas" description="Administra idiomas activos, base y orden." href="/admin/content/languages" icon={ServerCog} /></section>
+      <section className="mt-8 grid gap-4 lg:grid-cols-3"><QuickLink title="Editar contenido" description="Abre páginas y secciones de site_content." href="/admin/content" icon={FileText} /><QuickLink title="Gestionar traducciones" description="Abre el inventario y editor integral 3E.4." href="/admin/translations" icon={Languages} /><QuickLink title="Configurar idiomas" description="Administra registro, preparación y publicación segura." href="/admin/content-center?view=languages" icon={ServerCog} /></section>
     </>}
 
     {filters.view === 'translations' && <>
@@ -42,6 +45,7 @@ export default async function ContentCenterPage({ searchParams }: { searchParams
     </>}
 
     {filters.view === 'jobs' && <JobsPanel jobs={jobs} summary={data.summary} aiEnabled={ai.enabled} />}
+    {filters.view === 'languages' && languageData && <>{!languageData.rpcAvailable&&<section className="mt-6 rounded-2xl border border-amber-300 bg-amber-50 p-5 text-sm text-amber-950"><strong>Administración segura pendiente.</strong> Aplica manualmente <code>202610140002_language_administration.sql</code>. El editor antiguo queda bloqueado para evitar escrituras no transaccionales.</section>}{languageData.rpcAvailable&&<ContentCenterLanguages languages={languageData.languages} canCreate={access.permissions.has('content.create')} canUpdate={access.permissions.has('content.update')} canDelete={access.permissions.has('content.delete')}/>}</>}
   </div></main>
 }
 
@@ -53,7 +57,7 @@ function CenterNavigation({ active }: { active: string }) {
     { label: 'Revisión', href: '/admin/content-center?view=translations&bucket=in_review' },
     { label: 'Publicación', href: '/admin/content-center?view=translations&bucket=approved' },
     { label: 'Trabajos', href: '/admin/content-center?view=jobs', match: 'jobs' },
-    { label: 'Idiomas', href: '/admin/content/languages' },
+    { label: 'Idiomas', href: '/admin/content-center?view=languages', match: 'languages' },
   ]
   return <nav className="mt-7 flex gap-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-sm" aria-label="Centro de contenido">{links.map((link) => <Link key={link.label} href={link.href} aria-current={link.match === active ? 'page' : undefined} className={`shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${link.match === active ? 'bg-slate-950 text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'}`}>{link.label}</Link>)}</nav>
 }

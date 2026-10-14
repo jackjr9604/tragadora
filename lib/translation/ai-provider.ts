@@ -20,6 +20,13 @@ export class LibreTranslateLocalProvider implements LocalTranslationProvider {
   constructor(private readonly url: string, private readonly apiKey?: string) {
     if (!isLocalLibreTranslateUrl(url)) throw new Error('LIBRETRANSLATE_URL debe apuntar a localhost o a una IP privada del PC.')
   }
+  async supportedLanguages(signal?:AbortSignal){
+    const response=await fetch(`${this.url.replace(/\/+$/,'')}/languages`,{signal,cache:'no-store'})
+    const payload=await response.json().catch(()=>([])) as unknown
+    if(!response.ok||!Array.isArray(payload))throw new Error('LibreTranslate local no pudo informar sus idiomas.')
+    const codes=payload.flatMap((item)=>item&&typeof item==='object'&&typeof (item as {code?:unknown}).code==='string'?[(item as {code:string}).code.toLowerCase()]:[])
+    return [...new Set(codes)]
+  }
   async translate(request: LocalTranslationRequest, signal: AbortSignal) {
     const values = Array.isArray(request.value) ? request.value : [request.value]
     const response = await fetch(`${this.url.replace(/\/+$/, '')}/translate`, {

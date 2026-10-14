@@ -2,7 +2,7 @@ import { TRANSLATION_RESOURCES, type TranslationResourceType } from '@/lib/admin
 
 export const CONTENT_CENTER_BUCKETS = ['pending', 'draft', 'in_review', 'approved', 'published', 'partial', 'stale', 'error'] as const
 export type ContentCenterBucket = (typeof CONTENT_CENTER_BUCKETS)[number]
-export type ContentCenterView = 'summary' | 'translations' | 'jobs'
+export type ContentCenterView = 'summary' | 'translations' | 'jobs' | 'languages'
 
 export const CONTENT_CENTER_BUCKET_LABELS: Record<ContentCenterBucket, string> = {
   pending: 'Pendientes', draft: 'Borradores', in_review: 'En revisión', approved: 'Aprobadas',
@@ -14,7 +14,7 @@ export function normalizeContentCenterParams(input: Record<string, string | stri
   const rawView = one(input.view), rawBucket = one(input.bucket), rawPage = Number(one(input.page)), rawSize = Number(one(input.pageSize))
   const resourceType = clean(one(input.module), 80)
   return {
-    view: (['summary', 'translations', 'jobs'].includes(rawView ?? '') ? rawView : 'summary') as ContentCenterView,
+    view: (['summary', 'translations', 'jobs', 'languages'].includes(rawView ?? '') ? rawView : 'summary') as ContentCenterView,
     bucket: CONTENT_CENTER_BUCKETS.includes(rawBucket as ContentCenterBucket) ? rawBucket as ContentCenterBucket : undefined,
     page: Number.isInteger(rawPage) && rawPage > 0 ? rawPage : 1,
     pageSize: [25, 50, 100].includes(rawSize) ? rawSize : 25,

@@ -37,6 +37,7 @@ async function main() {
   process.once('SIGINT', stop)
   process.once('SIGTERM', stop)
   try {
+    await reportLanguageCapabilities(context)
     do {
       const processed = await runCycle(context)
       if (config.runOnce || stopping) break
@@ -46,6 +47,16 @@ async function main() {
     process.off('SIGINT', stop)
     process.off('SIGTERM', stop)
   }
+}
+
+async function reportLanguageCapabilities({supabase,provider}:WorkerContext){
+  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),10_000)
+  try{
+    const supported=await provider.supportedLanguages(controller.signal)
+    const result=await supabase.rpc('translation_worker_report_languages',{p_supported_codes:supported})
+    if(result.error&&!['PGRST202','42883'].includes(result.error.code??''))throw new Error(result.error.message)
+  }catch(error){console.warn(`[translation-worker] compatibilidad de idiomas pendiente: ${safeError(error)}`)}
+  finally{clearTimeout(timeout)}
 }
 
 async function runCycle({ config, supabase, provider, workerId }: WorkerContext) {

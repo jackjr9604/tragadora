@@ -23,6 +23,7 @@ export type TranslationResourceRow = {
   resource_type: TranslationResourceType; resource_id: string; resource_label: string; origin_href: string; updated_at: string
   total_fields: number; pending_count: number; translated_count: number; reviewed_count: number; published_count: number
   stale_count: number; protected_count: number; en_total: number; en_published: number; pt_total: number; pt_published: number
+  language_progress?: Record<string,{total:number;published:number}>
 }
 
 export type TranslationFieldDetail = {
@@ -53,6 +54,14 @@ export async function getTranslationResourceInventory(filters: InventoryFilters,
   if (languageResult.error) throw new Error(languageResult.error.message)
   if (resourceResult.error) throw new Error(resourceResult.error.message)
   const rows = (inventoryResult.data ?? []) as unknown as (TranslationResourceRow & { total_count: number })[]
+  if(rows.length){
+    const resourceTypes=[...new Set(rows.map((row)=>row.resource_type))],resourceIds=[...new Set(rows.map((row)=>row.resource_id))]
+    const progressResult=await db.from('translation_field_state').select('resource_type,resource_id,target_language,publication_status').in('resource_type',resourceTypes).in('resource_id',resourceIds)
+    if(progressResult.error)throw new Error(progressResult.error.message)
+    const rowKeys=new Set(rows.map((row)=>`${row.resource_type}:${row.resource_id}`)),progress=new Map<string,Record<string,{total:number;published:number}>>()
+    for(const state of progressResult.data??[]){const key=`${state.resource_type}:${state.resource_id}`;if(!rowKeys.has(key))continue;const languages=progress.get(key)??{},current=languages[state.target_language]??{total:0,published:0};current.total++;if(state.publication_status==='published')current.published++;languages[state.target_language]=current;progress.set(key,languages)}
+    for(const row of rows)row.language_progress=progress.get(`${row.resource_type}:${row.resource_id}`)??{}
+  }
   const total = Number(rows[0]?.total_count ?? 0)
   const summary = rows.reduce((acc, row) => ({
     total: acc.total + Number(row.total_fields), pending: acc.pending + Number(row.pending_count), translated: acc.translated + Number(row.translated_count),

@@ -68,6 +68,8 @@ async function getActivePublicLanguagesUncached(): Promise<PublicLanguageOption[
     .from('languages')
     .select('code, name, native_name, is_default')
     .eq('is_active', true)
+    .eq('publication_status', 'published')
+    .eq('ui_catalog_available', true)
     .order('sort_order')
     .order('name')
 

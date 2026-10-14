@@ -72,7 +72,7 @@ export async function updateTranslationWorkflow(_previous: TranslationActionStat
 export async function updateTranslationResourceWorkflow(_previous: TranslationBulkResult, formData: FormData): Promise<TranslationBulkResult> {
   const parsed = parseResourceKey(String(formData.get('resourceKey') ?? ''))
   const intent = String(formData.get('intent') ?? '')
-  const requestedLanguages = formData.getAll('languages').map(String).filter((language): language is 'en' | 'pt' => language === 'en' || language === 'pt')
+  const requestedLanguages = [...new Set(formData.getAll('languages').map(String).filter((language) => /^[a-z]{2,3}(?:-[a-z0-9]{2,8})?$/.test(language)))]
   if (!parsed || !isResourceBulkAction(intent) || !requestedLanguages.length) return bulkError('La solicitud agrupada no es válida.')
 
   const access = await getCurrentAdminPermissions()
@@ -82,7 +82,9 @@ export async function updateTranslationResourceWorkflow(_previous: TranslationBu
   const detail = await getTranslationResourceDetail(String(formData.get('resourceKey')), access.permissions)
   if (!detail?.workflowAvailable || !detail.canEdit) return bulkError('El flujo editorial no está disponible para este recurso.')
 
-  const requestedLanguageSet = new Set<string>(requestedLanguages)
+  const availableLanguages = new Set(detail.fields.map((field) => field.state.target_language))
+  const requestedLanguageSet = new Set<string>(requestedLanguages.filter((language) => availableLanguages.has(language)))
+  if (!requestedLanguageSet.size) return bulkError('Los idiomas seleccionados no están disponibles para este recurso.')
   const eligible = detail.fields.filter(({ state }) => requestedLanguageSet.has(state.target_language) && isEligibleForBulkAction(state, intent))
   if (!eligible.length) return bulkError('No hay campos elegibles para esta acción.')
   if (eligible.length > 50) return bulkError('La acción supera el límite seguro de 50 campos. Reduce los idiomas seleccionados.')

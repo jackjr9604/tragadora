@@ -11,7 +11,7 @@ export default function ContentPage() {
           <h1 className="text-3xl font-bold">Contenido</h1>
           <p className="mt-1 text-slate-500">Selecciona una página para editar sus secciones e idiomas.</p>
           </div>
-          <Link href="/admin/content/languages" className="inline-flex items-center gap-2 rounded-lg bg-black px-5 py-3 text-sm font-medium text-white"><Languages className="size-4" /> Gestionar idiomas</Link>
+          <Link href="/admin/content-center?view=languages" className="inline-flex items-center gap-2 rounded-lg bg-black px-5 py-3 text-sm font-medium text-white"><Languages className="size-4" /> Gestionar idiomas</Link>
         </div>
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {contentPages.map((page) => (
