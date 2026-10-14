@@ -147,7 +147,7 @@ test('el motor operativo no contiene proveedores comerciales reactivables por en
     assert.doesNotMatch(source, /OPENAI_API_KEY|TRANSLATION_PROVIDER|api\.openai\.com|anthropic|deepl/i)
   }
   assert.equal(existsSync('lib/content-translation.ts'), false)
-  assert.match(worker, /translation_claim_ai_jobs/)
+  assert.match(worker, /translation_claim_ready_ai_jobs/)
   assert.match(worker, /translation_complete_ai_job/)
   assert.match(worker, /estimated_cost_usd:\s*0/)
 })

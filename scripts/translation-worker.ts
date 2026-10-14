@@ -2,6 +2,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { loadEnvConfig } from '@next/env'
 import { randomUUID } from 'node:crypto'
 import { LibreTranslateLocalProvider, translateLocally } from '../lib/translation/ai-provider'
+import { isLocalProviderUnavailable, prepareLocalTranslationWorker, safeWorkerError } from '../lib/translation/worker-runtime'
 
 type TranslationJob = {
   id: string
@@ -37,9 +38,17 @@ async function main() {
   process.once('SIGINT', stop)
   process.once('SIGTERM', stop)
   try {
-    await reportLanguageCapabilities(context)
     do {
-      const processed = await runCycle(context)
+      const readiness = await prepareLocalTranslationWorker({ client: context.supabase, provider: context.provider,
+        recoveryLimit: config.recoveryBatchSize })
+      if (!readiness.ready) {
+        console.warn(`[translation-worker] LibreTranslate no disponible; la cola permanece pendiente: ${readiness.reason}`)
+        if (config.runOnce || stopping) break
+        await wait(config.pollMs)
+        continue
+      }
+      if (readiness.recoveredJobs) console.log(`[translation-worker] recuperados ${readiness.recoveredJobs} trabajo(s) locales elegibles`)
+      const processed = await runCycle(context, readiness.supportedCodes)
       if (config.runOnce || stopping) break
       if (!processed) await wait(config.pollMs)
     } while (!stopping)
@@ -49,19 +58,9 @@ async function main() {
   }
 }
 
-async function reportLanguageCapabilities({supabase,provider}:WorkerContext){
-  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),10_000)
-  try{
-    const supported=await provider.supportedLanguages(controller.signal)
-    const result=await supabase.rpc('translation_worker_report_languages',{p_supported_codes:supported})
-    if(result.error&&!['PGRST202','42883'].includes(result.error.code??''))throw new Error(result.error.message)
-  }catch(error){console.warn(`[translation-worker] compatibilidad de idiomas pendiente: ${safeError(error)}`)}
-  finally{clearTimeout(timeout)}
-}
-
-async function runCycle({ config, supabase, provider, workerId }: WorkerContext) {
-  const claim = await supabase.rpc('translation_claim_ai_jobs', {
-    p_worker_id: workerId, p_limit: config.batchSize, p_lease_seconds: config.leaseSeconds,
+async function runCycle({ config, supabase, provider, workerId }: WorkerContext, supportedCodes: string[]) {
+  const claim = await supabase.rpc('translation_claim_ready_ai_jobs', {
+    p_worker_id: workerId, p_supported_codes: supportedCodes, p_limit: config.batchSize, p_lease_seconds: config.leaseSeconds,
   })
   if (claim.error) throw new Error(`No se pudo reclamar la cola: ${claim.error.message}`)
   const jobs = (claim.data ?? []) as TranslationJob[]
@@ -84,13 +83,20 @@ async function processJob(job: TranslationJob, { config, supabase, provider, wor
     if (completion.error) throw new Error(completion.error.message)
   } catch (error) {
     const message = safeError(error)
-    const retry = isRetryable(error) && job.attempt_count < job.max_attempts
+    if (isLocalProviderUnavailable(error)) {
+      const released = await supabase.rpc('translation_release_ai_job_provider_unavailable', {
+        p_job_id: job.id, p_worker_id: workerId, p_error: message,
+      })
+      if (released.error) console.error(`[translation-worker] no se pudo devolver ${job.id} a la cola: ${released.error.message}`)
+      else console.warn(`[translation-worker] ${job.id}: proveedor local no disponible; intento conservado`)
+      return
+    }
     const failed = await supabase.rpc('translation_fail_ai_job', {
-      p_job_id: job.id, p_worker_id: workerId, p_error_code: retry ? 'local_provider_unavailable' : 'translation_failed',
-      p_error: message, p_retry: retry,
+      p_job_id: job.id, p_worker_id: workerId, p_error_code: 'translation_failed',
+      p_error: message, p_retry: false,
     })
     if (failed.error) console.error(`[translation-worker] no se pudo registrar fallo de ${job.id}: ${failed.error.message}`)
-    else console.warn(`[translation-worker] ${job.id}: ${retry ? 'reintento pendiente' : 'fallido'}`)
+    else console.warn(`[translation-worker] ${job.id}: fallido`)
   }
 }
 
@@ -105,18 +111,12 @@ function loadConfig() {
     batchSize: integer('TRANSLATION_WORKER_BATCH_SIZE', 5, 1, 20),
     leaseSeconds: integer('TRANSLATION_WORKER_LEASE_SECONDS', 120, 30, 300),
     timeoutMs: integer('TRANSLATION_WORKER_TIMEOUT_MS', 60_000, 5_000, 240_000),
+    recoveryBatchSize: integer('TRANSLATION_WORKER_RECOVERY_BATCH_SIZE', 50, 1, 100),
     runOnce: process.argv.includes('--once'),
   }
 }
 function required(name: string) { const value=process.env[name]?.trim(); if (!value) throw new Error(`Falta ${name}.`); return value }
 function integer(name: string,fallback: number,min: number,max: number) { const value=Number.parseInt(process.env[name] ?? '',10); return Number.isInteger(value) ? Math.min(max,Math.max(min,value)) : fallback }
 function normalizeValue(value: unknown) { if (typeof value === 'string' && value.trim()) return value; if (Array.isArray(value) && value.length && value.every((item)=>typeof item==='string' && item.trim())) return value as string[]; throw new Error('La fuente no tiene un formato traducible.') }
-function safeError(error: unknown) {
-  return (error instanceof Error ? error.message : 'Error local de traducción')
-    .replace(/eyJ[A-Za-z0-9._-]+/g, '[credential]')
-    .replace(/https?:\/\/[^\s]+/gi, '[local-endpoint]')
-    .replace(/(api[_-]?key|authorization|token)\s*[:=]\s*\S+/gi, '$1=[credential]')
-    .slice(0, 1000)
-}
-function isRetryable(error: unknown) { const message=error instanceof Error ? `${error.name} ${error.message}` : ''; return /fetch|timeout|abort|connect|network|LibreTranslate|ECONN/i.test(message) }
+const safeError = safeWorkerError
 function wait(ms: number) { return new Promise((resolve)=>setTimeout(resolve,ms)) }
