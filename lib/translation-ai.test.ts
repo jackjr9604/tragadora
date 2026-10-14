@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { protectAiValue, restoreAndValidateAiValue } from './translation/ai-content'
 import { isLocalLibreTranslateUrl, MockLocalTranslationProvider, translateLocally } from './translation/ai-provider'
 
@@ -142,11 +142,11 @@ test('la migración guarda borradores y restringe RPC sensibles', () => {
 
 test('el motor operativo no contiene proveedores comerciales reactivables por entorno', () => {
   const provider = readFileSync('lib/translation/ai-provider.ts', 'utf8')
-  const legacy = readFileSync('lib/content-translation.ts', 'utf8')
   const worker = readFileSync('scripts/translation-worker.ts', 'utf8')
-  for (const source of [provider, legacy, worker]) {
+  for (const source of [provider, worker]) {
     assert.doesNotMatch(source, /OPENAI_API_KEY|TRANSLATION_PROVIDER|api\.openai\.com|anthropic|deepl/i)
   }
+  assert.equal(existsSync('lib/content-translation.ts'), false)
   assert.match(worker, /translation_claim_ai_jobs/)
   assert.match(worker, /translation_complete_ai_job/)
   assert.match(worker, /estimated_cost_usd:\s*0/)

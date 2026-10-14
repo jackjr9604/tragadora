@@ -11,6 +11,7 @@ import { requestIndividualAiDraft } from '@/lib/admin-translation-ai'
 import type { TranslationActionState } from '@/lib/admin-translation-action-state'
 import type { TranslationBulkResult } from '@/lib/admin-translation-bulk-state'
 import { isEligibleForBulkAction, isResourceBulkAction } from '@/lib/admin-translation-resource-policy'
+import { revalidateSiteContent } from '@/lib/admin-content-revalidation'
 
 const RPC_BY_ACTION = {
   save_draft: 'translation_save_draft',
@@ -31,7 +32,7 @@ export async function updateTranslationWorkflow(_previous: TranslationActionStat
   const access = await getCurrentAdminPermissions()
   if (!access.userId) return { ok: false, message: 'La sesión expiró. Vuelve a iniciar sesión.' }
   const admin = createAdminClient()
-  const { data: row, error: rowError } = await admin.from('translation_field_state').select('resource_type,field_name').eq('id', stateId).maybeSingle()
+  const { data: row, error: rowError } = await admin.from('translation_field_state').select('resource_type,resource_id,field_name').eq('id', stateId).maybeSingle()
   if (rowError || !row) return { ok: false, message: 'La traducción ya no existe.' }
   const resourceType = row.resource_type as TranslationResourceType
   const resource = TRANSLATION_RESOURCES[resourceType]
@@ -65,7 +66,10 @@ export async function updateTranslationWorkflow(_previous: TranslationActionStat
     return { ok: false, message: concurrent ? 'El contenido cambió en otra sesión. Recarga antes de continuar.' : result.error.message }
   }
   revalidatePath('/admin/translations')
-  if (action === 'publish' || action === 'withdraw') revalidatePath('/', 'layout')
+  if (action === 'publish' || action === 'withdraw') {
+    if (resourceType === 'site_content') revalidateSiteContent(row.resource_id)
+    else revalidatePath('/', 'layout')
+  }
   return { ok: true, message: actionMessage(action) }
 }
 
@@ -106,7 +110,10 @@ export async function updateTranslationResourceWorkflow(_previous: TranslationBu
     }
   }
   revalidatePath('/admin/translations')
-  if (intent === 'publish') revalidatePath('/', 'layout')
+  if (intent === 'publish') {
+    if (parsed.resourceType === 'site_content') revalidateSiteContent(parsed.resourceId)
+    else revalidatePath('/', 'layout')
+  }
   const succeeded = items.filter((item) => item.ok).length, failed = items.length - succeeded
   return { ok: failed === 0, requested: items.length, succeeded, failed, items, message: failed ? `${succeeded} campos completados y ${failed} con error.` : `${succeeded} campos completados correctamente.` }
 }
