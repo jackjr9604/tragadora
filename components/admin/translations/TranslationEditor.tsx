@@ -26,14 +26,15 @@ type Props = {
 export function TranslationEditor(props: Props) {
   const [result, action] = useActionState(updateTranslationWorkflow, INITIAL_TRANSLATION_ACTION_STATE)
   const draft = editorValue(props.draftValue, props.translated)
+  const editorSize = editorHeight(props.rows)
   if (!props.workflowAvailable) return <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">Aplica primero la migración del Bloque 3E.2 para habilitar el flujo editorial. El inventario continúa disponible en modo lectura.</div>
 
   return <form action={action} className="space-y-4">
     <input type="hidden" name="stateId" value={props.stateId} />
     <input type="hidden" name="lockVersion" value={props.lockVersion} />
     <div className="grid gap-4 lg:grid-cols-2">
-      <EditorBlock label={`Original · ${props.sourceLanguage.toUpperCase()}`} value={props.source ?? 'Sin texto fuente'} rows={props.rows} readOnly />
-      <label><span className="mb-2 block text-xs font-bold uppercase tracking-wide text-slate-500">Borrador · {props.targetLanguage.toUpperCase()}</span><textarea name="translation" defaultValue={draft} rows={props.rows} maxLength={props.valueKind === 'text_array' ? undefined : props.maxCharacters ?? undefined} disabled={!props.canEdit} className="w-full resize-y rounded-xl border border-slate-200 bg-white p-4 font-mono text-sm leading-6 text-slate-900 shadow-inner disabled:bg-slate-100" aria-describedby={`translation-help-${props.stateId}`} /></label>
+      <EditorBlock label={`Original · ${props.sourceLanguage.toUpperCase()}`} value={props.source ?? 'Sin texto fuente'} rows={props.rows} sizeClass={editorSize} readOnly />
+      <label className="min-w-0"><span className="mb-2 block text-xs font-bold uppercase tracking-wide text-slate-500">Borrador · {props.targetLanguage.toUpperCase()}</span><textarea name="translation" defaultValue={draft} rows={props.rows} maxLength={props.valueKind === 'text_array' ? undefined : props.maxCharacters ?? undefined} disabled={!props.canEdit} className={`w-full max-w-full resize-y overflow-y-auto rounded-xl border border-slate-200 bg-white p-4 font-mono text-sm leading-6 text-slate-900 shadow-inner disabled:bg-slate-100 ${editorSize}`} aria-describedby={`translation-help-${props.stateId}`} /></label>
     </div>
     <p id={`translation-help-${props.stateId}`} className="text-xs text-slate-500">{props.valueKind === 'text_array' ? 'Un elemento por línea.' : props.maxCharacters ? `Máximo ${props.maxCharacters.toLocaleString('es-CO')} caracteres.` : 'El borrador no sustituye el contenido publicado.'}</p>
     {props.sourceChanged && <p className="rounded-lg bg-orange-50 p-3 text-sm text-orange-900">La fuente cambió después de crear el borrador. Guárdalo nuevamente sobre la versión actual antes de revisarlo.</p>}
@@ -54,8 +55,14 @@ function ActionButton({ intent, label, secondary = false, danger = false, disabl
   return <button type="submit" name="intent" value={intent} disabled={pending || disabled} onClick={(event) => { if (confirm && !window.confirm(confirm)) event.preventDefault() }} className={`${danger ? 'border border-red-200 bg-red-50 text-red-800' : secondary ? 'admin-secondary-button' : 'admin-primary-button'} rounded-lg px-4 py-2.5 text-sm font-semibold disabled:opacity-50`}>{pending ? 'Procesando…' : label}</button>
 }
 
-function EditorBlock({ label, value, rows, readOnly }: { label: string; value: string; rows: number; readOnly?: boolean }) {
-  return <label><span className="mb-2 block text-xs font-bold uppercase tracking-wide text-slate-500">{label}</span><textarea value={value} readOnly={readOnly} rows={rows} className="w-full resize-y rounded-xl border border-slate-800 bg-slate-950 p-4 font-mono text-sm leading-6 text-slate-100" /></label>
+function EditorBlock({ label, value, rows, sizeClass, readOnly }: { label: string; value: string; rows: number; sizeClass: string; readOnly?: boolean }) {
+  return <label className="min-w-0"><span className="mb-2 block text-xs font-bold uppercase tracking-wide text-slate-500">{label}</span><textarea value={value} readOnly={readOnly} rows={rows} className={`w-full max-w-full resize-y overflow-y-auto rounded-xl border border-slate-800 bg-slate-950 p-4 font-mono text-sm leading-6 text-slate-100 ${sizeClass}`} /></label>
+}
+
+function editorHeight(rows: number) {
+  if (rows <= 4) return 'min-h-24 max-h-48'
+  if (rows <= 8) return 'min-h-44 max-h-80'
+  return 'min-h-72 max-h-[42rem]'
 }
 
 function editorValue(draft: unknown, published: string | null) {

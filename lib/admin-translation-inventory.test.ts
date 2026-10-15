@@ -51,6 +51,10 @@ test('los editores adaptan altura y presentan nombres amigables sin ocultar el i
   const editor = readFileSync('components/admin/translations/TranslationResourceEditor.tsx', 'utf8')
   assert.match(editor, /xl:sticky/)
   assert.doesNotMatch(editor, /className="sticky top-3/)
+  assert.match(readFileSync('components/admin/translations/TranslationEditor.tsx', 'utf8'), /min-h-24 max-h-48/)
+  assert.match(editor, /Técnico/)
+  assert.match(editor, /Editorial/)
+  assert.match(editor, /Web/)
 })
 
 test('acciones agrupadas excluyen protegidos, publicados y borradores activos', () => {
@@ -74,6 +78,14 @@ test('el editor unificado conserva contexto, idiomas dinámicos y actividad del 
   assert.match(editor,/props\.languages/)
   assert.match(editor,/applicable\.map/)
   assert.match(editor,/intent: 'withdraw'/)
+})
+
+test('el listado distingue métricas globales, recursos paginados e idiomas dinámicos', () => {
+  const page = readFileSync('app/admin/translations/page.tsx', 'utf8')
+  assert.match(page, /Resumen global de los filtros actuales/)
+  assert.match(page, /Recursos de esta página/)
+  assert.match(page, /idiomas destino habilitados/)
+  assert.doesNotMatch(page, /campos EN\/PT/)
 })
 
 test('las consultas del Centro a translation_jobs usan únicamente columnas del esquema versionado', () => {
