@@ -1,6 +1,7 @@
 export type WorkerRpcResult<T=unknown> = { data: T; error: { code?: string; message: string } | null }
 export type WorkerRpcClient = { rpc(name: string, params: Record<string, unknown>): PromiseLike<WorkerRpcResult> }
 export type LanguageCapabilityProvider = { supportedLanguages(signal?: AbortSignal): Promise<string[]> }
+export type WorkerHeartbeatStatus = 'ready' | 'degraded' | 'stopping'
 
 export type WorkerReadiness =
   | { ready: true; supportedCodes: string[]; recoveredJobs: number }
@@ -46,4 +47,21 @@ export function safeWorkerError(error: unknown) {
     .replace(/https?:\/\/[^\s]+/gi, '[local-endpoint]')
     .replace(/(api[_-]?key|authorization|token)\s*[:=]\s*\S+/gi, '$1=[credential]')
     .slice(0, 1000)
+}
+
+export async function reportTranslationWorkerHeartbeat(input: {
+  client: WorkerRpcClient
+  workerId: string
+  status: WorkerHeartbeatStatus
+  supportedCodes: string[]
+  startedAt: string
+  providerCheckedAt: string | null
+  lastErrorCode: string | null
+}) {
+  const result = await input.client.rpc('translation_worker_heartbeat', {
+    p_worker_id: input.workerId, p_status: input.status,
+    p_supported_languages: normalizeLanguageCodes(input.supportedCodes), p_started_at: input.startedAt,
+    p_provider_checked_at: input.providerCheckedAt, p_last_error_code: input.lastErrorCode,
+  })
+  return result.error ? { ok: false as const, error: safeWorkerError(new Error(result.error.message)) } : { ok: true as const }
 }

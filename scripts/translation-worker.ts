@@ -2,7 +2,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { loadEnvConfig } from '@next/env'
 import { randomUUID } from 'node:crypto'
 import { LibreTranslateLocalProvider, translateLocally } from '../lib/translation/ai-provider'
-import { isLocalProviderUnavailable, prepareLocalTranslationWorker, safeWorkerError } from '../lib/translation/worker-runtime'
+import { isLocalProviderUnavailable, prepareLocalTranslationWorker, reportTranslationWorkerHeartbeat, safeWorkerError, type WorkerHeartbeatStatus } from '../lib/translation/worker-runtime'
 
 type TranslationJob = {
   id: string
@@ -33,26 +33,53 @@ async function main() {
     provider: new LibreTranslateLocalProvider(config.libreTranslateUrl, config.libreTranslateApiKey),
     workerId: process.env.TRANSLATION_WORKER_ID?.trim() || `windows-${randomUUID()}`,
   }
+  const startedAt = new Date().toISOString()
   let stopping = false
   const stop = () => { stopping = true }
   process.once('SIGINT', stop)
   process.once('SIGTERM', stop)
+  let heartbeat: { status: WorkerHeartbeatStatus; supportedCodes: string[]; providerCheckedAt: string | null; lastErrorCode: string | null } | null = null
+  let lastSupportedCodes: string[] = []
+  let heartbeatSending = false
+  const sendHeartbeat = async () => {
+    if (!heartbeat || heartbeatSending) return
+    heartbeatSending = true
+    try {
+      const result = await reportTranslationWorkerHeartbeat({ client: context.supabase, workerId: context.workerId, startedAt, ...heartbeat })
+      if (!result.ok) console.warn(`[translation-worker] heartbeat no enviado: ${result.error}`)
+    } finally { heartbeatSending = false }
+  }
+  const heartbeatTimer = setInterval(() => { void sendHeartbeat() }, config.heartbeatMs)
   try {
     do {
       const readiness = await prepareLocalTranslationWorker({ client: context.supabase, provider: context.provider,
         recoveryLimit: config.recoveryBatchSize })
+      const providerCheckedAt = new Date().toISOString()
       if (!readiness.ready) {
+        const shouldReportNow = heartbeat?.status !== 'degraded' || config.runOnce
+        heartbeat = { status: 'degraded', supportedCodes: lastSupportedCodes, providerCheckedAt,
+          lastErrorCode: isLocalProviderUnavailable(new Error(readiness.reason)) ? 'local_provider_unavailable' : 'worker_readiness_failed' }
+        if (shouldReportNow) await sendHeartbeat()
         console.warn(`[translation-worker] LibreTranslate no disponible; la cola permanece pendiente: ${readiness.reason}`)
         if (config.runOnce || stopping) break
         await wait(config.pollMs)
         continue
       }
+      const shouldReportNow = heartbeat?.status !== 'ready' || config.runOnce
+      lastSupportedCodes = readiness.supportedCodes
+      heartbeat = { status: 'ready', supportedCodes: readiness.supportedCodes, providerCheckedAt, lastErrorCode: null }
+      if (shouldReportNow) await sendHeartbeat()
       if (readiness.recoveredJobs) console.log(`[translation-worker] recuperados ${readiness.recoveredJobs} trabajo(s) locales elegibles`)
       const processed = await runCycle(context, readiness.supportedCodes)
       if (config.runOnce || stopping) break
       if (!processed) await wait(config.pollMs)
     } while (!stopping)
   } finally {
+    clearInterval(heartbeatTimer)
+    if (heartbeat) {
+      heartbeat = { ...heartbeat, status: 'stopping' }
+      await sendHeartbeat()
+    }
     process.off('SIGINT', stop)
     process.off('SIGTERM', stop)
   }
@@ -112,6 +139,7 @@ function loadConfig() {
     leaseSeconds: integer('TRANSLATION_WORKER_LEASE_SECONDS', 120, 30, 300),
     timeoutMs: integer('TRANSLATION_WORKER_TIMEOUT_MS', 60_000, 5_000, 240_000),
     recoveryBatchSize: integer('TRANSLATION_WORKER_RECOVERY_BATCH_SIZE', 50, 1, 100),
+    heartbeatMs: integer('TRANSLATION_WORKER_HEARTBEAT_MS', 45_000, 15_000, 60_000),
     runOnce: process.argv.includes('--once'),
   }
 }

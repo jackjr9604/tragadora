@@ -51,6 +51,7 @@ TRANSLATION_WORKER_BATCH_SIZE=5
 TRANSLATION_WORKER_LEASE_SECONDS=120
 TRANSLATION_WORKER_TIMEOUT_MS=60000
 TRANSLATION_WORKER_RECOVERY_BATCH_SIZE=50
+TRANSLATION_WORKER_HEARTBEAT_MS=45000
 ```
 
 La service-role nunca debe copiarse al navegador, Vercel público, logs ni repositorio. El worker no imprime textos traducidos ni credenciales.
@@ -72,6 +73,8 @@ npm run translation:worker -- --once
 Antes de reclamar trabajos, el worker consulta `/languages`. Si LibreTranslate está apagado, no reclama nada y los jobs permanecen pendientes sin consumir intentos. Si el proveedor cae después del chequeo, el lease se libera y el intento se restaura.
 
 Al reconectarse, el worker recupera por lotes únicamente jobs `failed` con `error_code=local_provider_unavailable` cuya fuente, revisión y `lock_version` siguen vigentes. Se excluyen traducciones protegidas, borradores activos y publicaciones. La operación es idempotente y no crea jobs duplicados. `TRANSLATION_WORKER_RECOVERY_BATCH_SIZE` controla el lote (1–100) y no modifica los límites diarios existentes.
+
+El worker informa su estado cada 45 segundos por defecto (`TRANSLATION_WORKER_HEARTBEAT_MS`, permitido entre 15000 y 60000). El heartbeat solo registra estado, idiomas compatibles y marcas de tiempo; nunca guarda el identificador en la interfaz, la URL local, credenciales ni contenido traducido. Antes de reclamar trabajos se comprueba LibreTranslate. Si no responde, se informa estado degradado y la cola permanece intacta.
 
 ## Orden de activación
 

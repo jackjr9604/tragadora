@@ -81,7 +81,7 @@ test('las consultas del Centro a translation_jobs usan únicamente columnas del 
   const table = sql.match(/create table if not exists public\.translation_jobs\s*\(([\s\S]*?)\n\);/i)
   assert.ok(table, 'No se encontró la definición versionada de translation_jobs')
   const columns = new Set(Array.from(table[1].matchAll(/^\s{2}([a-z_][a-z0-9_]*)\s+/gim), (match) => match[1]))
-  for (const path of ['lib/admin-translation-inventory.ts', 'lib/admin-content-center.ts']) {
+  for (const path of ['lib/admin-translation-inventory.ts']) {
     const source = readFileSync(path, 'utf8')
     const queries = Array.from(source.matchAll(/from\('translation_jobs'\)[\s\S]*?\.select\('([^']+)'\)/g), (match) => match[1])
     assert.ok(queries.length > 0, `${path} debe conservar una consulta explícita a translation_jobs`)
@@ -89,6 +89,9 @@ test('las consultas del Centro a translation_jobs usan únicamente columnas del 
       assert.ok(columns.has(column), `${path} consulta la columna inexistente translation_jobs.${column}`)
     }
   }
+  const center = readFileSync('lib/admin-content-center.ts', 'utf8')
+  assert.match(center, /rpc\('translation_admin_jobs_inventory'/)
+  assert.doesNotMatch(center, /from\('translation_jobs'\)/)
 })
 
 test('los editores especializados enlazan identidades traducibles existentes y conservan retorno', () => {

@@ -4,6 +4,8 @@ import type { PermissionKey } from '@/lib/admin-permissions'
 import { allowedTranslationResources, TRANSLATION_RESOURCES, type TranslationResourceType } from '@/lib/admin-translation-inventory-policy'
 import type { TranslationResourceRow } from '@/lib/admin-translation-inventory'
 import type { ContentCenterBucket, ContentCenterSummary } from '@/lib/admin-content-center-policy'
+import type { TranslationJobFilters } from '@/lib/admin-translation-jobs-policy'
+import { toRpcDateRange } from '@/lib/admin-translation-jobs-policy'
 
 export type ContentCenterResourceRow = TranslationResourceRow & {
   draft_count: number; in_review_count: number; approved_count: number; error_count: number
@@ -34,14 +36,47 @@ export async function getContentCenterData(filters: { page: number; pageSize: nu
   return { rows, total, pages: Math.ceil(total / filters.pageSize), languages: languagesResult.data ?? [], summary, rpcAvailable: true }
 }
 
-export async function getRecentTranslationJobs(permissions: ReadonlySet<PermissionKey>, limit = 25) {
+export type TranslationJobRow = {
+  id: string; resource_type: TranslationResourceType; resource_id: string; field_name: string
+  source_language: string; target_language: string; status: string; requested_provider: string | null
+  provider_used: string | null; priority: number; attempt_count: number; max_attempts: number
+  next_attempt_at: string | null; lease_expires_at: string | null; started_at: string | null
+  completed_at: string | null; error_code: string | null; input_characters: number | null
+  output_characters: number | null; estimated_cost_usd: number | null; created_at: string
+  updated_at: string; total_count: number
+}
+
+export type TranslationJobSummary = { total: number; queued: number; running: number; retry_wait: number; succeeded: number; failed: number; cancelled: number; recoverable: number }
+export type TranslationWorkerStatus = {
+  availability: 'available' | 'degraded' | 'offline' | 'never_connected'; worker_status: 'ready' | 'degraded' | 'stopping' | null
+  provider: string | null; supported_languages: string[] | null; started_at: string | null; provider_checked_at: string | null
+  last_seen_at: string | null; last_error_code: string | null; active_workers: number
+}
+
+export async function getTranslationJobsMonitor(filters: TranslationJobFilters, permissions: ReadonlySet<PermissionKey>) {
   const allowed = allowedTranslationResources(permissions)
-  if (!allowed.length) return []
-  const result = await createAdminClient().from('translation_jobs')
-    .select('id,resource_type,resource_id,field_name,source_language,target_language,status,attempt_count,max_attempts,next_attempt_at,created_at,completed_at,error_code')
-    .in('resource_type', allowed).order('created_at', { ascending: false }).limit(Math.min(Math.max(limit, 1), 100))
-  if (result.error) throw new Error(result.error.message)
-  return result.data ?? []
+  if (!allowed.length) return { rows: [] as TranslationJobRow[], total: 0, pages: 0, summary: emptyJobSummary(), worker: emptyWorkerStatus() }
+  const db = createAdminClient(), dates = toRpcDateRange(filters)
+  const common = {
+    p_allowed_resource_types: allowed, p_status: filters.status ?? null, p_resource_type: filters.resourceType && allowed.includes(filters.resourceType) ? filters.resourceType : null,
+    p_resource_id: filters.resourceId ?? null, p_source_language: filters.sourceLanguage ?? null, p_target_language: filters.targetLanguage ?? null,
+    p_provider: filters.provider ?? null, p_created_from: dates.from, p_created_to: dates.to, p_error_code: filters.errorCode ?? null,
+  }
+  const [inventoryResult, summaryResult, workerResult] = await Promise.all([
+    db.rpc('translation_admin_jobs_inventory', { ...common, p_sort: filters.sort, p_page: filters.page, p_page_size: filters.pageSize }),
+    db.rpc('translation_admin_jobs_summary', common),
+    db.rpc('translation_admin_worker_status', { p_stale_after_seconds: 120 }),
+  ])
+  if (inventoryResult.error) throw new Error(inventoryResult.error.message)
+  if (summaryResult.error) throw new Error(summaryResult.error.message)
+  if (workerResult.error) throw new Error(workerResult.error.message)
+  const rows = (inventoryResult.data ?? []) as unknown as TranslationJobRow[]
+  const total = Number(rows[0]?.total_count ?? 0)
+  return {
+    rows, total, pages: Math.ceil(total / filters.pageSize),
+    summary: numericRow<TranslationJobSummary>(summaryResult.data, emptyJobSummary()),
+    worker: numericRow<TranslationWorkerStatus>(workerResult.data, emptyWorkerStatus(), ['active_workers']),
+  }
 }
 
 export function resourceEditorHref(row: Pick<ContentCenterResourceRow, 'resource_type' | 'resource_id'>) {
@@ -51,3 +86,10 @@ export function resourceEditorHref(row: Pick<ContentCenterResourceRow, 'resource
 export function resourceModuleLabel(type: string) { return TRANSLATION_RESOURCES[type as TranslationResourceType]?.label ?? type }
 
 function emptySummary(): ContentCenterSummary { return { resources: 0, fields: 0, pending: 0, draft: 0, in_review: 0, approved: 0, published: 0, partial: 0, stale: 0, error: 0, queued_jobs: 0, running_jobs: 0, retry_jobs: 0, failed_jobs: 0 } }
+function emptyJobSummary(): TranslationJobSummary { return { total: 0, queued: 0, running: 0, retry_wait: 0, succeeded: 0, failed: 0, cancelled: 0, recoverable: 0 } }
+function emptyWorkerStatus(): TranslationWorkerStatus { return { availability: 'never_connected', worker_status: null, provider: null, supported_languages: [], started_at: null, provider_checked_at: null, last_seen_at: null, last_error_code: null, active_workers: 0 } }
+function numericRow<T extends object>(data: unknown, fallback: T, numericKeys: string[] = Object.keys(fallback)) {
+  const row = (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null
+  if (!row) return fallback
+  return { ...fallback, ...row, ...Object.fromEntries(numericKeys.filter((key) => key in row).map((key) => [key, Number(row[key])])) } as T
+}
