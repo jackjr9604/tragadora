@@ -157,7 +157,7 @@ function sourceField(state: TranslationStateRow, adapter: Adapter) {
 
 async function readOrigin(state: TranslationStateRow) {
   const config = TRANSLATION_RESOURCES[state.resource_type]
-  if (state.resource_type === 'site_content') { const page = state.resource_id.split('.')[0]; return { label: state.resource_id, href: page ? `/admin/content/${page}` : config.path } }
+  if (state.resource_type === 'site_content') { const page = state.resource_id.split('.')[0]; return { label: state.resource_id, href: page ? `/admin/content-center/content/${page}` : '/admin/content-center/content' } }
   const db = createAdminClient()
   if (state.resource_type === 'challenge_phase_translation') { const { data } = await db.from('challenge_phases').select('challenge_id,phase_number').eq('id', state.resource_id).maybeSingle(); return { label: data ? `Fase ${data.phase_number}` : `Fase · ${state.resource_id.slice(0, 8)}`, href: data ? `/admin/challenges/${data.challenge_id}` : config.path } }
   if (state.resource_type === 'challenge_variant_translation') { const { data } = await db.from('challenge_variants').select('challenge_id,name').eq('id', state.resource_id).maybeSingle(); return { label: data?.name ?? `Variante · ${state.resource_id.slice(0, 8)}`, href: data ? `/admin/challenges/${data.challenge_id}` : config.path } }

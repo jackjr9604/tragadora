@@ -26,6 +26,11 @@ export type PermissionKey = {
 }[number]
 export type AdminRole = 'super_admin' | 'admin' | 'editor' | 'user'
 
+export const CONTENT_CENTER_VIEW_PERMISSIONS = [
+  'content.view', 'platforms.view', 'offers.view', 'challenges.view',
+  'tools.view', 'communities.view', 'blog.view', 'giveaways.view',
+] as const satisfies readonly PermissionKey[]
+
 export const PERMISSION_KEYS = ADMIN_MODULES.flatMap((module) => module.actions.map((action) => `${module.key}.${action}`)) as PermissionKey[]
 
 export function permissionForAdminPath(pathname: string): PermissionKey {
@@ -76,4 +81,16 @@ export function permissionForAdminPath(pathname: string): PermissionKey {
   if (/^\/admin\/docs\/[^/]+\/edit$/.test(path)) return 'docs.update'
   if (path.startsWith('/admin/docs')) return 'docs.view'
   return 'dashboard.view'
+}
+
+export function permissionsForAdminPath(pathname: string): readonly PermissionKey[] {
+  const path = pathname.replace(/\/$/, '') || '/'
+  if (path === '/admin/content-center/content' || path.startsWith('/admin/content-center/content/')) return ['content.view']
+  if (path === '/admin/content-center/languages' || path.startsWith('/admin/content-center/languages/')) return ['content.view']
+  if (path === '/admin/content-center' || path.startsWith('/admin/content-center/')) return CONTENT_CENTER_VIEW_PERMISSIONS
+  return [permissionForAdminPath(pathname)]
+}
+
+export function canAccessContentCenter(permissions: ReadonlySet<PermissionKey>) {
+  return CONTENT_CENTER_VIEW_PERMISSIONS.some((permission) => permissions.has(permission))
 }

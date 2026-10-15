@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
 import { bucketCount, normalizeContentCenterParams, type ContentCenterSummary } from './admin-content-center-policy'
+import { safeContentCenterReturn } from './admin-content-center-navigation'
+import { CONTENT_CENTER_VIEW_PERMISSIONS, permissionsForAdminPath } from './admin-permissions'
 
 test('normaliza vistas, bandejas y filtros del Centro', () => {
   assert.deepEqual(normalizeContentCenterParams({ view: 'translations', bucket: 'in_review', page: '2', pageSize: '50', module: 'blog_post_translation', language: 'pt', q: ' artículo ' }), {
@@ -25,4 +27,30 @@ test('la migración restringe los read models a service_role y cubre todas las b
   for (const bucket of ['pending','draft','in_review','approved','published','partial','stale','error']) assert.match(sql, new RegExp(`p_bucket='${bucket}'`))
   assert.match(sql, /count\(\*\) over\(\)/i)
   assert.match(sql, /coalesce\(sum\(g\.total\),0\)::bigint/i)
+})
+
+test('el Centro usa rutas canónicas y conserva compatibilidad sin entradas laterales duplicadas', () => {
+  const layout = readFileSync('app/admin/layout.tsx', 'utf8')
+  const navigation = readFileSync('components/admin/AdminShellNavigation.tsx', 'utf8')
+  const editor = readFileSync('components/admin/content/PageContentEditor.tsx', 'utf8')
+  const proxy = readFileSync('proxy.ts', 'utf8')
+  assert.match(layout, /Centro de contenido/)
+  assert.doesNotMatch(layout, /label: 'Traducciones'/)
+  assert.doesNotMatch(navigation, /'\/admin\/translations'/)
+  assert.match(editor, /\/admin\/content-center\/translations/)
+  assert.match(proxy, /target\.pathname = '\/admin\/content-center\/translations'/)
+})
+
+test('el acceso al Centro admite permisos traducibles pero restringe Contenido e Idiomas', () => {
+  assert.ok(CONTENT_CENTER_VIEW_PERMISSIONS.includes('platforms.view'))
+  assert.ok(CONTENT_CENTER_VIEW_PERMISSIONS.includes('blog.view'))
+  assert.deepEqual(permissionsForAdminPath('/admin/content-center/content/home'), ['content.view'])
+  assert.deepEqual(permissionsForAdminPath('/admin/content-center/languages'), ['content.view'])
+  assert.equal(permissionsForAdminPath('/admin/content-center/translations').length, CONTENT_CENTER_VIEW_PERMISSIONS.length)
+})
+
+test('returnTo solo acepta rutas internas del Centro', () => {
+  assert.equal(safeContentCenterReturn(encodeURIComponent('/admin/content-center/review?q=blog')), '/admin/content-center/review?q=blog')
+  assert.equal(safeContentCenterReturn(encodeURIComponent('/admin/users')), '/admin/content-center/translations')
+  assert.equal(safeContentCenterReturn(encodeURIComponent('//evil.test')), '/admin/content-center/translations')
 })

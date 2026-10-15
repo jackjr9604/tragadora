@@ -7,17 +7,21 @@ import { AdminUserMenu } from '@/components/admin/AdminUserMenu'
 import { TradagoraBrand } from '@/components/shared/TradagoraBrand'
 import { getBranding } from '@/lib/branding'
 import type { BrandingAsset } from '@/lib/branding-config'
+import { canAccessContentCenter } from '@/lib/admin-permissions'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const access = await getCurrentAdminPermissions()
   if (!access.userId) redirect('/login')
   const links = availableAdminLinks(access)
-  const navigationLinks = links.flatMap((link) => {
+  const moduleLinks = links.flatMap((link) => {
     if (link.href === '/admin/platforms') return [link, { label: 'Brokers', href: '/admin/brokers' }, { label: 'Exchanges', href: '/admin/exchanges' }]
     if (link.href === '/admin/tools') return [link, { label: 'Calculadoras', href: '/admin/calculators' }]
-    if (link.href === '/admin/content') return [{ label: 'Centro de contenido', href: '/admin/content-center' }, link, { label: 'Traducciones', href: '/admin/translations' }]
+    if (link.href === '/admin/content') return []
     return [link]
   })
+  const navigationLinks = canAccessContentCenter(access.permissions)
+    ? [...moduleLinks.slice(0, 1), { label: 'Centro de contenido', href: '/admin/content-center' }, ...moduleLinks.slice(1)]
+    : moduleLinks
   if (!links.length) redirect('/')
   const branding = await getBranding()
 

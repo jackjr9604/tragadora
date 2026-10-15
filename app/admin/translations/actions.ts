@@ -44,7 +44,7 @@ export async function updateTranslationWorkflow(_previous: TranslationActionStat
     if (detail.state.is_protected) return { ok: false, message: 'La traducción está protegida y no puede sobrescribirse automáticamente.' }
     try {
       await requestIndividualAiDraft({ stateId, expectedLockVersion, sourceValue: detail.sourceValue })
-      revalidatePath('/admin/translations')
+      revalidateTranslationAdmin()
       return { ok: true, message: 'Trabajo en cola. El worker local creará un borrador cuando esté disponible.' }
     } catch (error) {
       return { ok: false, message: error instanceof Error ? error.message : 'No se pudo generar el borrador.' }
@@ -65,7 +65,7 @@ export async function updateTranslationWorkflow(_previous: TranslationActionStat
     const concurrent = result.error.code === '40001' || /cambió|anterior|recargue/i.test(result.error.message)
     return { ok: false, message: concurrent ? 'El contenido cambió en otra sesión. Recarga antes de continuar.' : result.error.message }
   }
-  revalidatePath('/admin/translations')
+  revalidateTranslationAdmin()
   if (action === 'publish' || action === 'withdraw') {
     if (resourceType === 'site_content') revalidateSiteContent(row.resource_id)
     else revalidatePath('/', 'layout')
@@ -109,7 +109,7 @@ export async function updateTranslationResourceWorkflow(_previous: TranslationBu
       items.push({ stateId: field.state.id, fieldName: field.state.field_name, language: field.state.target_language, ok: false, message: error instanceof Error ? error.message : 'Error desconocido' })
     }
   }
-  revalidatePath('/admin/translations')
+  revalidateTranslationAdmin()
   if (intent === 'publish') {
     if (parsed.resourceType === 'site_content') revalidateSiteContent(parsed.resourceId)
     else revalidatePath('/', 'layout')
@@ -133,4 +133,13 @@ function bulkSuccessMessage(action: string) {
   if (action === 'submit_review') return 'En revisión'
   if (action === 'approve') return 'Aprobada'
   return 'Publicada'
+}
+
+function revalidateTranslationAdmin() {
+  revalidatePath('/admin/translations')
+  revalidatePath('/admin/content-center')
+  revalidatePath('/admin/content-center/translations')
+  revalidatePath('/admin/content-center/review')
+  revalidatePath('/admin/content-center/publication')
+  revalidatePath('/admin/content-center/jobs')
 }

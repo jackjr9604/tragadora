@@ -32,7 +32,7 @@ export async function manageLanguage(_previous:LanguageActionState,formData:Form
     else return fail('Operación desconocida.')
   }
   if(result.error)return fail(friendly(result.error.message))
-  revalidatePath('/admin/content-center');revalidatePath('/admin/content');revalidatePath('/admin/translations')
+  revalidatePath('/admin/content-center');revalidatePath('/admin/content-center/languages');revalidatePath('/admin/content');revalidatePath('/admin/translations')
   revalidateTag('public-languages','max');revalidateTag('public-site-content','max')
   return {ok:true,message:intent==='create'?'Idioma registrado como borrador.':intent==='delete'?'Idioma eliminado.':'Idioma actualizado correctamente.'}
 }

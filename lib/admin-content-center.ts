@@ -2,7 +2,7 @@ import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { PermissionKey } from '@/lib/admin-permissions'
 import { allowedTranslationResources, TRANSLATION_RESOURCES, type TranslationResourceType } from '@/lib/admin-translation-inventory-policy'
-import { makeResourceKey, type TranslationResourceRow } from '@/lib/admin-translation-inventory'
+import type { TranslationResourceRow } from '@/lib/admin-translation-inventory'
 import type { ContentCenterBucket, ContentCenterSummary } from '@/lib/admin-content-center-policy'
 
 export type ContentCenterResourceRow = TranslationResourceRow & {
@@ -45,7 +45,7 @@ export async function getRecentTranslationJobs(permissions: ReadonlySet<Permissi
 }
 
 export function resourceEditorHref(row: Pick<ContentCenterResourceRow, 'resource_type' | 'resource_id'>) {
-  return `/admin/translations?selected=${encodeURIComponent(makeResourceKey(row.resource_type, row.resource_id))}#editor`
+  return `/admin/content-center/translations/${row.resource_type}/${encodeURIComponent(row.resource_id)}`
 }
 
 export function resourceModuleLabel(type: string) { return TRANSLATION_RESOURCES[type as TranslationResourceType]?.label ?? type }

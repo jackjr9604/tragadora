@@ -12,4 +12,8 @@ export function revalidateSiteContent(resourceId?: string) {
   revalidatePath('/admin/content')
   revalidatePath('/admin/translations')
   revalidatePath('/admin/content-center')
+  revalidatePath('/admin/content-center/content')
+  revalidatePath('/admin/content-center/translations')
+  revalidatePath('/admin/content-center/review')
+  revalidatePath('/admin/content-center/publication')
 }

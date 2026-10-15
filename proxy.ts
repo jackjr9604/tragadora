@@ -1,9 +1,14 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { permissionForAdminPath } from '@/lib/admin-permissions'
+import { permissionsForAdminPath } from '@/lib/admin-permissions'
 
 export async function proxy(request: NextRequest) {
   if (request.nextUrl.pathname === '/admin/denied') return NextResponse.next()
+  if (request.nextUrl.pathname === '/admin/translations') {
+    const target = request.nextUrl.clone()
+    target.pathname = '/admin/content-center/translations'
+    return NextResponse.redirect(target)
+  }
   let response = NextResponse.next({ request })
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -25,9 +30,13 @@ export async function proxy(request: NextRequest) {
   if (error || !profile) return NextResponse.redirect(new URL('/admin/denied', request.url))
   if (profile.role === 'super_admin') return response
   if (request.nextUrl.pathname.startsWith('/admin/users')) return NextResponse.redirect(new URL('/admin/denied', request.url))
-  const key = permissionForAdminPath(request.nextUrl.pathname)
-  const permission = await supabase.rpc('has_admin_permission', { permission_key: key })
-  if (permission.error || permission.data !== true) return NextResponse.redirect(new URL('/admin/denied', request.url))
+  const keys = permissionsForAdminPath(request.nextUrl.pathname)
+  let allowed = false
+  for (const key of keys) {
+    const permission = await supabase.rpc('has_admin_permission', { permission_key: key })
+    if (!permission.error && permission.data === true) { allowed = true; break }
+  }
+  if (!allowed) return NextResponse.redirect(new URL('/admin/denied', request.url))
   return response
 }
 

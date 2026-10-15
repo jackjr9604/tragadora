@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
 
 export default function LanguagesPage() {
-  redirect('/admin/content-center?view=languages')
+  redirect('/admin/content-center/languages')
 }

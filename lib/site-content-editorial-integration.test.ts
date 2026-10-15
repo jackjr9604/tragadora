@@ -6,7 +6,7 @@ test('el CMS edita solo fuente/global y enlaza el workflow común',()=>{
   const editor=readFileSync('components/admin/content/PageContentEditor.tsx','utf8')
   const action=readFileSync('app/admin/content/[page]/actions.ts','utf8')
   assert.match(editor,/savePageSourceContent/)
-  assert.match(editor,/selected=site_content:/)
+  assert.match(editor,/content-center\/translations\/site_content/)
   assert.doesNotMatch(editor,/api\/admin\/(?:content\/translate|translations)/)
   assert.doesNotMatch(editor,/overwriteTranslations|translateGroups|applyTranslationBatch/)
   assert.match(action,/eq\('is_default', true\)/)
