@@ -54,3 +54,24 @@ test('returnTo solo acepta rutas internas del Centro', () => {
   assert.equal(safeContentCenterReturn(encodeURIComponent('/admin/users')), '/admin/content-center/translations')
   assert.equal(safeContentCenterReturn(encodeURIComponent('//evil.test')), '/admin/content-center/translations')
 })
+
+test('la ruta canónica de traducciones conserva las ocho bandejas editoriales', () => {
+  const page = readFileSync('app/admin/content-center/translations/page.tsx', 'utf8')
+  const buckets = readFileSync('components/admin/content/ContentCenterBucketView.tsx', 'utf8')
+  assert.match(page, /ContentCenterBucketView/)
+  assert.match(page, /showEditorialBuckets/)
+  assert.match(page, /if \(bucket\)/)
+  assert.match(buckets, /CONTENT_CENTER_BUCKETS\.map/)
+  assert.match(buckets, /name="bucket"/)
+  assert.match(buckets, /returnTo=\$\{encodeURIComponent\(returnTo\)\}/)
+  assert.match(buckets, /estados editoriales/)
+  assert.match(buckets, /\/admin\/content-center\/jobs/)
+})
+
+test('la vista general conserva filtros detallados además de las bandejas', () => {
+  const inventory = readFileSync('app/admin/translations/page.tsx', 'utf8')
+  assert.match(inventory, /ContentCenterBucketTabs/)
+  assert.match(inventory, /name="status"/)
+  assert.match(inventory, /name="protection"/)
+  assert.match(inventory, /name="sort"/)
+})

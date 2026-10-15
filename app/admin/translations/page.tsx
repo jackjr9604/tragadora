@@ -4,16 +4,20 @@ import { getCurrentAdminPermissions } from '@/lib/admin-permissions-server'
 import { getTranslationResourceDetail, getTranslationResourceInventory, makeResourceKey, normalizeInventoryFilters, TRANSLATION_RESOURCES, type TranslationResourceRow, type TranslationStatus } from '@/lib/admin-translation-inventory'
 import { TranslationResourceEditor } from '@/components/admin/translations/TranslationResourceEditor'
 import { publicAiEngineStatus } from '@/lib/admin-translation-ai'
+import { getContentCenterData } from '@/lib/admin-content-center'
+import { normalizeContentCenterParams } from '@/lib/admin-content-center-policy'
+import { ContentCenterBucketTabs } from '@/components/admin/content/ContentCenterBucketView'
 
 type SearchParams = Record<string, string | string[] | undefined>
 const STATUS: Record<TranslationStatus, string> = { missing: 'Pendiente', queued: 'En cola', machine_translated: 'Automática', imported_unreviewed: 'Importada', reviewed: 'Revisada', stale: 'Desactualizada', error: 'Error' }
 
-export default async function TranslationsPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
+export default async function TranslationsPage({ searchParams, showEditorialBuckets = false }: { searchParams: Promise<SearchParams>; showEditorialBuckets?: boolean }) {
   const raw = await searchParams, filters = normalizeInventoryFilters(raw), access = await getCurrentAdminPermissions()
-  const [inventory, detail] = await Promise.all([getTranslationResourceInventory(filters, access.permissions), getTranslationResourceDetail(filters.selected, access.permissions)])
+  const [inventory, detail, center] = await Promise.all([getTranslationResourceInventory(filters, access.permissions), getTranslationResourceDetail(filters.selected, access.permissions), showEditorialBuckets ? getContentCenterData(normalizeContentCenterParams(raw), access.permissions) : null])
   const query = Object.fromEntries(Object.entries(raw).flatMap(([key, value]) => typeof value === 'string' ? [[key, value]] : []))
 
   return <section className="mt-6">
+    {center && <><ContentCenterBucketTabs summary={center.summary} query={query} /><p className="mt-3 text-xs text-slate-500">Las bandejas superiores agrupan recursos por estado editorial. Los filtros detallados de estado, protección y orden permanecen disponibles en esta vista general.</p></>}
     <header className="mb-7 flex flex-col justify-between gap-4 lg:flex-row lg:items-end"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-amber-700">Contenido multilingüe</p><h1 className="mt-2 text-3xl font-bold">Traducciones por recurso</h1><p className="mt-2 max-w-3xl text-sm text-slate-600">Administra todos los campos EN/PT de una publicación o entidad en una sola pantalla, conservando revisión, protección y publicación por campo.</p></div><div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"><strong>{inventory.total.toLocaleString('es-CO')}</strong> recursos encontrados</div></header>
 
     {!inventory.rpcAvailable && <div className="mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-5 text-sm text-amber-950"><strong>Falta aplicar la migración local 202610130002.</strong> El inventario agrupado permanece deshabilitado hasta instalar su RPC de lectura.</div>}
