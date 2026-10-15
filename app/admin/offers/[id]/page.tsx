@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useParams, useRouter } from 'next/navigation'
 import { OfferPresentationFields, type OfferPresentation } from '@/components/admin/OfferPresentationFields'
+import { TranslationWorkflowLink } from '@/components/admin/translations/TranslationWorkflowLink'
 
 type Platform = {
   id: string
@@ -245,13 +246,10 @@ export default function EditOfferPage() {
   return (
     <main className="p-8">
       <div className="mx-auto max-w-3xl">
-        <h1 className="mb-2 text-3xl font-bold">
-          Editar oferta
-        </h1>
-
-        <p className="mb-8 text-slate-500">
-          Modifica la información de la promoción.
-        </p>
+        <header className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+          <div><h1 className="text-3xl font-bold">Editar oferta</h1><p className="mt-2 text-slate-500">Modifica la información de la promoción.</p></div>
+          <TranslationWorkflowLink resourceType="offer_translation" resourceId={id} returnTo={`/admin/offers/${id}`} />
+        </header>
 
         <form
           onSubmit={handleSubmit}

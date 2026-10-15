@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { BrokerForm, type BrokerFormValue } from '@/components/admin/BrokerForm'
 import { createClient } from '@/lib/supabase/server'
+import { TranslationWorkflowLink } from '@/components/admin/translations/TranslationWorkflowLink'
 
 type MediaRelation = { id: string; file_name: string; file_url: string; alt_text: string | null }
 function first<T>(value: T | T[] | null): T | null { return Array.isArray(value) ? value[0] ?? null : value }
@@ -40,5 +41,5 @@ export default async function EditBrokerPage({ params }: { params: Promise<{ id:
     markets: (markets.data ?? []).map((row) => row.market),
     tradingPlatformIds: (platformCatalogs.data ?? []).map((row) => row.trading_platform_id),
   }
-  return <main className="min-h-screen bg-slate-100 p-4 sm:p-8"><div className="mx-auto max-w-4xl"><div className="mb-8"><h1 className="text-3xl font-bold">Editar broker</h1><p className="mt-1 text-slate-500">Actualiza la ficha pública de {platform.data.name}.</p></div><BrokerForm initial={initial} countries={countries.data ?? []} tradingPlatforms={tradingPlatforms.data ?? []} /></div></main>
+  return <main className="min-h-screen bg-slate-100 p-4 sm:p-8"><div className="mx-auto max-w-4xl"><header className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-start"><div><h1 className="text-3xl font-bold">Editar broker</h1><p className="mt-1 text-slate-500">Actualiza la ficha pública de {platform.data.name}.</p></div><div className="flex flex-wrap gap-2"><TranslationWorkflowLink resourceType="platform_translation" resourceId={id} label="Contenido general" returnTo={`/admin/brokers/${id}/edit`}/><TranslationWorkflowLink resourceType="broker_detail_translation" resourceId={id} label="Datos especializados" returnTo={`/admin/brokers/${id}/edit`}/></div></header><BrokerForm initial={initial} countries={countries.data ?? []} tradingPlatforms={tradingPlatforms.data ?? []} /></div></main>
 }

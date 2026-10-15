@@ -110,7 +110,7 @@ export async function updateTranslationResourceWorkflow(_previous: TranslationBu
     }
   }
   revalidateTranslationAdmin()
-  if (intent === 'publish') {
+  if (intent === 'publish' || intent === 'withdraw') {
     if (parsed.resourceType === 'site_content') revalidateSiteContent(parsed.resourceId)
     else revalidatePath('/', 'layout')
   }
@@ -132,7 +132,8 @@ function bulkSuccessMessage(action: string) {
   if (action === 'generate_pending' || action === 'regenerate_stale') return 'Trabajo en cola'
   if (action === 'submit_review') return 'En revisión'
   if (action === 'approve') return 'Aprobada'
-  return 'Publicada'
+  if (action === 'publish') return 'Publicada'
+  return 'Publicación retirada'
 }
 
 function revalidateTranslationAdmin() {

@@ -89,19 +89,34 @@ export async function getTranslationResourceDetail(resourceKey: string | undefin
   const sourceFields = [...new Set(states.map((state) => sourceField(state, adapter)))]
   const translatedFields = [...new Set(states.map((state) => adapter.translationField ?? state.field_name))]
   const targetLanguages = [...new Set(states.map((state) => state.target_language))]
-  const [sourceRow, targetRows, fields, origin] = await Promise.all([
+  const [sourceRow, targetRows, fields, origin, languagesResult] = await Promise.all([
     readResourceRow(adapter.sourceTable, adapter.sourceId, parsed.resourceId, sourceFields, sourceLanguage),
     Promise.all(targetLanguages.map(async (language) => [language, await readResourceRow(adapter.translationTable, adapter.translationId, parsed.resourceId, translatedFields, language)] as const)),
     db.from('translation_resource_fields').select('field_name,value_kind,max_characters').eq('resource_type', parsed.resourceType), readOrigin(states[0]),
+    db.from('languages').select('code,native_name').eq('is_active', true).order('sort_order'),
   ])
   if (fields.error) throw new Error(fields.error.message)
+  if (languagesResult.error) throw new Error(languagesResult.error.message)
   const targetByLanguage = new Map(targetRows), fieldConfig = new Map((fields.data ?? []).map((field) => [field.field_name, field]))
   const details: TranslationFieldDetail[] = states.map((state) => {
     const config = fieldConfig.get(state.field_name), sourceValue = sourceRow?.[sourceField(state, adapter)] ?? null
     const translatedValue = targetByLanguage.get(state.target_language)?.[adapter.translationField ?? state.field_name] ?? null
     return { state, sourceValue, translatedValue, source: displayValue(sourceValue), translated: displayValue(translatedValue), valueKind: config?.value_kind ?? 'text', maxCharacters: config?.max_characters ?? null }
   })
-  return { resourceType: parsed.resourceType, resourceId: parsed.resourceId, origin, fields: details, workflowAvailable, canEdit: permissions.has(TRANSLATION_RESOURCES[parsed.resourceType].updatePermission), summary: summarizeResourceStates(states) }
+  const availableTargets = new Set(states.map((state) => state.target_language))
+  const languages = (languagesResult.data ?? []).filter((language) => availableTargets.has(language.code))
+  return { resourceType: parsed.resourceType, resourceId: parsed.resourceId, origin, fields: details, languages, workflowAvailable, canEdit: permissions.has(TRANSLATION_RESOURCES[parsed.resourceType].updatePermission), summary: summarizeResourceStates(states) }
+}
+
+export async function getTranslationResourceJobs(resourceKey: string | undefined, permissions: ReadonlySet<PermissionKey>, limit = 20) {
+  const parsed = parseResourceKey(resourceKey)
+  if (!parsed || !allowedTranslationResources(permissions).includes(parsed.resourceType)) return []
+  const result = await createAdminClient().from('translation_jobs')
+    .select('id,field_name,source_language,target_language,status,attempt_count,max_attempts,requested_provider,provider_used,created_at,completed_at,error_code')
+    .eq('resource_type', parsed.resourceType).eq('resource_id', parsed.resourceId)
+    .order('created_at', { ascending: false }).limit(Math.min(Math.max(limit, 1), 50))
+  if (result.error) throw new Error(result.error.message)
+  return result.data ?? []
 }
 
 export async function getTranslationDetail(id: string | undefined, permissions: ReadonlySet<PermissionKey>) {

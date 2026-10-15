@@ -20,10 +20,7 @@ type Props = {
   canEdit: boolean
   workflowAvailable: boolean
   sourceChanged: boolean
-  isProtected: boolean
-  aiEnabled: boolean
-  aiProvider: string
-  aiMessage: string
+  rows: number
 }
 
 export function TranslationEditor(props: Props) {
@@ -35,15 +32,11 @@ export function TranslationEditor(props: Props) {
     <input type="hidden" name="stateId" value={props.stateId} />
     <input type="hidden" name="lockVersion" value={props.lockVersion} />
     <div className="grid gap-4 lg:grid-cols-2">
-      <EditorBlock label={`Original · ${props.sourceLanguage.toUpperCase()}`} value={props.source ?? 'Sin texto fuente'} readOnly />
-      <label><span className="mb-2 block text-xs font-bold uppercase tracking-wide text-slate-500">Borrador · {props.targetLanguage.toUpperCase()}</span><textarea name="translation" defaultValue={draft} rows={props.valueKind === 'rich_text' ? 18 : 10} maxLength={props.valueKind === 'text_array' ? undefined : props.maxCharacters ?? undefined} disabled={!props.canEdit} className="w-full resize-y rounded-xl border border-slate-200 bg-white p-4 font-mono text-sm leading-6 text-slate-900 shadow-inner disabled:bg-slate-100" aria-describedby="translation-help" /></label>
+      <EditorBlock label={`Original · ${props.sourceLanguage.toUpperCase()}`} value={props.source ?? 'Sin texto fuente'} rows={props.rows} readOnly />
+      <label><span className="mb-2 block text-xs font-bold uppercase tracking-wide text-slate-500">Borrador · {props.targetLanguage.toUpperCase()}</span><textarea name="translation" defaultValue={draft} rows={props.rows} maxLength={props.valueKind === 'text_array' ? undefined : props.maxCharacters ?? undefined} disabled={!props.canEdit} className="w-full resize-y rounded-xl border border-slate-200 bg-white p-4 font-mono text-sm leading-6 text-slate-900 shadow-inner disabled:bg-slate-100" aria-describedby={`translation-help-${props.stateId}`} /></label>
     </div>
-    <p id="translation-help" className="text-xs text-slate-500">{props.valueKind === 'text_array' ? 'Un elemento por línea.' : props.maxCharacters ? `Máximo ${props.maxCharacters.toLocaleString('es-CO')} caracteres.` : 'El borrador no sustituye el contenido publicado.'}</p>
+    <p id={`translation-help-${props.stateId}`} className="text-xs text-slate-500">{props.valueKind === 'text_array' ? 'Un elemento por línea.' : props.maxCharacters ? `Máximo ${props.maxCharacters.toLocaleString('es-CO')} caracteres.` : 'El borrador no sustituye el contenido publicado.'}</p>
     {props.sourceChanged && <p className="rounded-lg bg-orange-50 p-3 text-sm text-orange-900">La fuente cambió después de crear el borrador. Guárdalo nuevamente sobre la versión actual antes de revisarlo.</p>}
-    <div className="rounded-xl border border-violet-200 bg-violet-50 p-3 text-sm text-violet-900">
-      <div className="flex flex-wrap items-center justify-between gap-3"><div><strong>Asistente de traducción</strong><p className="mt-1 text-xs">{props.aiMessage} El resultado siempre se guarda como borrador sin publicar.</p></div>
-      {props.canEdit && <ActionButton intent="generate_ai" label={`Enviar a ${props.aiProvider}`} secondary disabled={!props.aiEnabled || props.isProtected || props.workflowStatus !== 'none'} confirm="¿Añadir esta traducción a la cola del worker local?" />}</div>
-    </div>
     {!props.canEdit && <p className="rounded-lg bg-slate-100 p-3 text-sm text-slate-700">Tienes acceso de lectura, pero no permiso de actualización para este módulo.</p>}
     {result.message && <p aria-live="polite" className={`rounded-lg p-3 text-sm ${result.ok ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800'}`}>{result.message}</p>}
     {props.canEdit && <div className="flex flex-wrap gap-2">
@@ -61,8 +54,8 @@ function ActionButton({ intent, label, secondary = false, danger = false, disabl
   return <button type="submit" name="intent" value={intent} disabled={pending || disabled} onClick={(event) => { if (confirm && !window.confirm(confirm)) event.preventDefault() }} className={`${danger ? 'border border-red-200 bg-red-50 text-red-800' : secondary ? 'admin-secondary-button' : 'admin-primary-button'} rounded-lg px-4 py-2.5 text-sm font-semibold disabled:opacity-50`}>{pending ? 'Procesando…' : label}</button>
 }
 
-function EditorBlock({ label, value, readOnly }: { label: string; value: string; readOnly?: boolean }) {
-  return <label><span className="mb-2 block text-xs font-bold uppercase tracking-wide text-slate-500">{label}</span><textarea value={value} readOnly={readOnly} rows={18} className="w-full resize-y rounded-xl border border-slate-800 bg-slate-950 p-4 font-mono text-sm leading-6 text-slate-100" /></label>
+function EditorBlock({ label, value, rows, readOnly }: { label: string; value: string; rows: number; readOnly?: boolean }) {
+  return <label><span className="mb-2 block text-xs font-bold uppercase tracking-wide text-slate-500">{label}</span><textarea value={value} readOnly={readOnly} rows={rows} className="w-full resize-y rounded-xl border border-slate-800 bg-slate-950 p-4 font-mono text-sm leading-6 text-slate-100" /></label>
 }
 
 function editorValue(draft: unknown, published: string | null) {
