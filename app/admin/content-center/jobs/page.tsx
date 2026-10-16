@@ -54,13 +54,15 @@ function JobFilters({ filters, allowed }: { filters: TranslationJobFilters; allo
 }
 
 function JobRow({ job, returnTo }: { job: TranslationJobRow; returnTo: string }) {
-  const href = `/admin/content-center/translations/${job.resource_type}/${encodeURIComponent(job.resource_id)}?returnTo=${encodeURIComponent(returnTo)}`, provider = job.provider_used ?? job.requested_provider ?? 'Local'
+  const resourceHref = `/admin/content-center/translations/${job.resource_type}/${encodeURIComponent(job.resource_id)}?returnTo=${encodeURIComponent(returnTo)}`
+  const detailHref = `/admin/content-center/jobs/${job.id}?returnTo=${encodeURIComponent(returnTo)}`
+  const provider = job.provider_used ?? job.requested_provider ?? 'Local'
   return <article className="grid gap-4 p-4 text-sm xl:grid-cols-[minmax(260px,1.4fr)_130px_150px_180px_minmax(180px,1fr)_auto] xl:items-center">
     <div className="min-w-0"><p className="text-xs font-bold uppercase tracking-wide text-amber-700">{resourceModuleLabel(job.resource_type)}</p><p className="mt-1 truncate font-semibold" title={job.field_name}>{friendlyField(job.field_name)}</p><p className="mt-1 truncate font-mono text-[11px] text-slate-400" title={job.resource_id}>{job.resource_id}</p></div>
     <p className="font-semibold text-slate-600">{job.source_language.toUpperCase()} → {job.target_language.toUpperCase()}</p><Status status={job.status} />
     <div><p className="font-semibold text-slate-700">{provider}</p><p className="mt-1 text-xs text-slate-500">Intentos {job.attempt_count}/{job.max_attempts}</p></div>
     <div className="text-xs leading-5 text-slate-500"><p>Creado: {formatDate(job.created_at)}</p>{job.started_at && <p>Iniciado: {formatDate(job.started_at)}</p>}{job.completed_at && <p>Finalizado: {formatDate(job.completed_at)}</p>}{job.error_code && <p className="font-semibold text-red-700" title={job.error_code}>{ERROR_LABELS[job.error_code] ?? `Error: ${job.error_code}`}</p>}</div>
-    <Link href={href} className="admin-secondary-button justify-center px-3 py-2 text-xs">Abrir recurso</Link>
+    <div className="flex flex-col gap-2"><Link href={detailHref} className="admin-primary-button justify-center px-3 py-2 text-xs">Ver detalle</Link><Link href={resourceHref} className="admin-secondary-button justify-center px-3 py-2 text-xs">Abrir recurso</Link></div>
   </article>
 }
 

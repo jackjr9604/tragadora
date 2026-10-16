@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
-import { normalizeTranslationJobFilters, toRpcDateRange } from './admin-translation-jobs-policy'
+import { normalizeTranslationJobFilters, safeTranslationJobsReturn, toRpcDateRange } from './admin-translation-jobs-policy'
 
 test('normaliza filtros combinables y limita paginación de trabajos', () => {
   assert.deepEqual(normalizeTranslationJobFilters({
@@ -39,6 +39,37 @@ test('la pestaña usa las tres RPC y autoriza módulos solo en servidor', () => 
   assert.match(page, /Worker desconectado/)
   assert.match(page, /Worker con problemas/)
   assert.match(page, /Worker disponible/)
+})
+
+test('detalle seguro clasifica errores sin exponer last_error ni worker interno', () => {
+  const sql = readFileSync('supabase/migrations/202610150002_translation_job_safe_detail.sql', 'utf8')
+  for (const category of ['recoverable_connectivity','lease_expired','source_unavailable','editorial_conflict','protected_content_validation','unknown']) assert.match(sql,new RegExp(category))
+  assert.match(sql,/translation_admin_jobs_validate_filters/)
+  assert.match(sql,/j\.resource_type=any\(p_allowed_resource_types\)/)
+  assert.match(sql,/j\.metadata->>'engine'='3e3'/)
+  assert.match(sql,/expected_lock_version/)
+  assert.match(sql,/active\.status in \('queued','running','retry_wait'\)/)
+  assert.match(sql,/revoke all on function public\.translation_admin_job_detail\(uuid,text\[\]\) from public,anon,authenticated/i)
+  const returns = sql.match(/returns table\(([\s\S]*?)\)\nlanguage/i)?.[1] ?? ''
+  assert.doesNotMatch(returns,/last_error|locked_by|worker_id|metadata/i)
+  const body = sql.match(/as \$\$([\s\S]*?)\$\$;/i)?.[1] ?? ''
+  assert.doesNotMatch(body,/\b(insert into|update|delete from)\s+public\./i)
+})
+
+test('detalle conserva regreso únicamente al inventario de trabajos', () => {
+  assert.equal(safeTranslationJobsReturn('/admin/content-center/jobs?status=failed&page=2'),'/admin/content-center/jobs?status=failed&page=2')
+  assert.equal(safeTranslationJobsReturn(encodeURIComponent('/admin/content-center/jobs?module=blog_post_translation')),'/admin/content-center/jobs?module=blog_post_translation')
+  assert.equal(safeTranslationJobsReturn('/admin/content-center/translations'),'/admin/content-center/jobs')
+  assert.equal(safeTranslationJobsReturn('https://evil.test/admin/content-center/jobs'),'/admin/content-center/jobs')
+})
+
+test('listado enlaza el detalle y la ruta separa trabajo técnico de publicación', () => {
+  const list = readFileSync('app/admin/content-center/jobs/page.tsx','utf8')
+  const detail = readFileSync('app/admin/content-center/jobs/[jobId]/page.tsx','utf8')
+  assert.match(list,/Ver detalle/)
+  assert.match(detail,/Estado técnico ≠ publicación/)
+  assert.match(detail,/Línea temporal disponible/)
+  assert.doesNotMatch(detail,/last_error|locked_by|worker_id/)
 })
 
 test('worker envía heartbeat periódico dentro del umbral y no cambia la cola', () => {

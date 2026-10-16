@@ -47,6 +47,18 @@ export function toRpcDateRange(filters: Pick<TranslationJobFilters, 'createdFrom
   return { from, to: toDate?.toISOString() ?? null }
 }
 
+export function safeTranslationJobsReturn(value: string | undefined) {
+  if (!value) return '/admin/content-center/jobs'
+  try {
+    const decoded = decodeURIComponent(value)
+    const url = new URL(decoded, 'https://tradagora.local')
+    if (url.origin !== 'https://tradagora.local' || url.pathname !== '/admin/content-center/jobs') return '/admin/content-center/jobs'
+    return `${url.pathname}${url.search}`
+  } catch {
+    return '/admin/content-center/jobs'
+  }
+}
+
 function clean(value: string | undefined, max: number) { const result = value?.trim().slice(0, max); return result || undefined }
 function language(value: string | undefined) { const result = value?.trim().toLowerCase(); return result && /^[a-z]{2,3}(?:-[a-z0-9]{2,8})?$/.test(result) ? result : undefined }
 function token(value: string | undefined, max: number) { const result = value?.trim().toLowerCase().slice(0, max); return result && /^[a-z0-9._-]+$/.test(result) ? result : undefined }

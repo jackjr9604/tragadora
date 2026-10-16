@@ -47,6 +47,20 @@ export type TranslationJobRow = {
 }
 
 export type TranslationJobSummary = { total: number; queued: number; running: number; retry_wait: number; succeeded: number; failed: number; cancelled: number; recoverable: number }
+export type TranslationJobDetail = Omit<TranslationJobRow, 'total_count' | 'estimated_cost_usd'> & {
+  duration_seconds: number | null
+  error_category: 'recoverable_connectivity' | 'lease_expired' | 'source_unavailable' | 'editorial_conflict' | 'protected_content_validation' | 'unknown' | null
+  error_summary: string | null
+  error_recoverable: boolean
+  requires_human_review: boolean
+  editorial_state_exists: boolean
+  editorial_status: string | null
+  workflow_status: string | null
+  publication_status: string | null
+  is_protected: boolean
+  source_is_current: boolean
+  editorial_updated_at: string | null
+}
 export type TranslationWorkerStatus = {
   availability: 'available' | 'degraded' | 'offline' | 'never_connected'; worker_status: 'ready' | 'degraded' | 'stopping' | null
   provider: string | null; supported_languages: string[] | null; started_at: string | null; provider_checked_at: string | null
@@ -77,6 +91,22 @@ export async function getTranslationJobsMonitor(filters: TranslationJobFilters, 
     summary: numericRow<TranslationJobSummary>(summaryResult.data, emptyJobSummary()),
     worker: numericRow<TranslationWorkerStatus>(workerResult.data, emptyWorkerStatus(), ['active_workers']),
   }
+}
+
+export async function getTranslationJobDetail(jobId: string, permissions: ReadonlySet<PermissionKey>) {
+  const allowed = allowedTranslationResources(permissions)
+  if (!allowed.length) return null
+  const db = createAdminClient()
+  const result = await db.rpc('translation_admin_job_detail', { p_job_id: jobId, p_allowed_resource_types: allowed })
+  if (result.error) throw new Error(result.error.message)
+  const row = (Array.isArray(result.data) ? result.data[0] : result.data) as TranslationJobDetail | null
+  return row ? {
+    ...row,
+    attempt_count: Number(row.attempt_count), max_attempts: Number(row.max_attempts), priority: Number(row.priority),
+    input_characters: row.input_characters === null ? null : Number(row.input_characters),
+    output_characters: row.output_characters === null ? null : Number(row.output_characters),
+    duration_seconds: row.duration_seconds === null ? null : Number(row.duration_seconds),
+  } : null
 }
 
 export function resourceEditorHref(row: Pick<ContentCenterResourceRow, 'resource_type' | 'resource_id'>) {
