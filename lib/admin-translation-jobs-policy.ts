@@ -3,6 +3,8 @@ import { TRANSLATION_RESOURCES, type TranslationResourceType } from './admin-tra
 export const TRANSLATION_JOB_STATUSES = ['queued', 'running', 'retry_wait', 'succeeded', 'failed', 'cancelled'] as const
 export type TranslationJobStatus = (typeof TRANSLATION_JOB_STATUSES)[number]
 export type TranslationJobSort = 'created_desc' | 'created_asc' | 'updated_desc'
+export const TRANSLATION_METRICS_PERIODS = ['24h', '7d', '30d'] as const
+export type TranslationMetricsPeriod = (typeof TRANSLATION_METRICS_PERIODS)[number]
 
 export type TranslationJobFilters = {
   page: number
@@ -17,6 +19,7 @@ export type TranslationJobFilters = {
   createdTo?: string
   errorCode?: string
   sort: TranslationJobSort
+  metricsPeriod: TranslationMetricsPeriod
 }
 
 export function normalizeTranslationJobFilters(input: Record<string, string | string[] | undefined>): TranslationJobFilters {
@@ -37,6 +40,8 @@ export function normalizeTranslationJobFilters(input: Record<string, string | st
     resourceId: clean(one(input.resource), 500), sourceLanguage, targetLanguage, provider,
     createdFrom: date(one(input.from)), createdTo: date(one(input.to)), errorCode,
     sort: sort === 'created_asc' || sort === 'updated_desc' ? sort : 'created_desc',
+    metricsPeriod: TRANSLATION_METRICS_PERIODS.includes(one(input.metricsPeriod) as TranslationMetricsPeriod)
+      ? one(input.metricsPeriod) as TranslationMetricsPeriod : '24h',
   }
 }
 

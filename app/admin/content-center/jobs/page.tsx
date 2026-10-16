@@ -1,9 +1,9 @@
 import Link from 'next/link'
-import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, CircleDashed, Clock3, ServerCog, Wifi, WifiOff } from 'lucide-react'
+import { Activity, AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, CircleDashed, Clock3, Gauge, ServerCog, TextCursorInput, Timer, Wifi, WifiOff } from 'lucide-react'
 import { getCurrentAdminPermissions } from '@/lib/admin-permissions-server'
 import { getTranslationJobsMonitor, resourceModuleLabel, type TranslationJobRow, type TranslationWorkerStatus } from '@/lib/admin-content-center'
 import { allowedTranslationResources, TRANSLATION_RESOURCES } from '@/lib/admin-translation-inventory-policy'
-import { normalizeTranslationJobFilters, TRANSLATION_JOB_STATUSES, type TranslationJobFilters } from '@/lib/admin-translation-jobs-policy'
+import { normalizeTranslationJobFilters, TRANSLATION_JOB_STATUSES, TRANSLATION_METRICS_PERIODS, type TranslationJobFilters } from '@/lib/admin-translation-jobs-policy'
 import { publicAiEngineStatus } from '@/lib/admin-translation-ai'
 
 type SearchParams = Record<string, string | string[] | undefined>
@@ -22,6 +22,7 @@ export default async function ContentCenterJobsPage({ searchParams }: { searchPa
       <Metric title="Completados" value={data.summary.succeeded} icon={CheckCircle2} tone="green" /><Metric title="Fallidos" value={data.summary.failed} icon={AlertTriangle} tone="red" />
       <Metric title="Cancelados" value={data.summary.cancelled} /><Metric title="Recuperables" value={data.summary.recoverable} tone="amber" />
     </div>
+    <OperationalMetrics metrics={data.metrics} available={data.metricsAvailable} />
     <JobFilters filters={filters} allowed={allowed} />
     <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div className="flex flex-col justify-between gap-2 border-b border-slate-200 p-4 sm:flex-row sm:items-center"><div><h2 className="font-bold">Inventario de trabajos</h2><p className="mt-1 text-xs text-slate-500">{data.total.toLocaleString('es-CO')} resultados con los filtros actuales.</p></div><p className="text-xs text-slate-500">Página {filters.page}{data.pages ? ` de ${data.pages}` : ''}</p></div>
@@ -49,9 +50,32 @@ function JobFilters({ filters, allowed }: { filters: TranslationJobFilters; allo
     <Input name="resource" label="Recurso" value={filters.resourceId} placeholder="UUID, clave o ID exacto" /><Input name="sourceLanguage" label="Idioma fuente" value={filters.sourceLanguage} placeholder="Ej. es" /><Input name="targetLanguage" label="Idioma destino" value={filters.targetLanguage} placeholder="Ej. en" />
     <Input name="provider" label="Proveedor" value={filters.provider} placeholder="Ej. libretranslate" /><Input name="error" label="Código de error" value={filters.errorCode} placeholder="Ej. translation_failed" /><Input name="from" label="Desde" value={filters.createdFrom} type="date" /><Input name="to" label="Hasta" value={filters.createdTo} type="date" />
     <Select name="sort" label="Orden" value={filters.sort} options={[{ value: 'created_desc', label: 'Más recientes' }, { value: 'created_asc', label: 'Más antiguos' }, { value: 'updated_desc', label: 'Actualizados recientemente' }]} />
+    <Select name="metricsPeriod" label="Periodo de métricas" value={filters.metricsPeriod} options={TRANSLATION_METRICS_PERIODS.map((value) => ({ value, label: value === '24h' ? 'Últimas 24 horas' : value === '7d' ? 'Últimos 7 días' : 'Últimos 30 días' }))} />
     <div className="flex gap-2 md:col-span-2 xl:col-span-5"><button className="admin-primary-button justify-center px-5 py-2.5 text-sm" type="submit">Aplicar filtros</button><Link href="/admin/content-center/jobs" className="admin-secondary-button px-4 py-2.5 text-sm">Limpiar</Link></div>
   </form>
 }
+
+function OperationalMetrics({ metrics, available }: { metrics: Awaited<ReturnType<typeof getTranslationJobsMonitor>>['metrics']; available: boolean }) {
+  if (!available) return <section className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950"><p className="font-bold">Métricas operativas pendientes de habilitar</p><p className="mt-1">El inventario continúa disponible. Aplica la migración versionada de 3.2B antes de desplegar esta vista.</p></section>
+  const hasTerminalData = metrics.terminal_jobs > 0
+  const errors = Object.entries(metrics.error_distribution ?? {}).sort((a, b) => b[1] - a[1])
+  return <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" aria-labelledby="operational-metrics-title">
+    <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end"><div><h2 id="operational-metrics-title" className="font-bold">Métricas operativas</h2><p className="mt-1 text-xs text-slate-500">Periodo {metrics.period === '24h' ? 'de 24 horas' : metrics.period === '7d' ? 'de 7 días' : 'de 30 días'}; respeta módulo, recurso, idiomas y proveedor. No depende de la página actual.</p></div><p className="text-xs text-slate-500">{metrics.period_started_at && metrics.period_ended_at ? `${formatDate(metrics.period_started_at)} — ${formatDate(metrics.period_ended_at)}` : 'Periodo no disponible'}</p></div>
+    <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <OperationalDatum icon={Clock3} label="Pendiente más antiguo" value={metrics.oldest_pending_age_seconds === null ? 'Sin trabajos pendientes' : formatAge(metrics.oldest_pending_age_seconds)} detail={metrics.oldest_pending_created_at ? `Creado ${formatDate(metrics.oldest_pending_created_at)}` : undefined} />
+      <OperationalDatum icon={Gauge} label="Tasa de éxito" value={metrics.success_rate === null ? 'Sin datos' : formatPercent(metrics.success_rate)} detail={hasTerminalData ? `${metrics.succeeded_jobs} exitosos de ${metrics.terminal_jobs} finalizados` : 'No hay éxitos o fallos en el periodo.'} />
+      <OperationalDatum icon={AlertTriangle} label="Tasa de fallo" value={metrics.failure_rate === null ? 'Sin datos' : formatPercent(metrics.failure_rate)} detail={hasTerminalData ? `${metrics.failed_jobs} fallidos de ${metrics.terminal_jobs} finalizados` : 'No hay éxitos o fallos en el periodo.'} />
+      <OperationalDatum icon={CheckCircle2} label="Trabajos completados" value={hasTerminalData ? metrics.completed_jobs.toLocaleString('es-CO') : 'Sin datos'} detail="Solo trabajos succeeded dentro del periodo." />
+      <OperationalDatum icon={Timer} label="Duración media" value={metrics.average_duration_seconds === null ? 'Sin datos' : formatDuration(metrics.average_duration_seconds)} detail={metrics.duration_samples ? `${metrics.duration_samples} ejecuciones válidas` : 'Requiere timestamps de inicio y finalización.'} />
+      <OperationalDatum icon={Activity} label="Percentil 50" value={metrics.p50_duration_seconds === null ? 'Datos insuficientes' : formatDuration(metrics.p50_duration_seconds)} detail="Disponible desde 2 duraciones válidas." />
+      <OperationalDatum icon={Activity} label="Percentil 95" value={metrics.p95_duration_seconds === null ? 'Datos insuficientes' : formatDuration(metrics.p95_duration_seconds)} detail="Disponible desde 5 duraciones válidas." />
+      <OperationalDatum icon={TextCursorInput} label="Caracteres procesados" value={metrics.processed_characters === null ? 'Sin datos' : metrics.processed_characters.toLocaleString('es-CO')} detail="Entrada + salida registradas en trabajos completados." />
+    </div>
+    <div className="mt-4 border-t border-slate-100 pt-4"><p className="text-xs font-bold uppercase tracking-wide text-slate-500">Fallos por categoría segura</p>{errors.length ? <div className="mt-2 flex flex-wrap gap-2">{errors.map(([category, count]) => <span key={category} className="rounded-full bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-800">{safeErrorCategory(category)} · {count.toLocaleString('es-CO')}</span>)}</div> : <p className="mt-2 text-sm text-slate-500">No hay fallos clasificados en este periodo.</p>}</div>
+  </section>
+}
+
+function OperationalDatum({ icon: Icon, label, value, detail }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string; detail?: string }) { return <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4"><div className="flex items-center gap-2 text-slate-500"><Icon className="size-4"/><p className="text-xs font-semibold">{label}</p></div><p className="mt-2 text-xl font-bold text-slate-900">{value}</p>{detail && <p className="mt-1 text-xs leading-5 text-slate-500">{detail}</p>}</div> }
 
 function JobRow({ job, returnTo }: { job: TranslationJobRow; returnTo: string }) {
   const resourceHref = `/admin/content-center/translations/${job.resource_type}/${encodeURIComponent(job.resource_id)}?returnTo=${encodeURIComponent(returnTo)}`
@@ -74,5 +98,9 @@ function Pagination({ page,pages,query }:{page:number;pages:number;query:Record<
 function workerPresentation(value:TranslationWorkerStatus['availability']){if(value==='available')return{label:'Worker disponible',description:'El worker local mantiene contacto y LibreTranslate respondió correctamente.',className:'border-emerald-200 bg-emerald-50 text-emerald-900',connected:true};if(value==='degraded')return{label:'Worker con problemas',description:'El worker reportó actividad, pero LibreTranslate o su compatibilidad requieren atención.',className:'border-amber-200 bg-amber-50 text-amber-950',connected:true};if(value==='offline')return{label:'Worker desconectado',description:'El último heartbeat superó el umbral de 120 segundos. Los trabajos permanecen en cola.',className:'border-red-200 bg-red-50 text-red-900',connected:false};return{label:'Worker nunca conectado',description:'Todavía no se ha recibido un heartbeat desde Windows.',className:'border-slate-200 bg-slate-50 text-slate-700',connected:false}}
 function friendlyField(value:string){return value.replaceAll('_',' ').replace(/^./,(letter)=>letter.toUpperCase())}
 function formatDate(value:string){return new Intl.DateTimeFormat('es-CO',{dateStyle:'medium',timeStyle:'short',timeZone:'America/Bogota'}).format(new Date(value))}
+function formatPercent(value:number){return new Intl.NumberFormat('es-CO',{style:'percent',maximumFractionDigits:1}).format(value)}
+function formatDuration(seconds:number){if(seconds<60)return `${Math.round(seconds)} s`;if(seconds<3600)return `${Math.floor(seconds/60)} min ${Math.round(seconds%60)} s`;return `${Math.floor(seconds/3600)} h ${Math.round(seconds%3600/60)} min`}
+function formatAge(seconds:number){if(seconds<3600)return `${Math.max(1,Math.floor(seconds/60))} min`;if(seconds<86400)return `${Math.floor(seconds/3600)} h ${Math.floor(seconds%3600/60)} min`;return `${Math.floor(seconds/86400)} d ${Math.floor(seconds%86400/3600)} h`}
+function safeErrorCategory(value:string){return({recoverable_connectivity:'Conectividad recuperable',lease_expired:'Lease vencido',source_unavailable:'Fuente modificada o no disponible',editorial_conflict:'Conflicto editorial',protected_content_validation:'Contenido protegido o inválido',unknown:'Error desconocido'} as Record<string,string>)[value]??'Error desconocido'}
 function stringQuery(raw:SearchParams){return Object.fromEntries(Object.entries(raw).flatMap(([key,value])=>typeof value==='string'?[[key,value]]:[]))}
 function jobsHref(current:Record<string,string>,changes:Record<string,string|undefined>={}){const params=new URLSearchParams(current);for(const[key,value]of Object.entries(changes)){if(value)params.set(key,value);else params.delete(key)}const query=params.toString();return `/admin/content-center/jobs${query?`?${query}`:''}`}

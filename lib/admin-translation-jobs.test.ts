@@ -7,11 +7,11 @@ test('normaliza filtros combinables y limita paginación de trabajos', () => {
   assert.deepEqual(normalizeTranslationJobFilters({
     page: '2', pageSize: '50', status: 'failed', module: 'blog_post_translation', resource: 'post-1',
     sourceLanguage: 'ES', targetLanguage: 'pt-BR', provider: 'LibreTranslate', error: 'translation_failed',
-    from: '2026-10-01', to: '2026-10-15', sort: 'updated_desc',
+    from: '2026-10-01', to: '2026-10-15', sort: 'updated_desc', metricsPeriod: '7d',
   }), {
     page: 2, pageSize: 50, status: 'failed', resourceType: 'blog_post_translation', resourceId: 'post-1',
     sourceLanguage: 'es', targetLanguage: 'pt-br', provider: 'libretranslate', errorCode: 'translation_failed',
-    createdFrom: '2026-10-01', createdTo: '2026-10-15', sort: 'updated_desc',
+    createdFrom: '2026-10-01', createdTo: '2026-10-15', sort: 'updated_desc', metricsPeriod: '7d',
   })
   const invalid = normalizeTranslationJobFilters({ page: '-1', pageSize: '100', status: 'invented', module: 'unknown', provider: 'bad value', from: 'today' })
   assert.equal(invalid.page, 1)
@@ -19,6 +19,7 @@ test('normaliza filtros combinables y limita paginación de trabajos', () => {
   assert.equal(invalid.status, undefined)
   assert.equal(invalid.resourceType, undefined)
   assert.equal(invalid.provider, undefined)
+  assert.equal(invalid.metricsPeriod, '24h')
 })
 
 test('rango de fechas usa inicio UTC y hasta exclusivo del día siguiente', () => {

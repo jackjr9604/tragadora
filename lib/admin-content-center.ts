@@ -4,7 +4,7 @@ import type { PermissionKey } from '@/lib/admin-permissions'
 import { allowedTranslationResources, TRANSLATION_RESOURCES, type TranslationResourceType } from '@/lib/admin-translation-inventory-policy'
 import type { TranslationResourceRow } from '@/lib/admin-translation-inventory'
 import type { ContentCenterBucket, ContentCenterSummary } from '@/lib/admin-content-center-policy'
-import type { TranslationJobFilters } from '@/lib/admin-translation-jobs-policy'
+import type { TranslationJobFilters, TranslationMetricsPeriod } from '@/lib/admin-translation-jobs-policy'
 import { toRpcDateRange } from '@/lib/admin-translation-jobs-policy'
 
 export type ContentCenterResourceRow = TranslationResourceRow & {
@@ -47,6 +47,25 @@ export type TranslationJobRow = {
 }
 
 export type TranslationJobSummary = { total: number; queued: number; running: number; retry_wait: number; succeeded: number; failed: number; cancelled: number; recoverable: number }
+export type TranslationJobMetrics = {
+  period: TranslationMetricsPeriod
+  period_started_at: string | null
+  period_ended_at: string | null
+  oldest_pending_created_at: string | null
+  oldest_pending_age_seconds: number | null
+  terminal_jobs: number
+  succeeded_jobs: number
+  failed_jobs: number
+  success_rate: number | null
+  failure_rate: number | null
+  completed_jobs: number
+  duration_samples: number
+  average_duration_seconds: number | null
+  p50_duration_seconds: number | null
+  p95_duration_seconds: number | null
+  processed_characters: number | null
+  error_distribution: Record<string, number> | null
+}
 export type TranslationJobDetail = Omit<TranslationJobRow, 'total_count' | 'estimated_cost_usd'> & {
   duration_seconds: number | null
   error_category: 'recoverable_connectivity' | 'lease_expired' | 'source_unavailable' | 'editorial_conflict' | 'protected_content_validation' | 'unknown' | null
@@ -69,26 +88,36 @@ export type TranslationWorkerStatus = {
 
 export async function getTranslationJobsMonitor(filters: TranslationJobFilters, permissions: ReadonlySet<PermissionKey>) {
   const allowed = allowedTranslationResources(permissions)
-  if (!allowed.length) return { rows: [] as TranslationJobRow[], total: 0, pages: 0, summary: emptyJobSummary(), worker: emptyWorkerStatus() }
+  if (!allowed.length) return { rows: [] as TranslationJobRow[], total: 0, pages: 0, summary: emptyJobSummary(), metrics: emptyJobMetrics(filters.metricsPeriod), metricsAvailable: true, worker: emptyWorkerStatus() }
   const db = createAdminClient(), dates = toRpcDateRange(filters)
   const common = {
     p_allowed_resource_types: allowed, p_status: filters.status ?? null, p_resource_type: filters.resourceType && allowed.includes(filters.resourceType) ? filters.resourceType : null,
     p_resource_id: filters.resourceId ?? null, p_source_language: filters.sourceLanguage ?? null, p_target_language: filters.targetLanguage ?? null,
     p_provider: filters.provider ?? null, p_created_from: dates.from, p_created_to: dates.to, p_error_code: filters.errorCode ?? null,
   }
-  const [inventoryResult, summaryResult, workerResult] = await Promise.all([
+  const [inventoryResult, summaryResult, metricsResult, workerResult] = await Promise.all([
     db.rpc('translation_admin_jobs_inventory', { ...common, p_sort: filters.sort, p_page: filters.page, p_page_size: filters.pageSize }),
     db.rpc('translation_admin_jobs_summary', common),
+    db.rpc('translation_admin_jobs_metrics', {
+      p_allowed_resource_types: allowed, p_period: filters.metricsPeriod,
+      p_resource_type: common.p_resource_type, p_resource_id: common.p_resource_id,
+      p_source_language: common.p_source_language, p_target_language: common.p_target_language,
+      p_provider: common.p_provider,
+    }),
     db.rpc('translation_admin_worker_status', { p_stale_after_seconds: 120 }),
   ])
   if (inventoryResult.error) throw new Error(inventoryResult.error.message)
   if (summaryResult.error) throw new Error(summaryResult.error.message)
+  const metricsAvailable = !metricsResult.error || !['42883', 'PGRST202'].includes(metricsResult.error.code ?? '')
+  if (metricsResult.error && metricsAvailable) throw new Error(metricsResult.error.message)
   if (workerResult.error) throw new Error(workerResult.error.message)
   const rows = (inventoryResult.data ?? []) as unknown as TranslationJobRow[]
   const total = Number(rows[0]?.total_count ?? 0)
   return {
     rows, total, pages: Math.ceil(total / filters.pageSize),
     summary: numericRow<TranslationJobSummary>(summaryResult.data, emptyJobSummary()),
+    metrics: metricsAvailable ? normalizeJobMetrics(metricsResult.data, filters.metricsPeriod) : emptyJobMetrics(filters.metricsPeriod),
+    metricsAvailable,
     worker: numericRow<TranslationWorkerStatus>(workerResult.data, emptyWorkerStatus(), ['active_workers']),
   }
 }
@@ -117,9 +146,27 @@ export function resourceModuleLabel(type: string) { return TRANSLATION_RESOURCES
 
 function emptySummary(): ContentCenterSummary { return { resources: 0, fields: 0, pending: 0, draft: 0, in_review: 0, approved: 0, published: 0, partial: 0, stale: 0, error: 0, queued_jobs: 0, running_jobs: 0, retry_jobs: 0, failed_jobs: 0 } }
 function emptyJobSummary(): TranslationJobSummary { return { total: 0, queued: 0, running: 0, retry_wait: 0, succeeded: 0, failed: 0, cancelled: 0, recoverable: 0 } }
+function emptyJobMetrics(period: TranslationMetricsPeriod): TranslationJobMetrics { return { period, period_started_at: null, period_ended_at: null, oldest_pending_created_at: null, oldest_pending_age_seconds: null, terminal_jobs: 0, succeeded_jobs: 0, failed_jobs: 0, success_rate: null, failure_rate: null, completed_jobs: 0, duration_samples: 0, average_duration_seconds: null, p50_duration_seconds: null, p95_duration_seconds: null, processed_characters: null, error_distribution: null } }
 function emptyWorkerStatus(): TranslationWorkerStatus { return { availability: 'never_connected', worker_status: null, provider: null, supported_languages: [], started_at: null, provider_checked_at: null, last_seen_at: null, last_error_code: null, active_workers: 0 } }
 function numericRow<T extends object>(data: unknown, fallback: T, numericKeys: string[] = Object.keys(fallback)) {
   const row = (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null
   if (!row) return fallback
   return { ...fallback, ...row, ...Object.fromEntries(numericKeys.filter((key) => key in row).map((key) => [key, Number(row[key])])) } as T
+}
+
+function normalizeJobMetrics(data: unknown, period: TranslationMetricsPeriod): TranslationJobMetrics {
+  const fallback = emptyJobMetrics(period)
+  const row = (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null
+  if (!row) return fallback
+  const nullableNumber = (key: string) => row[key] === null || row[key] === undefined ? null : Number(row[key])
+  return {
+    ...fallback, ...row,
+    terminal_jobs: Number(row.terminal_jobs ?? 0), succeeded_jobs: Number(row.succeeded_jobs ?? 0), failed_jobs: Number(row.failed_jobs ?? 0),
+    completed_jobs: Number(row.completed_jobs ?? 0), duration_samples: Number(row.duration_samples ?? 0),
+    oldest_pending_age_seconds: nullableNumber('oldest_pending_age_seconds'), success_rate: nullableNumber('success_rate'),
+    failure_rate: nullableNumber('failure_rate'), average_duration_seconds: nullableNumber('average_duration_seconds'),
+    p50_duration_seconds: nullableNumber('p50_duration_seconds'), p95_duration_seconds: nullableNumber('p95_duration_seconds'),
+    processed_characters: nullableNumber('processed_characters'),
+    error_distribution: row.error_distribution && typeof row.error_distribution === 'object' ? row.error_distribution as Record<string, number> : null,
+  } as TranslationJobMetrics
 }
