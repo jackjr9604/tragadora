@@ -1,0 +1,3 @@
+export type BatchPreviewItem = { state_id:string;resource_type:string;resource_id:string;field_name:string;source_language:string;target_language:string;eligible:boolean;reason:string|null;input_characters:number;existing_job_id:string|null }
+export type BatchActionState = { ok:boolean;stage:'idle'|'preview'|'created';message:string;selection?:{state_id:string;expected_lock_version:number}[];preview?:{selection_count:number;eligible_count:number;excluded_count:number;estimated_characters:number;daily_requests_remaining:number;daily_characters_remaining:number;items:BatchPreviewItem[]};batchId?:string }
+export const EMPTY_BATCH_ACTION_STATE:BatchActionState={ok:false,stage:'idle',message:''}
