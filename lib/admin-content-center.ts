@@ -79,6 +79,7 @@ export type TranslationJobDetail = Omit<TranslationJobRow, 'total_count' | 'esti
   is_protected: boolean
   source_is_current: boolean
   editorial_updated_at: string | null
+  editorial_lock_version: number | null
 }
 export type TranslationWorkerStatus = {
   availability: 'available' | 'degraded' | 'offline' | 'never_connected'; worker_status: 'ready' | 'degraded' | 'stopping' | null
@@ -128,13 +129,21 @@ export async function getTranslationJobDetail(jobId: string, permissions: Readon
   const db = createAdminClient()
   const result = await db.rpc('translation_admin_job_detail', { p_job_id: jobId, p_allowed_resource_types: allowed })
   if (result.error) throw new Error(result.error.message)
-  const row = (Array.isArray(result.data) ? result.data[0] : result.data) as TranslationJobDetail | null
+  const row = (Array.isArray(result.data) ? result.data[0] : result.data) as Omit<TranslationJobDetail, 'editorial_lock_version'> | null
+  if (!row) return null
+  const state = row.editorial_state_exists
+    ? await db.from('translation_field_state').select('lock_version')
+      .eq('resource_type', row.resource_type).eq('resource_id', row.resource_id)
+      .eq('field_name', row.field_name).eq('target_language', row.target_language).maybeSingle()
+    : null
+  if (state?.error) throw new Error(state.error.message)
   return row ? {
     ...row,
     attempt_count: Number(row.attempt_count), max_attempts: Number(row.max_attempts), priority: Number(row.priority),
     input_characters: row.input_characters === null ? null : Number(row.input_characters),
     output_characters: row.output_characters === null ? null : Number(row.output_characters),
     duration_seconds: row.duration_seconds === null ? null : Number(row.duration_seconds),
+    editorial_lock_version: state?.data ? Number(state.data.lock_version) : null,
   } : null
 }
 

@@ -5,6 +5,8 @@ import { getCurrentAdminPermissions } from '@/lib/admin-permissions-server'
 import { getTranslationJobDetail, resourceModuleLabel } from '@/lib/admin-content-center'
 import { safeTranslationJobsReturn } from '@/lib/admin-translation-jobs-policy'
 import { translationFieldLabel } from '@/lib/admin-translation-resource-policy'
+import { translationJobActionEligibility } from '@/lib/admin-translation-job-actions'
+import { TranslationJobActions } from '@/components/admin/translations/TranslationJobActions'
 
 type SearchParams = Record<string, string | string[] | undefined>
 
@@ -16,6 +18,7 @@ export default async function TranslationJobDetailPage({ params, searchParams }:
   const returnTo = safeTranslationJobsReturn(first(raw.returnTo))
   const resourceHref = `/admin/content-center/translations/${job.resource_type}/${encodeURIComponent(job.resource_id)}?returnTo=${encodeURIComponent(`/admin/content-center/jobs/${job.id}?returnTo=${encodeURIComponent(returnTo)}`)}`
   const timeline = jobTimeline(job)
+  const eligibility = translationJobActionEligibility(job)
 
   return <section className="mt-6 space-y-5">
     <header className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -32,6 +35,7 @@ export default async function TranslationJobDetailPage({ params, searchParams }:
     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex flex-wrap items-end justify-between gap-2"><div><h2 className="font-bold">Línea temporal disponible</h2><p className="mt-1 text-xs text-slate-500">Se muestran únicamente timestamps persistidos; no se reconstruyen eventos inexistentes.</p></div>{job.duration_seconds!==null&&<span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold">Duración registrada: {formatDuration(job.duration_seconds)}</span>}</div><ol className="mt-5 space-y-4 border-l-2 border-slate-200 pl-5">{timeline.map((event)=><li key={`${event.label}:${event.value}`} className="relative"><span className="absolute -left-[27px] top-1 size-3 rounded-full bg-amber-500 ring-4 ring-white"/><p className="font-semibold">{event.label}</p><time className="text-sm text-slate-500">{formatDate(event.value)}</time>{event.detail&&<p className="mt-1 text-xs text-slate-500">{event.detail}</p>}</li>)}</ol></section>
 
     <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><Datum label="Prioridad" value={String(job.priority)}/><Datum label="Entrada" value={job.input_characters===null?'No registrada':`${job.input_characters.toLocaleString('es-CO')} caracteres`}/><Datum label="Salida" value={job.output_characters===null?'No registrada':`${job.output_characters.toLocaleString('es-CO')} caracteres`}/><Datum label="Código técnico" value={job.error_code??'Sin error'}/></section>
+    {job.editorial_lock_version !== null && <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h2 className="font-bold">Acciones administrativas</h2><p className="mt-1 text-sm text-slate-500">Las acciones se vuelven a validar en el servidor y nunca publican traducciones.</p><div className="mt-4"><TranslationJobActions jobId={job.id} jobUpdatedAt={job.updated_at} stateLockVersion={job.editorial_lock_version} eligibility={eligibility}/></div></section>}
   </section>
 }
 
