@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "translation:worker": "tsx scripts/translation-worker.ts",
+    "e2e:local:guard": "tsx scripts/e2e/assert-local-environment.ts",
     "collect:official": "tsx scripts/collect-official-pages.ts",
     "test:official": "node --test scripts/official-page-collector.test.ts",
     "collect:mondo": "tsx scripts/collect-mondotraders.ts",
@@ -44,6 +45,7 @@
     "eslint-config-next": "16.4.1",
     "playwright": "^1.62.1",
     "shadcn": "4.19.0",
+    "supabase": "2.121.0",
     "tailwindcss": "^4",
     "tsx": "^4.23.12",
     "typescript": "^5"

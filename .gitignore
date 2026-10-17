@@ -12,6 +12,9 @@
 
 # testing
 /coverage
+/scripts/e2e/.local-supabase/
+/tradagora_auditoria_baseline_20261016.txt
+/tradagora_estructura_baseline_20261016.txt
 
 # next.js
 /.next/
