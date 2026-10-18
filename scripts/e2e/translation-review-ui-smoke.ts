@@ -11,6 +11,7 @@ void main().catch((error)=>{console.error(error);process.exitCode=1})
 async function main(){
   const safe=assertLocalE2eEnvironment()
   assert.equal(safe.supabaseOrigin,'http://127.0.0.1:54321')
+  const admin=localAdmin()
   const browser=await chromium.launch({headless:true})
   try{
     const context=await browser.newContext({viewport:{width:1440,height:900}})
@@ -19,13 +20,19 @@ async function main(){
     page.on('console',(message)=>{if(message.type()==='error')runtimeErrors.push(message.text())})
     await login(page,'review-admin@local.invalid','LocalOnly-Review-Admin!')
     await openReview(page)
-    await assertNoEditorialMutations(page)
+    await assertNoPublicationMutation(page)
     await assertPagination(page)
-    await filterBlogEnglish(page)
+    await filterBlogEnglish(page,15)
     await assertExclusions(page)
     await assertProtectedFilter(page)
-    await filterBlogEnglish(page)
-    await assertConcurrentPreview(page)
+    await filterBlogEnglish(page,15)
+    await assertPreviewConcurrency(page,admin)
+    await approveCurrentPreview(page)
+    await filterBlogEnglish(page,14)
+    await assertActionConcurrency(page,admin)
+    await filterBlogEnglish(page,13)
+    await rejectSelection(page)
+    await assertPersistedDecisions(admin)
     await assertNoHorizontalOverflow(page,'desktop')
     await page.setViewportSize({width:390,height:844})
     await openReview(page)
@@ -59,11 +66,10 @@ async function login(page:Page,email:string,password:string){
 }
 async function openReview(page:Page){const response=await page.goto(`${baseUrl}/admin/content-center/review`,{waitUntil:'networkidle'});assert.equal(response?.status(),200);assert.ok(!page.url().includes('/login'))}
 async function assertPagination(page:Page){await assertText(page,'30 campos enviados a revisión');await assertText(page,'Página 1 de 2');await page.getByRole('link',{name:/Siguiente/}).click();await page.waitForURL(/page=2/);await assertText(page,'Página 2 de 2');await page.getByRole('link',{name:/Anterior/}).click()}
-async function filterBlogEnglish(page:Page){await page.getByLabel('Módulo').selectOption('blog_post_translation');await page.getByLabel('Idioma').selectOption('en');await page.getByLabel('Protección').selectOption('');await page.getByRole('button',{name:'Filtrar'}).click();await page.waitForLoadState('networkidle');await assertText(page,'15 campos enviados a revisión')}
+async function filterBlogEnglish(page:Page,expected:number){await page.getByLabel('Módulo').selectOption('blog_post_translation');await page.getByLabel('Idioma').selectOption('en');await page.getByLabel('Protección').selectOption('');await page.getByRole('button',{name:'Filtrar'}).click();await page.waitForLoadState('networkidle');await assertText(page,`${expected} campos enviados a revisión`)}
 async function assertExclusions(page:Page){await assertText(page,'La fuente cambió y la traducción está desactualizada');await assertText(page,'El borrador corresponde a una versión anterior de la fuente');await assertText(page,'La traducción ya está publicada');const disabled=page.getByRole('checkbox',{disabled:true});assert.equal(await disabled.count(),3)}
 async function assertProtectedFilter(page:Page){await page.getByLabel('Protección').selectOption('protected');await page.getByRole('button',{name:'Filtrar'}).click();await page.waitForLoadState('networkidle');await assertText(page,'1 campos enviados a revisión');await page.getByTitle('Protección manual').waitFor({state:'visible'})}
-async function assertConcurrentPreview(page:Page){
-  const admin=createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!,process.env.SUPABASE_SERVICE_ROLE_KEY!,{auth:{persistSession:false,autoRefreshToken:false}})
+async function assertPreviewConcurrency(page:Page,admin:ReturnType<typeof localAdmin>){
   const title=page.getByRole('checkbox',{name:/Fuente sintética uno title/i}),tags=page.getByRole('checkbox',{name:/Fuente sintética uno tags/i})
   await title.check();await tags.check()
   const state=await admin.from('translation_field_state').select('id,lock_version').eq('resource_type','blog_post_translation').eq('resource_id',resourceId).eq('field_name','tags').eq('target_language','en').single()
@@ -76,6 +82,32 @@ async function assertConcurrentPreview(page:Page){
   await assertText(page,'Fuente sintética uno')
   await assertText(page,'Draft title en')
 }
-async function assertNoEditorialMutations(page:Page){for(const name of [/^Aprobar/i,/^Publicar/i,/^Rechazar/i])assert.equal(await page.getByRole('button',{name}).count(),0,`No debe existir la acción ${name}`)}
+async function approveCurrentPreview(page:Page){page.once('dialog',(dialog)=>dialog.accept());await page.getByRole('button',{name:'Aprobar selección'}).click();await assertText(page,'1 procesadas, 0 omitidas y 0 con error');await assertText(page,'Aprobadas: 1')}
+async function assertActionConcurrency(page:Page,admin:ReturnType<typeof localAdmin>){
+  const title=page.getByRole('checkbox',{name:/Fuente sintética dos title/i}),tags=page.getByRole('checkbox',{name:/Fuente sintética dos tags/i})
+  await title.check();await tags.check();await page.getByRole('button',{name:'Previsualizar selección'}).click();await assertText(page,'2 de 2 campos conservan una versión vigente')
+  const state=await admin.from('translation_field_state').select('id,lock_version').eq('resource_type','blog_post_translation').eq('resource_id','85110000-0000-4000-8000-000000000002').eq('field_name','tags').eq('target_language','en').single();assert.ifError(state.error)
+  const changed=await admin.from('translation_field_state').update({lock_version:Number(state.data.lock_version)+1}).eq('id',state.data.id);assert.ifError(changed.error)
+  page.once('dialog',(dialog)=>dialog.accept());await page.getByRole('button',{name:'Aprobar selección'}).click();await assertText(page,'1 procesadas, 1 omitidas y 0 con error');await assertText(page,'Cambió después de la previsualización')
+}
+async function rejectSelection(page:Page){
+  const title=page.getByRole('checkbox',{name:/Fuente sintética tres title/i}),tags=page.getByRole('checkbox',{name:/Fuente sintética tres tags/i})
+  await title.check();await tags.check();await page.getByRole('button',{name:'Previsualizar selección'}).click();await assertText(page,'2 de 2 campos conservan una versión vigente')
+  await page.getByLabel('Motivo del rechazo').fill('Corregir terminología antes de una nueva revisión.')
+  page.once('dialog',(dialog)=>dialog.accept());await page.getByRole('button',{name:'Rechazar selección'}).click();await assertText(page,'2 procesadas, 0 omitidas y 0 con error');await assertText(page,'Rechazadas: 2')
+}
+async function assertPersistedDecisions(admin:ReturnType<typeof localAdmin>){
+  const states=await admin.from('translation_field_state').select('resource_id,field_name,workflow_status,publication_status').in('resource_id',['85110000-0000-4000-8000-000000000001','85110000-0000-4000-8000-000000000002','85110000-0000-4000-8000-000000000003']).in('field_name',['title','tags']).eq('target_language','en');assert.ifError(states.error)
+  const by=(resource:string,field:string)=>states.data.find((row)=>row.resource_id===resource&&row.field_name===field)
+  assert.equal(by('85110000-0000-4000-8000-000000000001','title')?.workflow_status,'approved')
+  assert.equal(by('85110000-0000-4000-8000-000000000002','title')?.workflow_status,'approved')
+  assert.equal(by('85110000-0000-4000-8000-000000000002','tags')?.workflow_status,'in_review')
+  assert.equal(by('85110000-0000-4000-8000-000000000003','title')?.workflow_status,'draft')
+  assert.equal(by('85110000-0000-4000-8000-000000000003','tags')?.workflow_status,'draft')
+  assert.equal(states.data.some((row)=>row.publication_status==='published'),false,'Aprobar o rechazar no debe publicar')
+  const audit=await admin.from('admin_audit_log').select('action').eq('actor_user_id','85100000-0000-4000-8000-000000000001').in('action',['translation.approve','translation.reject']);assert.ifError(audit.error);assert.equal(audit.data.length,4)
+}
+function localAdmin(){return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!,process.env.SUPABASE_SERVICE_ROLE_KEY!,{auth:{persistSession:false,autoRefreshToken:false}})}
+async function assertNoPublicationMutation(page:Page){assert.equal(await page.getByRole('button',{name:/Publicar/i}).count(),0,'No debe existir publicación masiva')}
 async function assertNoHorizontalOverflow(page:Page,label:string){const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>document.documentElement.clientWidth);assert.equal(overflow,false,`La vista ${label} no debe producir scroll horizontal`)}
 async function assertText(page:Page,text:string){await page.getByText(text,{exact:false}).first().waitFor({state:'visible'})}

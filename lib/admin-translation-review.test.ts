@@ -39,18 +39,49 @@ test('los filtros tienen límites conservadores y rechazan módulos e idiomas in
   assert.deepEqual(normalizeReviewFilters({ page: '2', pageSize: '50', module: 'offer_translation', language: 'PT', protection: 'protected' }), { page: 2, pageSize: 50, resourceType: 'offer_translation', language: 'pt', protection: 'protected' })
 })
 
-test('la previsualización es de solo lectura y no exporta objetos desde use server', () => {
+test('la previsualización y las decisiones masivas no exportan objetos desde use server', () => {
   const action = readFileSync('app/admin/content-center/review/actions.ts', 'utf8')
   assert.match(action, /'use server'/)
   assert.match(action, /export async function previewTranslationReviewSelection/)
-  assert.doesNotMatch(action, /\.rpc\(/)
+  assert.match(action, /export async function mutateTranslationReviewSelection/)
+  assert.match(action, /translation_approve_draft/)
+  assert.match(action, /translation_reject_draft/)
+  assert.doesNotMatch(action, /translation_publish_draft|translation_withdraw_publication/)
   assert.doesNotMatch(action, /\.insert\(|\.update\(|\.delete\(|\.upsert\(/)
   assert.doesNotMatch(action, /export (?:const|type|interface|class) /)
   const page = readFileSync('components/admin/translations/TranslationReviewSelection.tsx', 'utf8')
   assert.match(page, /Previsualizar selección/)
   assert.match(page, /Fuente/)
   assert.match(page, /Borrador/)
-  assert.match(page, /no modifica ningún dato|No aprueba ni publica/)
+  assert.match(page, /Aprobar selección/)
+  assert.match(page, /Rechazar selección/)
+  assert.match(page, /No aprueba ni publica/)
+  assert.match(page, /window\.confirm/)
+})
+
+test('la migración reutiliza aprobación, añade rechazo auditado y nunca publica', () => {
+  const sql = readFileSync('supabase/migrations/202610180001_translation_bulk_review_actions.sql', 'utf8')
+  assert.match(sql, /create or replace function public\.translation_approve_draft\(/)
+  assert.match(sql, /create or replace function public\.translation_reject_draft\(/)
+  assert.match(sql, /translation_editor_assert_version/)
+  assert.match(sql, /translation_editor_assert_source/)
+  assert.match(sql, /workflow_status\s*=\s*'draft'/)
+  assert.match(sql, /translation\.approve/)
+  assert.match(sql, /translation\.reject/)
+  assert.doesNotMatch(sql, /translation_write_value|publication_status\s*=\s*'published'/)
+  assert.match(sql, /grant execute on function public\.translation_reject_draft\(uuid, bigint, text\) to authenticated/)
+  assert.match(sql, /revoke all on function public\.translation_reject_draft[\s\S]*service_role/)
+})
+
+test('el postcheck es de solo lectura y verifica seguridad, permisos y publicación', () => {
+  const sql = readFileSync('scripts/sql/translation-bulk-review-actions-postcheck.sql', 'utf8')
+  assert.doesNotMatch(sql, /\b(?:insert|update|delete|alter|create|drop|truncate)\s+(?:into|table|function|policy|on|from)/i)
+  assert.match(sql, /security_definer/)
+  assert.match(sql, /anon_execute/)
+  assert.match(sql, /authenticated_execute/)
+  assert.match(sql, /service_role_execute/)
+  assert.match(sql, /approve_does_not_write_public_value/)
+  assert.match(sql, /reject_checks_module_permission/)
 })
 
 function state(overrides: Partial<TranslationStateRow> = {}): TranslationStateRow {

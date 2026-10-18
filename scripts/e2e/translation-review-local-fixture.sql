@@ -20,6 +20,9 @@ from auth.users where id in ('85100000-0000-4000-8000-000000000001','85100000-00
 on conflict(provider_id,provider) do update set identity_data=excluded.identity_data,updated_at=now();
 
 select set_config('request.jwt.claim.role','service_role',false);
+delete from public.admin_audit_log
+where actor_user_id='85100000-0000-4000-8000-000000000001'
+  and action in ('translation.approve','translation.reject');
 update public.profiles set role='super_admin' where id='85100000-0000-4000-8000-000000000001';
 update public.profiles set role='user' where id='85100000-0000-4000-8000-000000000002';
 insert into public.user_permission_overrides(user_id,permission_key,allowed)
