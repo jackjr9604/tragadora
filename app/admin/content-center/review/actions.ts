@@ -9,6 +9,7 @@ import type { ReviewMutationItem, ReviewMutationState } from '@/lib/admin-transl
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { classifyEditorialRpcError, editorialSnapshot } from '@/lib/admin-translation-conflict-policy'
+import { isConflictReason } from '@/lib/admin-translation-operation-report'
 
 const MAX_PREVIEW_FIELDS = 50
 
@@ -54,12 +55,12 @@ export async function mutateTranslationReviewSelection(_previous: ReviewMutation
   const items: ReviewMutationItem[] = []
   for (const snapshot of snapshots) {
     const detail = details.get(snapshot.stateId)
-    if (!detail) { items.push(resultItem(snapshot.stateId, '', '', 'skipped', 'No existe o no tienes permiso para este campo.')); continue }
+    if (!detail) { items.push(resultItem(snapshot.stateId, '', '', 'skipped', 'skipped', 'No existe o no tienes permiso para este campo.')); continue }
     const resource = TRANSLATION_RESOURCES[detail.state.resource_type]
-    if (!resource || !access.permissions.has(resource.updatePermission)) { items.push(resultItem(detail.state.id, detail.state.field_name, detail.state.target_language, 'skipped', 'Sin permiso para este módulo.')); continue }
+    if (!resource || !access.permissions.has(resource.updatePermission)) { items.push(resultItem(detail.state.id, detail.state.field_name, detail.state.target_language, 'skipped', 'skipped', 'Sin permiso para este módulo.')); continue }
     const eligibility = reviewEligibility(detail.state)
-    if (!eligibility.eligible) { items.push(resultItem(detail.state.id, detail.state.field_name, detail.state.target_language, 'skipped', eligibility.reason ? reviewReasonLabel(eligibility.reason) : 'Ya no es elegible.')); continue }
-    if (!matchesReviewSnapshot(detail.state, snapshot)) { items.push(resultItem(detail.state.id, detail.state.field_name, detail.state.target_language, 'skipped', 'Cambió después de la previsualización.')); continue }
+    if (!eligibility.eligible) { items.push(resultItem(detail.state.id, detail.state.field_name, detail.state.target_language, 'skipped', isConflictReason(eligibility.reason) ? 'conflict' : 'skipped', eligibility.reason ? reviewReasonLabel(eligibility.reason) : 'Ya no es elegible.')); continue }
+    if (!matchesReviewSnapshot(detail.state, snapshot)) { items.push(resultItem(detail.state.id, detail.state.field_name, detail.state.target_language, 'skipped', 'conflict', 'Cambió después de la previsualización.')); continue }
     const rpc = intent === 'approve' ? 'translation_approve_draft' : 'translation_reject_draft'
     const args = intent === 'approve'
       ? { p_state_id: detail.state.id, p_expected_lock_version: snapshot.lockVersion }
@@ -67,17 +68,17 @@ export async function mutateTranslationReviewSelection(_previous: ReviewMutation
     const response = await session.rpc(rpc, args)
     if (response.error) {
       const conflict = classifyEditorialRpcError(response.error)
-      items.push(resultItem(detail.state.id, detail.state.field_name, detail.state.target_language, conflict.expected ? 'skipped' : 'error', conflict.message))
+      items.push(resultItem(detail.state.id, detail.state.field_name, detail.state.target_language, conflict.expected ? 'skipped' : 'error', conflict.expected ? 'conflict' : 'error', conflict.message))
       continue
     }
-    items.push(resultItem(detail.state.id, detail.state.field_name, detail.state.target_language, intent === 'approve' ? 'approved' : 'rejected', intent === 'approve' ? 'Aprobada; aún no está publicada.' : 'Devuelta a borrador para corrección.'))
+    items.push(resultItem(detail.state.id, detail.state.field_name, detail.state.target_language, intent === 'approve' ? 'approved' : 'rejected', 'success', intent === 'approve' ? 'Aprobada; aún no está publicada.' : 'Devuelta a borrador para corrección.'))
   }
   revalidatePath('/admin/content-center/review')
   revalidatePath('/admin/content-center/translations')
   const approved=items.filter((item)=>item.outcome==='approved').length,rejected=items.filter((item)=>item.outcome==='rejected').length
-  const skipped=items.filter((item)=>item.outcome==='skipped').length,failed=items.filter((item)=>item.outcome==='error').length
+  const conflicts=items.filter((item)=>item.category==='conflict').length,skipped=items.filter((item)=>item.category==='skipped').length,failed=items.filter((item)=>item.outcome==='error').length
   const processed=approved+rejected
-  return { ok: failed===0, message:`${processed} procesadas, ${skipped} omitidas y ${failed} con error. Ninguna traducción fue publicada.`, processed, approved, rejected, skipped, failed, items }
+  return { ok: processed===snapshots.length, message:`${processed} correctas, ${skipped} omitidas, ${conflicts} en conflicto y ${failed} con error. Ninguna traducción fue publicada.`, selected:snapshots.length, processed, approved, rejected, skipped, conflicts, failed, items }
 }
 
 function parseSnapshots(value: FormDataEntryValue | null): ReviewSnapshot[] {
@@ -102,5 +103,5 @@ function parseSnapshots(value: FormDataEntryValue | null): ReviewSnapshot[] {
 function isUuid(value: unknown): value is string { return typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value) }
 function displayValue(value: unknown) { if (value == null) return null; if (Array.isArray(value)) return value.map(String).join('\n'); if (typeof value === 'object') return JSON.stringify(value, null, 2); return String(value) }
 function snapshotOf(state: Parameters<typeof editorialSnapshot>[0]):ReviewSnapshot { return editorialSnapshot(state) }
-function mutationError(message:string):ReviewMutationState { return {ok:false,message,processed:0,approved:0,rejected:0,skipped:0,failed:0,items:[]} }
-function resultItem(stateId:string,fieldName:string,language:string,outcome:ReviewMutationItem['outcome'],message:string):ReviewMutationItem { return {stateId,fieldName,language,outcome,message} }
+function mutationError(message:string):ReviewMutationState { return {ok:false,message,selected:0,processed:0,approved:0,rejected:0,skipped:0,conflicts:0,failed:0,items:[]} }
+function resultItem(stateId:string,fieldName:string,language:string,outcome:ReviewMutationItem['outcome'],category:ReviewMutationItem['category'],message:string):ReviewMutationItem { return {stateId,fieldName,language,outcome,category,message} }

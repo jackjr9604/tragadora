@@ -82,19 +82,19 @@ async function assertPreviewConcurrency(page:Page,admin:ReturnType<typeof localA
   await assertText(page,'Fuente sintética uno')
   await assertText(page,'Draft title en')
 }
-async function approveCurrentPreview(page:Page){page.once('dialog',(dialog)=>dialog.accept());await page.getByRole('button',{name:'Aprobar selección'}).click();await assertText(page,'1 procesadas, 0 omitidas y 0 con error');await assertText(page,'Aprobadas: 1')}
+async function approveCurrentPreview(page:Page){page.once('dialog',(dialog)=>dialog.accept());await page.getByRole('button',{name:'Aprobar selección'}).click();await assertText(page,'Operación completada');await assertText(page,'Seleccionados');await assertText(page,'Correctos');await page.reload({waitUntil:'networkidle'});await assertText(page,'Último resultado conservado en esta sesión de administración.')}
 async function assertActionConcurrency(page:Page,admin:ReturnType<typeof localAdmin>){
   const title=page.getByRole('checkbox',{name:/Fuente sintética dos title/i}),tags=page.getByRole('checkbox',{name:/Fuente sintética dos tags/i})
   await title.check();await tags.check();await page.getByRole('button',{name:'Previsualizar selección'}).click();await assertText(page,'2 de 2 campos conservan una versión vigente')
   const state=await admin.from('translation_field_state').select('id,lock_version').eq('resource_type','blog_post_translation').eq('resource_id','85110000-0000-4000-8000-000000000002').eq('field_name','tags').eq('target_language','en').single();assert.ifError(state.error)
   const changed=await admin.from('translation_field_state').update({lock_version:Number(state.data.lock_version)+1}).eq('id',state.data.id);assert.ifError(changed.error)
-  page.once('dialog',(dialog)=>dialog.accept());await page.getByRole('button',{name:'Aprobar selección'}).click();await assertText(page,'1 procesadas, 1 omitidas y 0 con error');await assertText(page,'Cambió después de la previsualización')
+  page.once('dialog',(dialog)=>dialog.accept());await page.getByRole('button',{name:'Aprobar selección'}).click();await assertText(page,'Operación completada con resultados parciales');await assertText(page,'Conflictos');await assertText(page,'Cambió después de la previsualización')
 }
 async function rejectSelection(page:Page){
   const title=page.getByRole('checkbox',{name:/Fuente sintética tres title/i}),tags=page.getByRole('checkbox',{name:/Fuente sintética tres tags/i})
   await title.check();await tags.check();await page.getByRole('button',{name:'Previsualizar selección'}).click();await assertText(page,'2 de 2 campos conservan una versión vigente')
   await page.getByLabel('Motivo del rechazo').fill('Corregir terminología antes de una nueva revisión.')
-  page.once('dialog',(dialog)=>dialog.accept());await page.getByRole('button',{name:'Rechazar selección'}).click();await assertText(page,'2 procesadas, 0 omitidas y 0 con error');await assertText(page,'Rechazadas: 2')
+  page.once('dialog',(dialog)=>dialog.accept());await page.getByRole('button',{name:'Rechazar selección'}).click();await assertText(page,'Devuelta a borrador para corrección.');await assertText(page,'Correctos')
 }
 async function assertPersistedDecisions(admin:ReturnType<typeof localAdmin>){
   const states=await admin.from('translation_field_state').select('resource_id,field_name,workflow_status,publication_status').in('resource_id',['85110000-0000-4000-8000-000000000001','85110000-0000-4000-8000-000000000002','85110000-0000-4000-8000-000000000003']).in('field_name',['title','tags']).eq('target_language','en');assert.ifError(states.error)

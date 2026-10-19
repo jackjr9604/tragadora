@@ -70,6 +70,9 @@ test('la previsualización y las decisiones masivas no exportan objetos desde us
   assert.match(page, /window\.confirm/)
   assert.match(page, /Revalidar conflictos/)
   assert.match(page, /selección permanece intacta/)
+  assert.match(page, /TranslationOperationReport/)
+  assert.match(action, /conflicts/)
+  assert.match(action, /processed===snapshots\.length/)
 })
 
 test('la migración reutiliza aprobación, añade rechazo auditado y nunca publica', () => {
