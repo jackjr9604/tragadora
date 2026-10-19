@@ -8,6 +8,7 @@ import type { ReviewPreviewItem, ReviewPreviewState } from '@/lib/admin-translat
 import type { ReviewMutationItem, ReviewMutationState } from '@/lib/admin-translation-review-state'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { classifyEditorialRpcError, editorialSnapshot } from '@/lib/admin-translation-conflict-policy'
 
 const MAX_PREVIEW_FIELDS = 50
 
@@ -65,8 +66,8 @@ export async function mutateTranslationReviewSelection(_previous: ReviewMutation
       : { p_state_id: detail.state.id, p_expected_lock_version: snapshot.lockVersion, p_reason: reason }
     const response = await session.rpc(rpc, args)
     if (response.error) {
-      const concurrent = response.error.code === '40001' || /cambi|anterior|versi[oó]n|revisi[oó]n/i.test(response.error.message)
-      items.push(resultItem(detail.state.id, detail.state.field_name, detail.state.target_language, concurrent ? 'skipped' : 'error', concurrent ? 'Cambió mientras se procesaba; no se modificó.' : safeRpcError(response.error.message)))
+      const conflict = classifyEditorialRpcError(response.error)
+      items.push(resultItem(detail.state.id, detail.state.field_name, detail.state.target_language, conflict.expected ? 'skipped' : 'error', conflict.message))
       continue
     }
     items.push(resultItem(detail.state.id, detail.state.field_name, detail.state.target_language, intent === 'approve' ? 'approved' : 'rejected', intent === 'approve' ? 'Aprobada; aún no está publicada.' : 'Devuelta a borrador para corrección.'))
@@ -91,6 +92,7 @@ function parseSnapshots(value: FormDataEntryValue | null): ReviewSnapshot[] {
       if (!isUuid(snapshot.stateId) || !Number.isInteger(snapshot.lockVersion) || Number(snapshot.lockVersion) < 1 || typeof snapshot.sourceHash !== 'string' || !Number.isInteger(snapshot.sourceRevision)) continue
       if (snapshot.draftSourceHash !== null && typeof snapshot.draftSourceHash !== 'string') continue
       if (snapshot.draftSourceRevision !== null && !Number.isInteger(snapshot.draftSourceRevision)) continue
+      if (typeof snapshot.status !== 'string' || typeof snapshot.workflowStatus !== 'string' || typeof snapshot.publicationStatus !== 'string' || typeof snapshot.protected !== 'boolean') continue
       unique.set(snapshot.stateId, snapshot as ReviewSnapshot)
     }
     return [...unique.values()]
@@ -99,7 +101,6 @@ function parseSnapshots(value: FormDataEntryValue | null): ReviewSnapshot[] {
 
 function isUuid(value: unknown): value is string { return typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value) }
 function displayValue(value: unknown) { if (value == null) return null; if (Array.isArray(value)) return value.map(String).join('\n'); if (typeof value === 'object') return JSON.stringify(value, null, 2); return String(value) }
-function snapshotOf(state:{id:string;lock_version?:number|null;source_hash:string;source_revision:number;draft_source_hash?:string|null;draft_source_revision?:number|null}):ReviewSnapshot { return {stateId:state.id,lockVersion:state.lock_version??0,sourceHash:state.source_hash,sourceRevision:state.source_revision,draftSourceHash:state.draft_source_hash??null,draftSourceRevision:state.draft_source_revision??null} }
+function snapshotOf(state: Parameters<typeof editorialSnapshot>[0]):ReviewSnapshot { return editorialSnapshot(state) }
 function mutationError(message:string):ReviewMutationState { return {ok:false,message,processed:0,approved:0,rejected:0,skipped:0,failed:0,items:[]} }
 function resultItem(stateId:string,fieldName:string,language:string,outcome:ReviewMutationItem['outcome'],message:string):ReviewMutationItem { return {stateId,fieldName,language,outcome,message} }
-function safeRpcError(message:string) { if (/permiso|forbidden|autoriz/i.test(message)) return 'No tienes permiso para procesar este campo.'; if (/motivo|borrador|revisi[oó]n/i.test(message)) return message; return 'No se pudo procesar el campo.' }

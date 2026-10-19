@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs'
 import type { PermissionKey } from './admin-permissions'
 import type { TranslationStateRow } from './admin-translation-inventory'
 import { matchesReviewSnapshot, normalizeReviewFilters, reviewEligibility, reviewableResources } from './admin-translation-review-policy'
+import { classifyEditorialRpcError, editorialSnapshot } from './admin-translation-conflict-policy'
 
 test('solo los borradores vigentes enviados a revisión son elegibles', () => {
   assert.deepEqual(reviewEligibility(state()), { eligible: true, reason: null })
@@ -22,11 +23,21 @@ test('la protección manual se muestra pero no impide revisión humana', () => {
 
 test('el snapshot detecta cambios concurrentes de versión, fuente o borrador', () => {
   const current = state()
-  const snapshot = { stateId: current.id, lockVersion: 4, sourceHash: 'source', sourceRevision: 3, draftSourceHash: 'source', draftSourceRevision: 3 }
+  const snapshot = editorialSnapshot(current)
   assert.equal(matchesReviewSnapshot(current, snapshot), true)
   assert.equal(matchesReviewSnapshot(state({ lock_version: 5 }), snapshot), false)
   assert.equal(matchesReviewSnapshot(state({ source_hash: 'new-source' }), snapshot), false)
   assert.equal(matchesReviewSnapshot(state({ draft_source_revision: 2 }), snapshot), false)
+  assert.equal(matchesReviewSnapshot(state({ workflow_status: 'approved' }), snapshot), false)
+  assert.equal(matchesReviewSnapshot(state({ publication_status: 'published' }), snapshot), false)
+  assert.equal(matchesReviewSnapshot(state({ is_protected: true }), snapshot), false)
+})
+
+test('clasifica conflictos editoriales sin exponer errores internos', () => {
+  assert.deepEqual(classifyEditorialRpcError({ code: '40001', message: 'detalle interno' }).kind, 'concurrent_change')
+  assert.deepEqual(classifyEditorialRpcError({ code: '42501', message: 'detalle interno' }).kind, 'permission_changed')
+  assert.deepEqual(classifyEditorialRpcError({ code: '22023', message: 'El borrador cambió' }).kind, 'state_changed')
+  assert.deepEqual(classifyEditorialRpcError({ code: 'XX000', message: 'secreto interno' }), { expected: false, kind: 'unknown', message: 'No se pudo procesar el campo.' })
 })
 
 test('los recursos de revisión requieren permiso de actualización y no solo lectura', () => {
@@ -57,6 +68,8 @@ test('la previsualización y las decisiones masivas no exportan objetos desde us
   assert.match(page, /Rechazar selección/)
   assert.match(page, /No aprueba ni publica/)
   assert.match(page, /window\.confirm/)
+  assert.match(page, /Revalidar conflictos/)
+  assert.match(page, /selección permanece intacta/)
 })
 
 test('la migración reutiliza aprobación, añade rechazo auditado y nunca publica', () => {

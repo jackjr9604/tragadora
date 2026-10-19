@@ -1,6 +1,7 @@
 import type { TranslationStateRow } from './admin-translation-inventory'
 import type { PermissionKey } from './admin-permissions'
 import { TRANSLATION_RESOURCES, type TranslationResourceType } from './admin-translation-inventory-policy'
+import { matchesEditorialSnapshot, type EditorialSnapshot } from './admin-translation-conflict-policy'
 
 export type ReviewFilters = { page:number;pageSize:25|50;resourceType?:TranslationResourceType;language?:string;protection?:'protected'|'unprotected' }
 
@@ -16,14 +17,7 @@ export const REVIEW_EXCLUSION_REASONS = [
 
 export type ReviewExclusionReason = (typeof REVIEW_EXCLUSION_REASONS)[number]
 
-export type ReviewSnapshot = {
-  stateId: string
-  lockVersion: number
-  sourceHash: string
-  sourceRevision: number
-  draftSourceHash: string | null
-  draftSourceRevision: number | null
-}
+export type ReviewSnapshot = EditorialSnapshot
 
 export function reviewEligibility(state: TranslationStateRow) {
   if (state.workflow_status !== 'in_review') return excluded('not_in_review')
@@ -36,12 +30,7 @@ export function reviewEligibility(state: TranslationStateRow) {
 }
 
 export function matchesReviewSnapshot(state: TranslationStateRow, snapshot: ReviewSnapshot) {
-  return state.id === snapshot.stateId
-    && state.lock_version === snapshot.lockVersion
-    && state.source_hash === snapshot.sourceHash
-    && state.source_revision === snapshot.sourceRevision
-    && state.draft_source_hash === snapshot.draftSourceHash
-    && state.draft_source_revision === snapshot.draftSourceRevision
+  return matchesEditorialSnapshot(state, snapshot)
 }
 
 export function reviewReasonLabel(reason: ReviewExclusionReason) {
