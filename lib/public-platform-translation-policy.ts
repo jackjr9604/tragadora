@@ -34,7 +34,7 @@ export function isPublishableTranslationState(state: TranslationFieldState | und
   if (!state) return false
   // Optional preserves compatibility while migration 3E.2 is not installed.
   if (state.publication_status !== undefined && state.publication_status !== 'published') return false
-  const statusAllowed = state.status === 'reviewed' || state.status === 'machine_translated' || (state.status === 'imported_unreviewed' && state.is_protected)
+  const statusAllowed = state.status === 'reviewed' || (state.status === 'imported_unreviewed' && state.is_protected)
   return statusAllowed && state.translated_source_hash === state.source_hash && state.translated_revision === state.source_revision
 }
 

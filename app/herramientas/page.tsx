@@ -5,8 +5,13 @@ import { resolvePublicLanguage } from '@/lib/language'
 import { getPublishedTools } from '@/lib/tools'
 import { getPageContent, pageValue } from '@/lib/site-content'
 import { getPublicUi } from '@/lib/public-i18n'
+import { publicSeoMetadata } from '@/lib/public-seo'
 
-export const metadata: Metadata = { title: 'Herramientas de trading | Tradagora', description: 'Recursos, plataformas y servicios útiles para traders.', alternates: { canonical: '/herramientas' } }
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ lang?: string | string[] }> }): Promise<Metadata> {
+  const language = await resolvePublicLanguage((await searchParams).lang), t = getPublicUi(language), content = await getPageContent('herramientas', language)
+  const value = (field: string, fallback: string) => typeof content.hero?.[field] === 'string' && String(content.hero[field]).trim() ? String(content.hero[field]) : fallback
+  return publicSeoMetadata({ path: '/herramientas', language, title: value('title', t('hero.tools.title')), description: value('subtitle', t('hero.tools.subtitle')) })
+}
 export const revalidate = 60
 
 export default async function ToolsPage({ searchParams }: { searchParams: Promise<{ lang?: string | string[] }> }) {

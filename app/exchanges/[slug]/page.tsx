@@ -8,6 +8,7 @@ import { getPublicExchange } from '@/lib/exchanges'
 import { resolvePublicLanguage } from '@/lib/language'
 import { getPublicOffers } from '@/lib/public-offers'
 import { firmProfileText, getPublicUi, localizedCountryName, publicExchangeProfileCopy, publicLocale, publicPath, publicUiLanguage } from '@/lib/public-i18n'
+import { publicSeoMetadata } from '@/lib/public-seo'
 
 export const revalidate = 60
 
@@ -20,7 +21,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   const [{ slug }, query] = await Promise.all([params, searchParams])
   const language = await resolvePublicLanguage(query.lang)
   const exchange = await getPublicExchange(slug, language)
-  return exchange ? { title: exchange.seoTitle || `${exchange.name} | Tradagora`, description: exchange.seoDescription || exchange.shortDescription || undefined } : {}
+  return exchange ? publicSeoMetadata({ path: `/exchanges/${slug}`, language, title: exchange.seoTitle || exchange.name, description: exchange.seoDescription || exchange.shortDescription }) : {}
 }
 
 export default async function Page({ params, searchParams }: PageProps) {

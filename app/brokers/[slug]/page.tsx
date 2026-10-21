@@ -10,6 +10,7 @@ import { getPublicBroker } from '@/lib/brokers'
 import { resolvePublicLanguage } from '@/lib/language'
 import { getPublicOffers } from '@/lib/public-offers'
 import { firmProfileText, getPublicUi, localizedCountryName, publicBrokerProfileCopy, publicLocale, publicPath, publicUiLanguage } from '@/lib/public-i18n'
+import { publicSeoMetadata } from '@/lib/public-seo'
 
 export const revalidate = 60
 type PageProps = { params: Promise<{ slug: string }>; searchParams: Promise<{ lang?: string | string[] }> }
@@ -18,7 +19,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   const [{ slug }, query] = await Promise.all([params, searchParams])
   const language = await resolvePublicLanguage(query.lang)
   const broker = await getPublicBroker(slug, language)
-  return broker ? { title: broker.seoTitle || `${broker.name} | Tradagora`, description: broker.seoDescription || broker.shortDescription || undefined } : {}
+  return broker ? publicSeoMetadata({ path: `/brokers/${slug}`, language, title: broker.seoTitle || broker.name, description: broker.seoDescription || broker.shortDescription }) : {}
 }
 
 export default async function BrokerPage({ params, searchParams }: PageProps) {

@@ -8,10 +8,19 @@ import { getPageContent } from '@/lib/site-content'
 import { resolvePublicLanguage } from '@/lib/language'
 import type { RecommendationCriteria } from '@/lib/prop-firm-recommender'
 import { getPublicOffers } from '@/lib/public-offers'
+import { publicHomeCopy, publicUiLanguage } from '@/lib/public-i18n'
+import { publicSeoMetadata } from '@/lib/public-seo'
 import { SITE_URL } from '@/lib/site-url'
 
 export const revalidate = 60
-export const metadata: Metadata = { alternates: { canonical: SITE_URL } }
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ lang?: string | string[] }> }): Promise<Metadata> {
+  const language = await resolvePublicLanguage((await searchParams).lang)
+  const copy = publicHomeCopy[publicUiLanguage(language)]
+  const content = await getPageContent('home', language)
+  const title = typeof content.hero?.title === 'string' && content.hero.title.trim() ? content.hero.title : copy.heroTitle
+  const description = typeof content.hero?.subtitle === 'string' && content.hero.subtitle.trim() ? content.hero.subtitle : copy.heroSubtitle
+  return publicSeoMetadata({ path: '/', language, title, description })
+}
 
 const structuredData = [
   {

@@ -1,8 +1,11 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { permissionsForAdminPath } from '@/lib/admin-permissions'
+import { hasPublicUiCatalog } from '@/lib/public-i18n'
+import { normalizedLanguage, PUBLIC_LANGUAGE_REQUEST_HEADER } from '@/lib/public-language'
 
 export async function proxy(request: NextRequest) {
+  if (!request.nextUrl.pathname.startsWith('/admin')) return publicLanguageRequest(request)
   if (request.nextUrl.pathname === '/admin/denied') return NextResponse.next()
   if (request.nextUrl.pathname === '/admin/translations') {
     const target = request.nextUrl.clone()
@@ -40,4 +43,16 @@ export async function proxy(request: NextRequest) {
   return response
 }
 
-export const config = { matcher: '/admin/:path*' }
+function publicLanguageRequest(request: NextRequest) {
+  const requested = normalizedLanguage(request.nextUrl.searchParams.get('lang') ?? undefined)
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.delete(PUBLIC_LANGUAGE_REQUEST_HEADER)
+  if (requested && hasPublicUiCatalog(requested)) {
+    requestHeaders.set(PUBLIC_LANGUAGE_REQUEST_HEADER, requested)
+  }
+  return NextResponse.next({ request: { headers: requestHeaders } })
+}
+
+export const config = {
+  matcher: ['/((?!api|_next/static|_next/image|brand/|favicon.ico|robots.txt|sitemap.xml).*)'],
+}

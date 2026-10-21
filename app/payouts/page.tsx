@@ -10,9 +10,14 @@ import { GlobalOffersStrip } from '@/components/public/offers/GlobalOffersStrip'
 import { PageHero } from '@/components/public/PageHero'
 import { getPageContent, pageValue, sectionEnabled } from '@/lib/site-content'
 import { getPublicUi, publicLocale } from '@/lib/public-i18n'
+import { publicSeoMetadata } from '@/lib/public-seo'
 
 export const revalidate = 60
-export const metadata: Metadata = { title: 'Payout Tracker de Prop Firms | Tradagora', description: 'Compara datos externos de referencia con payouts verificados independientemente por Tradagora.' }
+export async function generateMetadata({ searchParams }: { searchParams: Promise<SearchParams> }): Promise<Metadata> {
+  const language = await resolvePublicLanguage((await searchParams).lang), t = getPublicUi(language), content = await getPageContent('payouts', language)
+  const value = (field: string, fallback: string) => typeof content.hero?.[field] === 'string' && String(content.hero[field]).trim() ? String(content.hero[field]) : fallback
+  return publicSeoMetadata({ path: '/payouts', language, title: value('title', t('hero.payouts.title')), description: value('subtitle', t('hero.payouts.subtitle')) })
+}
 type SearchParams = { lang?: string | string[]; period?: string | string[]; q?: string | string[]; market?: string | string[]; sort?: string | string[] }
 
 export default async function PayoutsPage({ searchParams }: { searchParams: Promise<SearchParams> }) {

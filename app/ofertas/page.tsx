@@ -6,8 +6,16 @@ import { getPublicOffers } from '@/lib/public-offers'
 import { PageHero } from '@/components/public/PageHero'
 import { getPageContent } from '@/lib/site-content'
 import { publicOffersCopy, publicUiLanguage } from '@/lib/public-i18n'
+import type { Metadata } from 'next'
+import { publicSeoMetadata } from '@/lib/public-seo'
 
 export const revalidate = 60
+
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ lang?: string | string[] }> }): Promise<Metadata> {
+  const language = await resolvePublicLanguage((await searchParams).lang), copy = publicOffersCopy[publicUiLanguage(language)], content = await getPageContent('ofertas', language)
+  const value = (field: string, fallback: string) => typeof content.hero?.[field] === 'string' && String(content.hero[field]).trim() ? String(content.hero[field]) : fallback
+  return publicSeoMetadata({ path: '/ofertas', language, title: value('title', copy.pageTitle), description: value('subtitle', copy.pageSubtitle) })
+}
 
 export default async function OffersPage({ searchParams }: { searchParams: Promise<{ lang?: string | string[] }> }) {
   const language = await resolvePublicLanguage((await searchParams).lang)

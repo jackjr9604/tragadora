@@ -19,6 +19,7 @@ import { getPublicPlatformTranslations } from '@/lib/public-platform-translation
 import { getPublicOfferTranslations } from '@/lib/public-offer-translations'
 import { selectCanonicalOfferRows } from '@/lib/public-offer-translation-policy'
 import { getPublicChallengeTranslations } from '@/lib/public-challenge-translations'
+import { publicSeoMetadata } from '@/lib/public-seo'
 
 export const revalidate = 60
 
@@ -34,7 +35,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   const platform = await getPublicPlatformBySlug(slug)
   if (!platform) return {}
   const translation = (await getPublicPlatformTranslations([platform.id], language)).get(platform.id)
-  return { title: translation?.seoTitle || `${platform.name} | Tradagora`, description: translation?.seoDescription || translation?.shortDescription || firmProfileText(copy.metaDescription, { name: platform.name }) }
+  return publicSeoMetadata({ path: `/prop-firms/${slug}`, language, title: translation?.seoTitle || platform.name, description: translation?.seoDescription || translation?.shortDescription || firmProfileText(copy.metaDescription, { name: platform.name }) })
 }
 
 export default async function PropFirmDetailPage({ params, searchParams }: PageProps) {

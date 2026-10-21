@@ -11,10 +11,12 @@ import { GlobalOffersStrip } from '@/components/public/offers/GlobalOffersStrip'
 import { PageHero } from '@/components/public/PageHero'
 import { getPageContent } from '@/lib/site-content'
 import { getPublicUi } from '@/lib/public-i18n'
+import { publicSeoMetadata } from '@/lib/public-seo'
 
-export const metadata: Metadata = {
-  title: 'Comparador de Prop Firms | Tradagora',
-  description: 'Compara challenges, planes, reglas, precio y evidencia de payouts según tus prioridades, sin un ganador universal.',
+export async function generateMetadata({ searchParams }: { searchParams: Promise<Query> }): Promise<Metadata> {
+  const language = await resolvePublicLanguage((await searchParams).lang), t = getPublicUi(language), content = await getPageContent('comparador', language)
+  const value = (field: string, fallback: string) => typeof content.hero?.[field] === 'string' && String(content.hero[field]).trim() ? String(content.hero[field]) : fallback
+  return publicSeoMetadata({ path: '/comparador', language, title: value('title', t('hero.comparator.title')), description: value('subtitle', t('hero.comparator.subtitle')) })
 }
 export const revalidate = 60
 

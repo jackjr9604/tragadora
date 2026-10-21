@@ -6,6 +6,7 @@ import { getBlogPosts } from '@/lib/discovery'
 import { resolvePublicLanguage } from '@/lib/language'
 import { getPageContent } from '@/lib/site-content'
 import { getPublicUi } from '@/lib/public-i18n'
+import { publicSeoMetadata } from '@/lib/public-seo'
 
 export const revalidate = 60
 
@@ -15,7 +16,7 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
   const content = await getPageContent('blog', language)
   const title = typeof content.hero?.title === 'string' && content.hero.title.trim() ? content.hero.title : t('hero.blog.title')
   const description = typeof content.hero?.subtitle === 'string' && content.hero.subtitle.trim() ? content.hero.subtitle : t('hero.blog.subtitle')
-  return { title: `${title} | Tradagora`, description }
+  return publicSeoMetadata({ path: '/blog', language, title, description })
 }
 
 export default async function Page({ searchParams }: { searchParams: Promise<{ lang?: string | string[] }> }) {

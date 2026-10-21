@@ -6,8 +6,13 @@ import { getGiveaways } from '@/lib/discovery'
 import { resolvePublicLanguage } from '@/lib/language'
 import { getPageContent } from '@/lib/site-content'
 import { getPublicUi } from '@/lib/public-i18n'
+import { publicSeoMetadata } from '@/lib/public-seo'
 
-export const metadata: Metadata = { title: 'Giveaways | Tradagora', description: 'Campañas y giveaways para la comunidad de Tradagora.' }
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ lang?: string | string[] }> }): Promise<Metadata> {
+  const language = await resolvePublicLanguage((await searchParams).lang), t = getPublicUi(language), content = await getPageContent('giveaway', language)
+  const value = (field: string, fallback: string) => typeof content.hero?.[field] === 'string' && String(content.hero[field]).trim() ? String(content.hero[field]) : fallback
+  return publicSeoMetadata({ path: '/giveaway', language, title: value('title', t('hero.giveaway.title')), description: value('subtitle', t('hero.giveaway.subtitle')) })
+}
 export const revalidate = 60
 
 export default async function Page({ searchParams }: { searchParams: Promise<{ lang?: string | string[] }> }) {

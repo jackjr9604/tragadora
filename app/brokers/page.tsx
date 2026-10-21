@@ -5,8 +5,17 @@ import { resolvePublicLanguage } from '@/lib/language'
 import { PageHero } from '@/components/public/PageHero'
 import { getPageContent } from '@/lib/site-content'
 import { getPublicUi } from '@/lib/public-i18n'
+import type { Metadata } from 'next'
+import { publicSeoMetadata } from '@/lib/public-seo'
 
 export const revalidate = 60
+
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ lang?: string | string[] }> }): Promise<Metadata> {
+  const language = await resolvePublicLanguage((await searchParams).lang), t = getPublicUi(language), content = await getPageContent('brokers', language)
+  return publicSeoMetadata({ path: '/brokers', language, title: text(content, 'title', t('hero.brokers.title')), description: text(content, 'subtitle', t('hero.brokers.subtitle')) })
+}
+
+function text(content: Awaited<ReturnType<typeof getPageContent>>, field: string, fallback: string) { const value = content.hero?.[field]; return typeof value === 'string' && value.trim() ? value : fallback }
 
 export default async function BrokersPage({ searchParams }: { searchParams: Promise<{ lang?: string | string[] }> }) {
   const language = await resolvePublicLanguage((await searchParams).lang)

@@ -9,6 +9,7 @@ export type PublicLanguageOption = {
 
 export const PUBLIC_LANGUAGE_COOKIE = 'tradagora_language'
 export const PUBLIC_LANGUAGE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365
+export const PUBLIC_LANGUAGE_REQUEST_HEADER = 'x-tradagora-public-language'
 
 export function normalizedLanguage(value: string | string[] | undefined) {
   const candidate = (Array.isArray(value) ? value[0] : value)?.trim().toLowerCase()

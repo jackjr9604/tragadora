@@ -76,8 +76,6 @@ async function getActivePublicLanguagesUncached(): Promise<PublicLanguageOption[
   if (error || !data?.length) {
     return [
       { code: 'es', name: 'Español', nativeName: 'Español', isDefault: true },
-      { code: 'en', name: 'English', nativeName: 'English', isDefault: false },
-      { code: 'pt', name: 'Portuguese', nativeName: 'Português', isDefault: false },
     ]
   }
 

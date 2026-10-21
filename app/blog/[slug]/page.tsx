@@ -5,6 +5,7 @@ import { SafeMarkdown } from '@/components/public/SafeMarkdown'
 import { getBlogPosts } from '@/lib/discovery'
 import { resolvePublicLanguage } from '@/lib/language'
 import { getPublicUi, publicLocale } from '@/lib/public-i18n'
+import { publicSeoMetadata } from '@/lib/public-seo'
 
 export const revalidate = 60
 
@@ -14,7 +15,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const [{ slug }, query] = await Promise.all([params, searchParams])
   const language = await resolvePublicLanguage(query.lang)
   const post = (await getBlogPosts(language)).find((item) => item.slug === slug)
-  return post ? { title: `${post.title} | Tradagora`, description: post.excerpt ?? undefined } : { title: 'Blog | Tradagora' }
+  return post ? publicSeoMetadata({ path: `/blog/${slug}`, language, title: post.title, description: post.excerpt }) : { title: 'Blog | Tradagora' }
 }
 
 export default async function Page({ params, searchParams }: Props) {

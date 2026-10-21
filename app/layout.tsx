@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { headers } from 'next/headers';
 import "./globals.css";
 import { getBranding } from '@/lib/branding';
 import { SITE_URL } from '@/lib/site-url';
+import { resolvePublicLanguage } from '@/lib/language';
+import { PUBLIC_LANGUAGE_REQUEST_HEADER } from '@/lib/public-language';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,10 +35,13 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const requestHeaders = await headers();
+  const language = await resolvePublicLanguage(requestHeaders.get(PUBLIC_LANGUAGE_REQUEST_HEADER) ?? undefined);
   return (
     <html
-      lang="es"
+      lang={language}
+      data-scroll-behavior="smooth"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">{children}</body>

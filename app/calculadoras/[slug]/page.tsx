@@ -8,6 +8,7 @@ import { PublicPageShell } from '@/components/public/PublicPageShell'
 import { resolvePublicLanguage } from '@/lib/language'
 import { getPublishedTool } from '@/lib/tools'
 import { publicCalculatorCopy, publicPath, publicUiLanguage } from '@/lib/public-i18n'
+import { publicSeoMetadata } from '@/lib/public-seo'
 
 const REGISTRY = { drawdown: DrawdownCalculator, 'profit-split': ProfitSplitCalculator, 'challenge-target': ChallengeTargetCalculator } as const
 export const revalidate = 60
@@ -17,7 +18,7 @@ export async function generateMetadata({ params, searchParams }: { params: Promi
   const language = await resolvePublicLanguage(query.lang)
   const text = publicCalculatorCopy[publicUiLanguage(language)]
   const tool = await getPublishedTool(slug, language)
-  return tool ? { title: `${tool.seo_title || tool.name} | Tradagora`, description: tool.seo_description || tool.short_description || undefined, alternates: { canonical: `/calculadoras/${tool.slug}` } } : { title: `${text.notFound} | Tradagora` }
+  return tool ? publicSeoMetadata({ path: `/calculadoras/${tool.slug}`, language, title: tool.seo_title || tool.name, description: tool.seo_description || tool.short_description }) : { title: `${text.notFound} | Tradagora` }
 }
 
 export default async function CalculatorPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ lang?: string | string[] }> }) {

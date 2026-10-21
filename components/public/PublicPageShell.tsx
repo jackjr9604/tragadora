@@ -15,7 +15,7 @@ export async function PublicPageShell({ language = 'es', children }: { language?
   const activeLanguage = languages.some((item) => item.code === language)
     ? language
     : languages.find((item) => item.isDefault)?.code ?? 'es'
-  return <main className="tradagora-shell min-h-screen overflow-x-clip bg-[#09111f] text-slate-100"><Suspense fallback={<TickerFallback />}><AsyncTicker language={activeLanguage} /></Suspense><PublicNavbar language={activeLanguage} languages={languages} searchItems={searchItems} desktopLogo={branding.navbar_desktop_logo} mobileLogo={branding.navbar_mobile_logo} /><div className="flex flex-col">{children}</div><PublicFooter language={activeLanguage} logo={branding.footer_logo} /></main>
+  return <main lang={activeLanguage} className="tradagora-shell min-h-screen overflow-x-clip bg-[#09111f] text-slate-100"><Suspense fallback={<TickerFallback />}><AsyncTicker language={activeLanguage} /></Suspense><PublicNavbar language={activeLanguage} languages={languages} searchItems={searchItems} desktopLogo={branding.navbar_desktop_logo} mobileLogo={branding.navbar_mobile_logo} /><div className="flex flex-col">{children}</div><PublicFooter language={activeLanguage} logo={branding.footer_logo} /></main>
 }
 
 async function AsyncTicker({ language }: { language: PublicLanguage }) {

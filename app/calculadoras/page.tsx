@@ -5,8 +5,13 @@ import { resolvePublicLanguage } from '@/lib/language'
 import { getPageContent, pageValue } from '@/lib/site-content'
 import { getPublishedCalculators } from '@/lib/tools'
 import { getPublicUi } from '@/lib/public-i18n'
+import { publicSeoMetadata } from '@/lib/public-seo'
 
-export const metadata: Metadata = { title: 'Calculadoras de trading | Tradagora', description: 'Calculadoras propias de Tradagora para riesgo, objetivos y profit split.', alternates: { canonical: '/calculadoras' } }
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ lang?: string | string[] }> }): Promise<Metadata> {
+  const language = await resolvePublicLanguage((await searchParams).lang), t = getPublicUi(language), content = await getPageContent('calculadoras', language)
+  const value = (field: string, fallback: string) => typeof content.hero?.[field] === 'string' && String(content.hero[field]).trim() ? String(content.hero[field]) : fallback
+  return publicSeoMetadata({ path: '/calculadoras', language, title: value('title', t('hero.calculators.title')), description: value('subtitle', t('hero.calculators.subtitle')) })
+}
 export const revalidate = 60
 
 export default async function CalculatorsPage({ searchParams }: { searchParams: Promise<{ lang?: string | string[] }> }) {

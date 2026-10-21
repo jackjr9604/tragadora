@@ -10,6 +10,7 @@ import { getPayoutFirmDetail } from '@/lib/payout-tracker'
 import { resolvePublicLanguage } from '@/lib/language'
 import { getPublicPlatformBySlug } from '@/lib/public-platform'
 import { firmProfileText, publicFirmProfileCopy, publicPath, publicUiLanguage } from '@/lib/public-i18n'
+import { publicSeoMetadata } from '@/lib/public-seo'
 
 export const revalidate = 60
 type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ lang?: string | string[]; period?: string | string[] }> }
@@ -19,7 +20,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const language = await resolvePublicLanguage(query.lang)
   const copy = publicFirmProfileCopy[publicUiLanguage(language)]
   const platform = await getPublicPlatformBySlug(slug)
-  return platform ? { title: `${platform.name} Payouts | Tradagora`, description: firmProfileText(copy.payoutMetaDescription, { name: platform.name }) } : {}
+  return platform ? publicSeoMetadata({ path: `/payouts/${slug}`, language, title: `${platform.name} Payouts`, description: firmProfileText(copy.payoutMetaDescription, { name: platform.name }) }) : {}
 }
 
 export default async function PayoutFirmPage({ params, searchParams }: Props) {
