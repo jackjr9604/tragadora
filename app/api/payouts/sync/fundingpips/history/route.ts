@@ -39,22 +39,19 @@ type FundingPipsResult = {
   hasMore: boolean
 }
 
-export async function GET() {
-  try {
-    const { payouts } =
-      await getFundingPipsPayouts(1)
+const ETHERSCAN_TIMEOUT_MS = 15_000
 
-    return NextResponse.json({
-      success: true,
-      mode: 'preview',
-      collector: 'fundingpips',
-      network: 'arbitrum',
-      found: payouts.length,
-      payouts,
-    })
-  } catch (error) {
-    return errorResponse(error)
-  }
+export async function GET() {
+  return NextResponse.json(
+    {
+      success: false,
+      error: 'Method Not Allowed',
+    },
+    {
+      status: 405,
+      headers: { Allow: 'POST' },
+    }
+  )
 }
 
 /*
@@ -376,7 +373,10 @@ export async function POST(
         historyCompletedThisRun,
     })
   } catch (error) {
-    console.error(error)
+    console.error(
+      '[fundingpips-history] sync failed:',
+      getErrorMessage(error)
+    )
 
     /*
      * Intentamos registrar el error en payout_sources
@@ -411,7 +411,7 @@ export async function POST(
       // podemos registrar el error.
     }
 
-    return errorResponse(error)
+    return errorResponse()
   }
 }
 
@@ -457,7 +457,16 @@ async function getFundingPipsPayouts(
   ) {
     const response = await fetch(url, {
       cache: 'no-store',
+      signal: AbortSignal.timeout(
+        ETHERSCAN_TIMEOUT_MS
+      ),
     })
+
+    if (!response.ok) {
+      throw new Error(
+        `Etherscan respondió HTTP ${response.status}`
+      )
+    }
 
     result =
       await response.json() as EtherscanResponse
@@ -557,14 +566,13 @@ async function getFundingPipsPayouts(
   }
 }
 
-function errorResponse(
-  error: unknown
-) {
+function errorResponse() {
   return NextResponse.json(
     {
       success: false,
 
-      error: getErrorMessage(error),
+      error:
+        'No fue posible completar la sincronización.',
     },
     {
       status: 500,

@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { normalizedLanguage } from '@/lib/public-language'
 import { getPublicUi } from '@/lib/public-i18n'
+import {
+  affiliateVisitorHash,
+  sanitizeAffiliateCountry,
+  sanitizeAffiliateSourcePage,
+} from '@/lib/affiliate-tracking'
 
 type AffiliateLink = {
   id: string
@@ -18,8 +23,8 @@ export async function GET(
 ) {
   const { slug } = await params
   const supabase = createAdminClient()
-  const countryCode = request.headers.get('x-vercel-ip-country')?.toUpperCase() ?? null
-  const knownCountry = countryCode?.trim() || null
+  const countryCode = sanitizeAffiliateCountry(request.headers.get('x-vercel-ip-country'))
+  const knownCountry = countryCode
   const language = normalizedLanguage(request.nextUrl.searchParams.get('lang') ?? undefined)
   const t = getPublicUi(language)
 
@@ -94,12 +99,25 @@ export async function GET(
     return NextResponse.redirect(profileUrl)
   }
 
-  await supabase.from('affiliate_clicks').insert({
-    affiliate_link_id: affiliateLink.id,
-    country_code: countryCode,
-    language,
-    source_page: request.headers.get('referer') ?? null,
-  })
+  const visitorHash = affiliateVisitorHash(
+    request,
+    process.env.AFFILIATE_TRACKING_SECRET
+  )
+  if (visitorHash) {
+    try {
+      const { error: trackingError } = await supabase.rpc('affiliate_record_click', {
+        p_affiliate_link_id: affiliateLink.id,
+        p_visitor_hash: visitorHash,
+        p_country_code: countryCode,
+        p_language: language,
+        p_source_page: sanitizeAffiliateSourcePage(request.headers.get('referer')),
+      })
+      if (trackingError) console.warn('affiliate_tracking_failed')
+    } catch {
+      console.warn('affiliate_tracking_failed')
+      // El tracking nunca debe impedir una redirección de afiliado válida.
+    }
+  }
 
   return NextResponse.redirect(affiliateLink.url)
 }
