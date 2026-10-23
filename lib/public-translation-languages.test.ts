@@ -58,6 +58,6 @@ test('todas las mutaciones administrativas invalidan el registro solo después d
     assert.match(actions, new RegExp(`rpc\\('${rpc}'`))
   }
   const errorGuard = actions.indexOf('if(result.error)return fail')
-  const invalidation = actions.indexOf("revalidateTag('public-languages','max')")
+  const invalidation = actions.indexOf("updateTag('public-languages')")
   assert.ok(errorGuard >= 0 && invalidation > errorGuard)
 })

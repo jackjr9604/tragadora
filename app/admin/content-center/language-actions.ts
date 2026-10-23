@@ -1,9 +1,10 @@
 'use server'
 
-import { revalidatePath,revalidateTag } from 'next/cache'
+import { revalidatePath,revalidateTag,updateTag } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCurrentAdminPermissions } from '@/lib/admin-permissions-server'
 import { LANGUAGE_PUBLICATION_STATUSES,normalizeLanguageCode } from '@/lib/admin-language-policy'
+import { invalidatePublicBlogTranslations } from '@/lib/admin-public-blog-revalidation'
 
 export type LanguageActionState={ok:boolean;message:string}
 export const INITIAL_LANGUAGE_ACTION_STATE:LanguageActionState={ok:false,message:''}
@@ -33,7 +34,7 @@ export async function manageLanguage(_previous:LanguageActionState,formData:Form
   }
   if(result.error)return fail(friendly(result.error.message))
   revalidatePath('/admin/content-center');revalidatePath('/admin/content-center/languages');revalidatePath('/admin/content');revalidatePath('/admin/translations')
-  revalidateTag('public-languages','max');revalidateTag('public-site-content','max')
+  updateTag('public-languages');invalidatePublicBlogTranslations();revalidateTag('public-site-content','max')
   return {ok:true,message:intent==='create'?'Idioma registrado como borrador.':intent==='delete'?'Idioma eliminado.':'Idioma actualizado correctamente.'}
 }
 

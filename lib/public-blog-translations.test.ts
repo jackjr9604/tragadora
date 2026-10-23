@@ -24,3 +24,19 @@ test('rechaza stale, revisiones antiguas, arrays inválidos e idiomas no publica
   const unpublished = languages.map((item) => item.code === 'en' ? { ...item, publication_status: 'review' } : item)
   assert.equal(resolveBlogTranslations({ posts, requestedLanguage: 'en', defaultLanguage: 'es', languages: unpublished, translations, states }).size, 0)
 })
+
+test('admite importaciones históricas solo cuando están protegidas y vigentes', () => {
+  const imported = states.map((item) => item.target_language === 'en' ? { ...item, status: 'imported_unreviewed', is_protected: true } : item)
+  assert.equal(resolveBlogTranslations({ posts, requestedLanguage: 'en', defaultLanguage: 'es', languages, translations, states: imported }).get('one')?.title, 'Title')
+  const unprotected = imported.map((item) => item.field_name === 'title' && item.target_language === 'en' ? { ...item, is_protected: false } : item)
+  assert.equal(resolveBlogTranslations({ posts, requestedLanguage: 'en', defaultLanguage: 'es', languages, translations, states: unprotected }).get('one')?.title, undefined)
+})
+
+test('excluye machine_translated, draft y unpublished aunque exista una fila traducida', () => {
+  for (const status of ['machine_translated', 'draft']) {
+    const changed = states.map((item) => item.field_name === 'title' && item.target_language === 'en' ? { ...item, status } : item)
+    assert.equal(resolveBlogTranslations({ posts, requestedLanguage: 'en', defaultLanguage: 'es', languages, translations, states: changed }).get('one')?.title, undefined)
+  }
+  const unpublished = states.map((item) => item.field_name === 'title' && item.target_language === 'en' ? { ...item, publication_status: 'unpublished' } : item)
+  assert.equal(resolveBlogTranslations({ posts, requestedLanguage: 'en', defaultLanguage: 'es', languages, translations, states: unpublished }).get('one')?.title, undefined)
+})
