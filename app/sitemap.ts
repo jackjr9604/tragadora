@@ -1,7 +1,16 @@
 import type { MetadataRoute } from 'next'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getActivePublicLanguages } from '@/lib/site-content'
+import {
+  dynamicPublicPathsFromRows,
+  resilientPublicSitemapData,
+  safeSitemapRows,
+  type SitemapPlatformRow,
+  type SitemapSlugRow,
+} from '@/lib/public-sitemap-data'
 import { publicSitemapEntries } from '@/lib/public-sitemap-policy'
+
+export const revalidate = 300
 
 const PUBLIC_ROUTES = [
   '/',
@@ -22,25 +31,26 @@ const PUBLIC_ROUTES = [
 ] as const
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [languages, dynamicPaths] = await Promise.all([getActivePublicLanguages(), getDynamicPublicPaths()])
-  return publicSitemapEntries([...PUBLIC_ROUTES, ...dynamicPaths], languages)
+  const { paths, languages } = await resilientPublicSitemapData({
+    staticPaths: PUBLIC_ROUTES,
+    loadLanguages: getActivePublicLanguages,
+    loadDynamicPaths: getDynamicPublicPaths,
+  })
+  return publicSitemapEntries(paths, languages)
 }
 
 async function getDynamicPublicPaths() {
-  const db = createAdminClient()
-  const [platforms, posts, tools] = await Promise.all([
-    db.from('platforms').select('slug,type').eq('status', 'active').in('type', ['prop_firm', 'broker', 'exchange']),
-    db.from('blog_posts').select('slug').eq('status', 'published').or(`published_at.is.null,published_at.lte.${new Date().toISOString()}`),
-    db.from('tools').select('slug,tool_type').eq('status', 'published').eq('tool_type', 'internal'),
-  ])
-  if (platforms.error || posts.error || tools.error) return []
-  const paths = new Set<string>()
-  for (const platform of platforms.data ?? []) {
-    const prefix = platform.type === 'prop_firm' ? 'prop-firms' : platform.type === 'broker' ? 'brokers' : 'exchanges'
-    paths.add(`/${prefix}/${platform.slug}`)
-    if (platform.type === 'prop_firm') paths.add(`/payouts/${platform.slug}`)
+  try {
+    const db = createAdminClient()
+    const publishedBefore = new Date().toISOString()
+    const [platforms, posts, tools] = await Promise.all([
+      safeSitemapRows<SitemapPlatformRow>('platforms', (signal) => db.from('platforms').select('slug,type').eq('status', 'active').in('type', ['prop_firm', 'broker', 'exchange']).abortSignal(signal)),
+      safeSitemapRows<SitemapSlugRow>('blog_posts', (signal) => db.from('blog_posts').select('slug').eq('status', 'published').or(`published_at.is.null,published_at.lte.${publishedBefore}`).abortSignal(signal)),
+      safeSitemapRows<SitemapSlugRow>('tools', (signal) => db.from('tools').select('slug').eq('status', 'published').eq('tool_type', 'internal').abortSignal(signal)),
+    ])
+    return dynamicPublicPathsFromRows({ platforms, posts, tools })
+  } catch {
+    console.warn('sitemap_dynamic_sources_unavailable')
+    return []
   }
-  for (const post of posts.data ?? []) paths.add(`/blog/${post.slug}`)
-  for (const tool of tools.data ?? []) paths.add(`/calculadoras/${tool.slug}`)
-  return [...paths]
 }
