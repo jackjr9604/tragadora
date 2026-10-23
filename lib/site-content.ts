@@ -62,7 +62,11 @@ export const getSiteContent = unstable_cache(
   { revalidate: 300, tags: ['public-site-content'] }
 )
 
-async function getActivePublicLanguagesUncached(): Promise<PublicLanguageOption[]> {
+const FALLBACK_PUBLIC_LANGUAGES: PublicLanguageOption[] = [
+  { code: 'es', name: 'Español', nativeName: 'Español', isDefault: true },
+]
+
+async function queryActivePublicLanguages(): Promise<PublicLanguageOption[]> {
   const supabase = createAdminClient()
   const { data, error } = await supabase
     .from('languages')
@@ -73,11 +77,8 @@ async function getActivePublicLanguagesUncached(): Promise<PublicLanguageOption[
     .order('sort_order')
     .order('name')
 
-  if (error || !data?.length) {
-    return [
-      { code: 'es', name: 'Español', nativeName: 'Español', isDefault: true },
-    ]
-  }
+  if (error) throw new Error(error.message)
+  if (!data?.length) return FALLBACK_PUBLIC_LANGUAGES
 
   return data.map((language) => ({
     code: language.code,
@@ -87,11 +88,19 @@ async function getActivePublicLanguagesUncached(): Promise<PublicLanguageOption[
   }))
 }
 
-export const getActivePublicLanguages = unstable_cache(
-  getActivePublicLanguagesUncached,
+const getCachedActivePublicLanguages = unstable_cache(
+  queryActivePublicLanguages,
   ['public-languages-v1'],
   { revalidate: 300, tags: ['public-languages'] }
 )
+
+export async function getActivePublicLanguages(): Promise<PublicLanguageOption[]> {
+  try {
+    return await getCachedActivePublicLanguages()
+  } catch {
+    return FALLBACK_PUBLIC_LANGUAGES
+  }
+}
 
 export function contentValue(
   content: SiteContent,

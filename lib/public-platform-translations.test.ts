@@ -54,7 +54,9 @@ test('acepta importadas protegidas y rechaza importadas desprotegidas o revision
   assert.equal(isPublishableTranslationState(state('description', { status: 'machine_translated', publication_status: 'published' })), false)
 })
 
-test('un idioma no publicado cae al idioma base', () => {
+test('un idioma no publicado o inactivo cae al idioma base', () => {
   const value = resolvePlatformTranslations({ platformIds: ['p1'], requestedLanguage: 'pt', defaultLanguage: 'es', languages: languages.map((item) => item.code === 'pt' ? { ...item, publication_status: 'review' } : item), translations: [base], states: [] }).get('p1')
   assert.equal(value?.description, 'Larga ES')
+  const inactive = resolvePlatformTranslations({ platformIds: ['p1'], requestedLanguage: 'pt', defaultLanguage: 'es', languages: languages.map((item) => item.code === 'pt' ? { ...item, is_active: false } : item), translations: [base, portuguese], states: [] }).get('p1')
+  assert.equal(inactive?.description, 'Larga ES')
 })

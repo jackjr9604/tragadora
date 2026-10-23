@@ -8,8 +8,9 @@ import {
   type ChallengeTranslationResource,
   type ChallengeTranslationRow,
 } from './public-challenge-translation-policy'
-import type { TranslationFieldState, TranslationLanguage } from './public-platform-translation-policy'
+import type { TranslationFieldState } from './public-platform-translation-policy'
 import { getPublicTranslationStates } from './public-translation-states'
+import { getPublicTranslationLanguageContext } from './public-translation-languages'
 
 const TABLES: Record<ChallengeTranslationResource, { table: string; id: string }> = {
   challenge_phase_translation: { table: 'challenge_phase_translations', id: 'phase_id' },
@@ -34,15 +35,8 @@ export async function getPublicChallengeTranslations(
   if (!allIds.length) return collections
 
   const db = createAdminClient()
-  const languagesResult = await db.from('languages')
-    .select('code, is_active, is_default, publication_status')
-    .eq('is_active', true)
-  // Compatibilidad previa a la migración 3C: cualquier tabla o columna ausente
-  // conserva exactamente los datos fuente actuales.
-  if (languagesResult.error) return collections
-  const languages = (languagesResult.data ?? []) as TranslationLanguage[]
-  const defaultLanguage = languages.find((item) => item.is_default)?.code ?? 'es'
-  const effectiveLanguage = languages.find((item) => item.code === requestedLanguage && item.is_active && item.publication_status === 'published')?.code ?? defaultLanguage
+  const { languages, defaultLanguage } = await getPublicTranslationLanguageContext()
+  const effectiveLanguage = languages.find((item) => item.code === requestedLanguage)?.code ?? defaultLanguage
   if (effectiveLanguage === defaultLanguage) return collections
 
   const translationQueries = (Object.keys(TABLES) as ChallengeTranslationResource[]).map(async (resourceType) => {

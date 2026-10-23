@@ -7,8 +7,9 @@ import {
   type ExchangeDetailTranslation,
   type PlatformDetailTranslationRow,
 } from './public-platform-detail-translation-policy'
-import type { TranslationFieldState, TranslationLanguage } from './public-platform-translation-policy'
+import type { TranslationFieldState } from './public-platform-translation-policy'
 import { getPublicTranslationStates } from './public-translation-states'
+import { getPublicTranslationLanguageContext } from './public-translation-languages'
 
 type DetailTranslations = {
   brokers: Map<string, BrokerDetailTranslation>
@@ -21,15 +22,8 @@ export async function getPublicPlatformDetailTranslations(platformIds: string[],
   const ids = [...new Set(platformIds.filter(Boolean))]
   if (!ids.length) return empty()
   const db = createAdminClient()
-  const languagesResult = await db.from('languages')
-    .select('code, is_active, is_default, publication_status')
-    .eq('is_active', true)
-  // Compatibilidad hasta aplicar 3D.1: la ausencia de tablas/columnas conserva
-  // exactamente los valores fuente de broker_details/exchange_details.
-  if (languagesResult.error) return empty()
-  const languages = (languagesResult.data ?? []) as TranslationLanguage[]
-  const defaultLanguage = languages.find((language) => language.is_default)?.code ?? 'es'
-  const effectiveLanguage = languages.find((language) => language.code === requestedLanguage && language.is_active && language.publication_status === 'published')?.code ?? defaultLanguage
+  const { languages, defaultLanguage } = await getPublicTranslationLanguageContext()
+  const effectiveLanguage = languages.find((language) => language.code === requestedLanguage)?.code ?? defaultLanguage
   if (effectiveLanguage === defaultLanguage) return empty()
 
   const [brokersResult, exchangesResult, statesResult] = await Promise.all([

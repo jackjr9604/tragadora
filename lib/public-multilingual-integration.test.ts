@@ -46,7 +46,9 @@ test('el sitemap incluye rutas dinámicas y variantes lingüísticas publicadas'
 
 test('un fallo del registro de idiomas no reactiva idiomas secundarios', () => {
   const source = readFileSync(join(root, 'lib/site-content.ts'), 'utf8')
-  const fallback = source.match(/if \(error \|\| !data\?\.length\) \{([\s\S]*?)\n  \}/)?.[1] ?? ''
+  const fallback = source.match(/const FALLBACK_PUBLIC_LANGUAGES[\s\S]*?\n\]/)?.[0] ?? ''
   assert.match(fallback, /code: 'es'/)
   assert.doesNotMatch(fallback, /code: 'en'|code: 'pt'/)
+  assert.match(source, /if \(error\) throw new Error\(error\.message\)/)
+  assert.match(source, /catch \{\s*return FALLBACK_PUBLIC_LANGUAGES/)
 })
