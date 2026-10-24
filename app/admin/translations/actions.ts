@@ -12,7 +12,7 @@ import type { TranslationActionState } from '@/lib/admin-translation-action-stat
 import type { TranslationBulkResult } from '@/lib/admin-translation-bulk-state'
 import { isEligibleForBulkAction, isResourceBulkAction } from '@/lib/admin-translation-resource-policy'
 import { revalidateSiteContent } from '@/lib/admin-content-revalidation'
-import { invalidatePublicBlogTranslations } from '@/lib/admin-public-blog-revalidation'
+import { invalidatePublicTranslations, type PublicTranslationResourceType } from '@/lib/admin-public-translation-revalidation'
 
 const RPC_BY_ACTION = {
   save_draft: 'translation_save_draft',
@@ -69,8 +69,10 @@ export async function updateTranslationWorkflow(_previous: TranslationActionStat
   revalidateTranslationAdmin()
   if (action === 'publish' || action === 'withdraw') {
     if (resourceType === 'site_content') revalidateSiteContent(row.resource_id)
-    else if (resourceType === 'blog_post_translation') invalidatePublicBlogTranslations(row.target_language)
-    else revalidatePath('/', 'layout')
+    else if (isCachedPublicResource(resourceType)) {
+      try { invalidatePublicTranslations(resourceType, row.target_language) }
+      catch { return { ok: false, message: 'La operación se guardó, pero no fue posible renovar la caché pública. No repitas la acción; recarga y verifica el contenido.' } }
+    } else revalidatePath('/', 'layout')
   }
   return { ok: true, message: actionMessage(action) }
 }
@@ -114,8 +116,9 @@ export async function updateTranslationResourceWorkflow(_previous: TranslationBu
   revalidateTranslationAdmin()
   if (intent === 'publish' || intent === 'withdraw') {
     if (parsed.resourceType === 'site_content') revalidateSiteContent(parsed.resourceId)
-    else if (parsed.resourceType === 'blog_post_translation') {
-      for (const language of new Set(items.filter((item) => item.ok).map((item) => item.language))) invalidatePublicBlogTranslations(language)
+    else if (isCachedPublicResource(parsed.resourceType)) {
+      try { for (const language of new Set(items.filter((item) => item.ok).map((item) => item.language))) invalidatePublicTranslations(parsed.resourceType, language) }
+      catch { return { ok: false, requested: items.length, succeeded: items.filter((item) => item.ok).length, failed: items.filter((item) => !item.ok).length, items, message: 'La operación se guardó, pero no fue posible renovar la caché pública. No repitas la acción; recarga y verifica el contenido.' } }
     }
     else revalidatePath('/', 'layout')
   }
@@ -139,6 +142,10 @@ function bulkSuccessMessage(action: string) {
   if (action === 'approve') return 'Aprobada'
   if (action === 'publish') return 'Publicada'
   return 'Publicación retirada'
+}
+
+function isCachedPublicResource(resourceType: TranslationResourceType): resourceType is PublicTranslationResourceType {
+  return resourceType === 'blog_post_translation' || resourceType === 'tool_translation' || resourceType === 'community_translation' || resourceType === 'giveaway_translation'
 }
 
 function revalidateTranslationAdmin() {

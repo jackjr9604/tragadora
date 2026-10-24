@@ -4,7 +4,7 @@ import { revalidatePath,revalidateTag,updateTag } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCurrentAdminPermissions } from '@/lib/admin-permissions-server'
 import { LANGUAGE_PUBLICATION_STATUSES,normalizeLanguageCode } from '@/lib/admin-language-policy'
-import { invalidatePublicBlogTranslations } from '@/lib/admin-public-blog-revalidation'
+import { invalidateAllPublicTranslationResources } from '@/lib/admin-public-translation-revalidation'
 
 export type LanguageActionState={ok:boolean;message:string}
 export const INITIAL_LANGUAGE_ACTION_STATE:LanguageActionState={ok:false,message:''}
@@ -34,7 +34,8 @@ export async function manageLanguage(_previous:LanguageActionState,formData:Form
   }
   if(result.error)return fail(friendly(result.error.message))
   revalidatePath('/admin/content-center');revalidatePath('/admin/content-center/languages');revalidatePath('/admin/content');revalidatePath('/admin/translations')
-  updateTag('public-languages');invalidatePublicBlogTranslations();revalidateTag('public-site-content','max')
+  try{updateTag('public-languages');invalidateAllPublicTranslationResources();revalidateTag('public-site-content','max')}
+  catch{return fail('El idioma se actualizó, pero no fue posible renovar la caché pública. No repitas la operación; recarga y verifica el estado.')}
   return {ok:true,message:intent==='create'?'Idioma registrado como borrador.':intent==='delete'?'Idioma eliminado.':'Idioma actualizado correctamente.'}
 }
 

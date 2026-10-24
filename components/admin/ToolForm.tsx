@@ -2,11 +2,11 @@
 
 import { FormEvent, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { useAdminPermission } from '@/components/admin/AdminPermissionsProvider'
 import { MediaPicker, type PickedMedia } from '@/components/admin/MediaPicker'
 import { TOOL_ICON_OPTIONS, ToolIcon } from '@/components/tools/ToolIcon'
 import type { ToolPricingModel, ToolStatus, ToolType } from '@/lib/tools'
+import { deleteToolSource, saveToolSource } from '@/app/admin/catalog-actions'
 
 export type ToolFormValue = {
   id: string
@@ -37,7 +37,7 @@ export type ToolFormValue = {
 const INPUT = 'w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200'
 
 export function ToolForm({ initial, mode = 'tool' }: { initial?: ToolFormValue; mode?: 'tool' | 'calculator' }) {
-  const router = useRouter(), db = createClient(), editing = Boolean(initial)
+  const router = useRouter(), editing = Boolean(initial)
   const calculatorMode = mode === 'calculator'
   const returnPath = calculatorMode ? '/admin/calculators' : '/admin/tools'
   const canDelete = useAdminPermission('tools.delete')
@@ -58,27 +58,27 @@ export function ToolForm({ initial, mode = 'tool' }: { initial?: ToolFormValue; 
     if (toolType === 'internal' && !internalPath.trim().startsWith('/')) return fail('La ruta interna debe comenzar por /.')
     if (toolType === 'external' && !isUrl(externalUrl)) return fail('Ingresa una URL externa válida.')
     const payload = {
-      slug: cleanSlug, name: name.trim(), short_description: description.trim() || null, tool_type: toolType, category: category.trim() || null,
-      icon_key: iconKey || null, badge: badge.trim() || null,
-      internal_path: toolType === 'internal' ? internalPath.trim() : null,
-      external_url: toolType === 'external' ? externalUrl.trim() : null,
-      is_featured: isFeatured, display_order: Number(displayOrder || 100), status,
-      open_in_new_tab: toolType === 'external' ? openInNewTab : false,
-      pricing_model: pricingModel || null, has_free_plan: pricingModel === 'free' || hasFreePlan,
-      price_label: priceLabel.trim() || null, availability: availability.trim() || null,
-      author_name: authorName.trim() || null, promo_code: promoCode.trim() || null,
-      promo_label: promoLabel.trim() || null, is_ours: isOurs, logo_media_id: logo?.id ?? null,
+      id: initial?.id, slug: cleanSlug, name: name.trim(), shortDescription: description.trim() || null, toolType, category: category.trim() || null,
+      iconKey: iconKey || null, badge: badge.trim() || null,
+      internalPath: toolType === 'internal' ? internalPath.trim() : null,
+      externalUrl: toolType === 'external' ? externalUrl.trim() : null,
+      featured: isFeatured, displayOrder: Number(displayOrder || 100), status,
+      openInNewTab: toolType === 'external' ? openInNewTab : false,
+      pricingModel: pricingModel || null, hasFreePlan: pricingModel === 'free' || hasFreePlan,
+      priceLabel: priceLabel.trim() || null, availability: availability.trim() || null,
+      authorName: authorName.trim() || null, promoCode: promoCode.trim() || null,
+      promoLabel: promoLabel.trim() || null, isOurs, logoMediaId: logo?.id ?? null,
     }
-    const result = initial ? await db.from('tools').update(payload).eq('id', initial.id) : await db.from('tools').insert(payload)
-    if (result.error) return fail(result.error.message)
+    const result = await saveToolSource(payload)
+    if (!result.ok) return fail(result.message)
     router.push(returnPath); router.refresh()
   }
 
   async function remove() {
     if (!initial || !window.confirm(`¿Eliminar ${initial.name}?`)) return
     setSaving(true); setError('')
-    const result = await db.from('tools').delete().eq('id', initial.id)
-    if (result.error) { setError(result.error.message); setSaving(false); return }
+    const result = await deleteToolSource(initial.id)
+    if (!result.ok) { setError(result.message); setSaving(false); return }
     router.push(returnPath); router.refresh()
   }
 
