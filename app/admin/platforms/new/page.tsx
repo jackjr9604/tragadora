@@ -1,14 +1,12 @@
 'use client'
 
 import { FormEvent, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { MediaPicker, type PickedMedia } from '@/components/admin/MediaPicker'
+import { savePropFirmSource } from '@/app/admin/platform-actions'
 
 export default function NewPlatformPage() {
   const router = useRouter()
-  const supabase = createClient()
-
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
   const [description, setDescription] = useState('')
@@ -31,60 +29,15 @@ export default function NewPlatformPage() {
     setLoading(true)
     setError('')
 
-    const { data: platform, error: platformError } =
-      await supabase
-        .from('platforms')
-        .insert({
-          name,
-          slug,
-          type: 'prop_firm',
-          website_url: websiteUrl || null,
-          logo_media_id: logoMedia?.id ?? null,
-          status: 'active',
-        })
-        .select()
-        .single()
-
-    if (platformError) {
-      setError(platformError.message)
-      setLoading(false)
-      return
-    }
-
-    const { error: detailsError } = await supabase
-      .from('prop_firm_details')
-      .insert({
-        platform_id: platform.id,
-        profit_split_min: profitSplitMin
-          ? Number(profitSplitMin)
-          : null,
-        profit_split_max: profitSplitMax
-          ? Number(profitSplitMax)
-          : null,
-        supports_ea: supportsEa,
-        allows_news_trading: allowsNews,
-        allows_weekend_holding: allowsWeekend,
-      })
-
-    if (detailsError) {
-      setError(detailsError.message)
-      setLoading(false)
-      return
-    }
-
-    const { error: translationError } = await supabase
-      .from('platform_translations')
-      .insert({
-        platform_id: platform.id,
-        language: 'es',
-        short_description: description,
-      })
-
-    if (translationError) {
-      setError(translationError.message)
-      setLoading(false)
-      return
-    }
+    const result = await savePropFirmSource({
+      name: name.trim(), slug: slug.trim(), description, websiteUrl: websiteUrl.trim() || null, logoMediaId: logoMedia?.id ?? null,
+      status: 'active', score: null, originCountryCode: null, ceoName: null, foundedAt: null, brokerProvider: null,
+      inactivityDays: null, isNew: false, profitSplitMin: profitSplitMin ? Number(profitSplitMin) : null,
+      profitSplitMax: profitSplitMax ? Number(profitSplitMax) : null, supportsEa, allowsNews, allowsWeekend,
+      allowsScalping: null, allowsDayTrading: null, allowsCopyTrading: null, timeLimitPolicy: null,
+      consistencyRules: null, specialRules: null, markets: [], tradingPlatformIds: [], instrumentCategoryIds: [], transactionMethods: [],
+    })
+    if (!result.ok) { setError(result.message); setLoading(false); return }
 
     router.push('/admin/platforms')
     router.refresh()

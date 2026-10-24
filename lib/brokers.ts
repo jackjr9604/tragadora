@@ -104,7 +104,7 @@ async function queryBrokers(language: PublicLanguage): Promise<PublicBroker[]> {
   }).sort((a, b) => Number(b.isFeatured) - Number(a.isFeatured) || a.displayOrder - b.displayOrder || a.name.localeCompare(b.name, 'es'))
 }
 
-const getCachedBrokers = unstable_cache(queryBrokers, ['public-brokers-v1'], { revalidate: 60 })
+const getCachedBrokers = unstable_cache(queryBrokers, ['public-brokers-v1'], { revalidate: 60, tags: ['public-brokers-v1'] })
 
 export function getPublicBrokers(language: PublicLanguage) { return getCachedBrokers(language) }
 export async function getPublicBroker(slug: string, language: PublicLanguage) {

@@ -10,7 +10,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   const { id } = await params
   const db = await createClient()
   const [platform, details, translation, countries] = await Promise.all([
-    db.from('platforms').select('id,name,slug,website_url,status,origin_country_code,media:logo_media_id(id,file_name,file_url,alt_text)').eq('id', id).eq('type', 'exchange').maybeSingle(),
+    db.from('platforms').select('id,name,slug,website_url,status,origin_country_code,updated_at,media:logo_media_id(id,file_name,file_url,alt_text)').eq('id', id).eq('type', 'exchange').maybeSingle(),
     db.from('exchange_details').select('*').eq('platform_id', id).maybeSingle(),
     db.from('platform_translations').select('short_description').eq('platform_id', id).eq('language', 'es').maybeSingle(),
     db.from('countries').select('code,name').order('name'),
@@ -20,7 +20,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   if (!platform.data) notFound()
   const row = platform.data, specialized = details.data
   const initial: ExchangeValue = {
-    id: row.id, name: row.name, slug: row.slug, websiteUrl: row.website_url ?? '', status: row.status,
+    id: row.id, updatedAt: row.updated_at, name: row.name, slug: row.slug, websiteUrl: row.website_url ?? '', status: row.status,
     countryCode: row.origin_country_code ?? '', description: translation.data?.short_description ?? '',
     logo: first(row.media as Media | Media[] | null), foundedYear: specialized?.founded_year ? String(specialized.founded_year) : '',
     exchangeType: specialized?.exchange_type ?? 'centralized', productSummary: specialized?.product_summary ?? '',

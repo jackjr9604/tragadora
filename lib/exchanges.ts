@@ -83,7 +83,7 @@ async function queryExchanges(language: PublicLanguage): Promise<PublicExchange[
   }).sort((a, b) => Number(b.isFeatured) - Number(a.isFeatured) || a.displayOrder - b.displayOrder || a.name.localeCompare(b.name, 'es'))
 }
 
-const cached = unstable_cache(queryExchanges, ['public-exchanges-v2'], { revalidate: 60 })
+const cached = unstable_cache(queryExchanges, ['public-exchanges-v2'], { revalidate: 60, tags: ['public-exchanges-v2'] })
 export function getPublicExchanges(language: PublicLanguage) { return cached(language) }
 export async function getPublicExchange(slug: string, language: PublicLanguage) {
   return (await cached(language)).find((item) => item.slug === slug) ?? null

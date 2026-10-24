@@ -8,6 +8,7 @@ import { PayoutMetricsManager } from '@/components/admin/PayoutMetricsManager'
 import { MondoTradersMetricsPanel } from '@/components/admin/MondoTradersMetricsPanel'
 import { MediaPicker } from '@/components/admin/MediaPicker'
 import { PlatformAvailabilityEditor } from './PlatformAvailabilityEditor'
+import { deletePropFirmSource, savePropFirmSource } from '@/app/admin/platform-actions'
 
 type NullableBoolean = boolean | null
 type Market = 'cfd' | 'futures' | 'crypto' | 'options'
@@ -42,6 +43,7 @@ export default function EditPlatformPage() {
   const [timeLimitPolicy, setTimeLimitPolicy] = useState(''), [consistencyRules, setConsistencyRules] = useState(''), [specialRules, setSpecialRules] = useState('')
   const [ceoName, setCeoName] = useState(''), [foundedAt, setFoundedAt] = useState(''), [brokerProvider, setBrokerProvider] = useState(''), [inactivityDays, setInactivityDays] = useState('')
   const [isNew, setIsNew] = useState(false)
+  const [sourceUpdatedAt, setSourceUpdatedAt] = useState(''), [sourceSlug, setSourceSlug] = useState('')
   const [markets, setMarkets] = useState<Market[]>([]), [initialMarkets, setInitialMarkets] = useState<Market[]>([])
   const [tradingPlatforms, setTradingPlatforms] = useState<CatalogItem[]>([]), [selectedTradingPlatforms, setSelectedTradingPlatforms] = useState<string[]>([]), [initialTradingPlatforms, setInitialTradingPlatforms] = useState<string[]>([])
   const [transactionMethods, setTransactionMethods] = useState<CatalogItem[]>([]), [selectedMethods, setSelectedMethods] = useState<Record<string, MethodSelection>>({})
@@ -57,7 +59,7 @@ export default function EditPlatformPage() {
       const platformResult = await supabase.from('platforms').select('*').eq('id', id).single()
       if (platformResult.error || !platformResult.data) { setError(platformResult.error?.message ?? 'No se pudo cargar la Prop Firm.'); setLoading(false); return }
       const platform = platformResult.data
-      setName(platform.name); setSlug(platform.slug); setWebsiteUrl(platform.website_url ?? ''); setStatus(platform.status)
+      setName(platform.name); setSlug(platform.slug); setSourceSlug(platform.slug); setSourceUpdatedAt(platform.updated_at); setWebsiteUrl(platform.website_url ?? ''); setStatus(platform.status)
       setLogoMediaId(platform.logo_media_id ?? ''); setScore(platform.score?.toString() ?? ''); setOriginCountryCode(platform.origin_country_code ?? '')
 
       const results = await Promise.all([
@@ -111,38 +113,22 @@ export default function EditPlatformPage() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setSaving(true); setError('')
     const fail = (message: string) => { setError(message); setSaving(false); return false }
-    if (inactivityDays.trim() && (!Number.isInteger(Number(inactivityDays)) || Number(inactivityDays) < 0)) return void fail('Los días de inactividad deben ser un número entero igual o mayor que cero.')
-    const platformResult = await supabase.from('platforms').update({ name, slug, website_url: websiteUrl || null, logo_media_id: logoMediaId || null, status, score: numberOrNull(score), origin_country_code: originCountryCode || null }).eq('id', id)
-    if (platformResult.error) return void fail(platformResult.error.message)
-    const detailResult = await supabase.from('prop_firm_details').upsert({ platform_id: id, ceo_name: textOrNull(ceoName), founded_at: textOrNull(foundedAt), broker_provider: textOrNull(brokerProvider), inactivity_days: nonNegativeIntegerOrNull(inactivityDays), is_new: isNew, profit_split_min: numberOrNull(profitSplitMin), profit_split_max: numberOrNull(profitSplitMax), supports_ea: supportsEa, allows_news_trading: allowsNews, allows_weekend_holding: allowsWeekend, allows_scalping: allowsScalping, allows_day_trading: allowsDayTrading, allows_copy_trading: allowsCopyTrading, time_limit_policy: textOrNull(timeLimitPolicy), consistency_rules: textOrNull(consistencyRules), special_rules: textOrNull(specialRules) }, { onConflict: 'platform_id' })
-    if (detailResult.error) return void fail(detailResult.error.message)
-    const translationResult = await supabase.from('platform_translations').upsert({ platform_id: id, language: 'es', short_description: description }, { onConflict: 'platform_id,language' })
-    if (translationResult.error) return void fail(translationResult.error.message)
-    if (!await syncRelations('platform_markets', 'market', initialMarkets, markets, (market) => ({ platform_id: id, market }), fail)) return
-    if (!await syncRelations('platform_trading_platforms', 'trading_platform_id', initialTradingPlatforms, selectedTradingPlatforms, (tradingPlatformId) => ({ platform_id: id, trading_platform_id: tradingPlatformId }), fail)) return
-    if (!await syncRelations('platform_instruments', 'instrument_category_id', initialInstruments, selectedInstruments, (instrumentCategoryId) => ({ platform_id: id, instrument_category_id: instrumentCategoryId }), fail)) return
-    const methodRows = Object.entries(selectedMethods).filter(([, method]) => method.supportsDeposit || method.supportsPayout)
-    const selectedMethodIds = methodRows.map(([methodId]) => methodId)
-    const methodUpsert = methodRows.length ? await supabase.from('platform_transaction_methods').upsert(methodRows.map(([methodId, method]) => ({ platform_id: id, transaction_method_id: methodId, supports_deposit: method.supportsDeposit, supports_payout: method.supportsPayout })), { onConflict: 'platform_id,transaction_method_id' }) : null
-    if (methodUpsert?.error) return void fail(methodUpsert.error.message)
-    const methodDelete = selectedMethodIds.length
-      ? await supabase.from('platform_transaction_methods').delete().eq('platform_id', id).not('transaction_method_id', 'in', `(${selectedMethodIds.join(',')})`)
-      : await supabase.from('platform_transaction_methods').delete().eq('platform_id', id)
-    if (methodDelete.error) return void fail(methodDelete.error.message)
+    const result = await savePropFirmSource({ id, expectedUpdatedAt: sourceUpdatedAt, name: name.trim(), slug: slug.trim(), description, websiteUrl: textOrNull(websiteUrl), logoMediaId: textOrNull(logoMediaId),
+      status: status as 'active' | 'draft' | 'inactive', score: numberOrNull(score), originCountryCode: textOrNull(originCountryCode),
+      ceoName: textOrNull(ceoName), foundedAt: textOrNull(foundedAt), brokerProvider: textOrNull(brokerProvider), inactivityDays: nonNegativeIntegerOrNull(inactivityDays), isNew,
+      profitSplitMin: numberOrNull(profitSplitMin), profitSplitMax: numberOrNull(profitSplitMax), supportsEa, allowsNews, allowsWeekend,
+      allowsScalping, allowsDayTrading, allowsCopyTrading, timeLimitPolicy: textOrNull(timeLimitPolicy), consistencyRules: textOrNull(consistencyRules), specialRules: textOrNull(specialRules),
+      markets, tradingPlatformIds: selectedTradingPlatforms, instrumentCategoryIds: selectedInstruments,
+      transactionMethods: Object.entries(selectedMethods).map(([methodId, method]) => ({ id: methodId, ...method })),
+    })
+    if (!result.ok) return void fail(result.message)
     router.push('/admin/platforms'); router.refresh()
-  }
-
-  async function syncRelations<T extends string>(table: string, column: string, initial: T[], current: T[], row: (value: T) => Record<string, unknown>, fail: (message: string) => boolean) {
-    const removed = initial.filter((value) => !current.includes(value)), added = current.filter((value) => !initial.includes(value))
-    if (removed.length) { const result = await supabase.from(table).delete().eq('platform_id', id).in(column, removed); if (result.error) return fail(result.error.message) }
-    if (added.length) { const result = await supabase.from(table).insert(added.map(row)); if (result.error) return fail(result.error.message) }
-    return true
   }
 
   async function removePlatform() {
     if (!window.confirm('¿Seguro que quieres eliminar esta Prop Firm? Esta acción no se puede deshacer.')) return
-    const result = await supabase.from('platforms').delete().eq('id', id)
-    if (result.error) { setError(result.error.message); return }
+    const result = await deletePropFirmSource({ id, type: 'prop_firm', slug: sourceSlug, expectedUpdatedAt: sourceUpdatedAt })
+    if (!result.ok) { setError(result.message); return }
     router.push('/admin/platforms'); router.refresh()
   }
 

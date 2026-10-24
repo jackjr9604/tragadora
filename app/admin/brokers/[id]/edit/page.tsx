@@ -10,7 +10,7 @@ export default async function EditBrokerPage({ params }: { params: Promise<{ id:
   const { id } = await params
   const db = await createClient()
   const [platform, details, translation, markets, platformCatalogs, countries, tradingPlatforms] = await Promise.all([
-    db.from('platforms').select('id, name, slug, website_url, status, origin_country_code, media:logo_media_id(id, file_name, file_url, alt_text)').eq('id', id).eq('type', 'broker').maybeSingle(),
+    db.from('platforms').select('id, name, slug, website_url, status, origin_country_code, updated_at, media:logo_media_id(id, file_name, file_url, alt_text)').eq('id', id).eq('type', 'broker').maybeSingle(),
     db.from('broker_details').select('founded_year, minimum_deposit, minimum_deposit_currency, regulation_summary, regulation_source_url, is_featured, display_order').eq('platform_id', id).maybeSingle(),
     db.from('platform_translations').select('short_description').eq('platform_id', id).eq('language', 'es').maybeSingle(),
     db.from('platform_markets').select('market').eq('platform_id', id),
@@ -24,6 +24,7 @@ export default async function EditBrokerPage({ params }: { params: Promise<{ id:
   const media = first(platform.data.media as MediaRelation | MediaRelation[] | null)
   const initial: BrokerFormValue = {
     id: platform.data.id,
+    updatedAt: platform.data.updated_at,
     name: platform.data.name,
     slug: platform.data.slug,
     websiteUrl: platform.data.website_url ?? '',

@@ -3,12 +3,13 @@
 import { FormEvent, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { MediaPicker, type PickedMedia } from '@/components/admin/MediaPicker'
-import { createClient } from '@/lib/supabase/client'
+import { deleteBrokerSource, saveBrokerSource } from '@/app/admin/platform-actions'
 
 type CatalogItem = { id: string; name: string; status: boolean }
 type Country = { code: string; name: string }
 export type BrokerFormValue = {
   id: string
+  updatedAt: string
   name: string
   slug: string
   websiteUrl: string
@@ -32,7 +33,6 @@ const INPUT = 'w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 te
 
 export function BrokerForm({ initial, countries, tradingPlatforms }: { initial?: BrokerFormValue; countries: Country[]; tradingPlatforms: CatalogItem[] }) {
   const router = useRouter()
-  const db = createClient()
   const editing = Boolean(initial)
   const [name, setName] = useState(initial?.name ?? '')
   const [slug, setSlug] = useState(initial?.slug ?? '')
@@ -56,39 +56,23 @@ export function BrokerForm({ initial, countries, tradingPlatforms }: { initial?:
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setSaving(true); setError('')
     const fail = (message: string) => { setError(message); setSaving(false) }
-    const platformPayload = { name: name.trim(), slug: slug.trim(), type: 'broker', website_url: websiteUrl.trim() || null, logo_media_id: logo?.id ?? null, status, origin_country_code: countryCode || null }
-    let platformId = initial?.id
-    if (platformId) {
-      const result = await db.from('platforms').update(platformPayload).eq('id', platformId).eq('type', 'broker')
-      if (result.error) return fail(result.error.message)
-    } else {
-      const result = await db.from('platforms').insert(platformPayload).select('id').single()
-      if (result.error) return fail(result.error.message)
-      platformId = result.data.id
-    }
-    const details = await db.from('broker_details').upsert({
-      platform_id: platformId,
-      founded_year: foundedYear.trim() ? Number(foundedYear) : null,
-      minimum_deposit: minimumDeposit.trim() ? Number(minimumDeposit) : null,
-      minimum_deposit_currency: minimumDeposit.trim() ? minimumDepositCurrency.trim().toUpperCase() || 'USD' : null,
-      regulation_summary: regulationSummary.trim() || null,
-      regulation_source_url: regulationSourceUrl.trim() || null,
-      is_featured: isFeatured,
-      display_order: Number(displayOrder || 100),
-    }, { onConflict: 'platform_id' })
-    if (details.error) return fail(details.error.message)
-    const translation = await db.from('platform_translations').upsert({ platform_id: platformId, language: 'es', short_description: description.trim() || null }, { onConflict: 'platform_id,language' })
-    if (translation.error) return fail(translation.error.message)
-    if (!await syncRelations('platform_markets', 'market', initial?.markets ?? [], markets, (value) => ({ platform_id: platformId, market: value }))) return
-    if (!await syncRelations('platform_trading_platforms', 'trading_platform_id', initial?.tradingPlatformIds ?? [], selectedTradingPlatforms, (value) => ({ platform_id: platformId, trading_platform_id: value }))) return
+    const result = await saveBrokerSource({ id: initial?.id, expectedUpdatedAt: initial?.updatedAt, name: name.trim(), slug: slug.trim(), websiteUrl: websiteUrl.trim() || null,
+      status: status as 'active' | 'draft' | 'inactive', countryCode: countryCode || null, description: description.trim() || null,
+      logoMediaId: logo?.id ?? null, foundedYear: foundedYear.trim() ? Number(foundedYear) : null,
+      minimumDeposit: minimumDeposit.trim() ? Number(minimumDeposit) : null,
+      minimumDepositCurrency: minimumDeposit.trim() ? minimumDepositCurrency.trim().toUpperCase() || 'USD' : null,
+      regulationSummary: regulationSummary.trim() || null, regulationSourceUrl: regulationSourceUrl.trim() || null,
+      featured: isFeatured, displayOrder: Number(displayOrder || 100), markets, tradingPlatformIds: selectedTradingPlatforms })
+    if (!result.ok) return fail(result.message)
     router.push('/admin/brokers'); router.refresh()
   }
 
-  async function syncRelations(table: string, column: string, previous: string[], current: string[], row: (value: string) => Record<string, unknown>) {
-    const removed = previous.filter((value) => !current.includes(value)), added = current.filter((value) => !previous.includes(value))
-    if (removed.length) { const result = await db.from(table).delete().eq('platform_id', initial?.id ?? '').in(column, removed); if (result.error) { setError(result.error.message); setSaving(false); return false } }
-    if (added.length) { const result = await db.from(table).insert(added.map(row)); if (result.error) { setError(result.error.message); setSaving(false); return false } }
-    return true
+  async function remove() {
+    if (!initial || !window.confirm('¿Seguro que quieres eliminar este broker?')) return
+    setSaving(true); setError('')
+    const result = await deleteBrokerSource({ id: initial.id, type: 'broker', slug: initial.slug, expectedUpdatedAt: initial.updatedAt })
+    if (!result.ok) { setError(result.message); setSaving(false); return }
+    router.push('/admin/brokers'); router.refresh()
   }
 
   return <form onSubmit={submit} className="space-y-8 rounded-xl bg-white p-6 shadow sm:p-8">
@@ -97,7 +81,7 @@ export function BrokerForm({ initial, countries, tradingPlatforms }: { initial?:
     <Section title="Regulación" /><Field label="Resumen corto"><input value={regulationSummary} onChange={(event) => setRegulationSummary(event.target.value)} className={INPUT} placeholder="ASIC · FCA · CySEC" /></Field><Field label="Fuente oficial"><input type="url" value={regulationSourceUrl} onChange={(event) => setRegulationSourceUrl(event.target.value)} className={INPUT} /></Field>
     <Section title="Presentación" /><MediaPicker label="Logo" value={logo} onChange={setLogo} /><div className="grid gap-5 md:grid-cols-2"><Field label="Orden editorial"><input type="number" min="0" value={displayOrder} onChange={(event) => setDisplayOrder(event.target.value)} className={INPUT} /></Field><Check label="Broker destacado" checked={isFeatured} onChange={() => setIsFeatured(!isFeatured)} /></div>
     <Section title="Estado" /><Field label="Estado"><select value={status} onChange={(event) => setStatus(event.target.value)} className={INPUT}><option value="active">Activo</option><option value="draft">Borrador</option><option value="inactive">Inactivo</option></select></Field>
-    {error && <p className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</p>}<div className="flex justify-end gap-3 border-t pt-6"><button type="button" onClick={() => router.push('/admin/brokers')} className="rounded-lg border px-5 py-2.5 text-sm font-medium">Cancelar</button><button disabled={saving} className="rounded-lg bg-black px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{saving ? 'Guardando...' : editing ? 'Guardar cambios' : 'Crear broker'}</button></div>
+    {error && <p className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</p>}<div className="flex justify-between gap-3 border-t pt-6">{editing ? <button type="button" onClick={remove} disabled={saving} className="rounded-lg border border-red-300 px-5 py-2.5 text-sm font-medium text-red-700">Eliminar</button> : <span />}<div className="flex gap-3"><button type="button" onClick={() => router.push('/admin/brokers')} className="rounded-lg border px-5 py-2.5 text-sm font-medium">Cancelar</button><button disabled={saving} className="rounded-lg bg-black px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{saving ? 'Guardando...' : editing ? 'Guardar cambios' : 'Crear broker'}</button></div></div>
   </form>
 }
 
