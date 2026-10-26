@@ -20,6 +20,6 @@ export default async function NewAccountPlanPage({ params }: { params: Promise<{
   return <main className="min-h-screen bg-slate-100 p-4 sm:p-8"><div className="mx-auto max-w-3xl">
     <Link href={`/admin/challenges/${id}`} className="text-sm font-medium text-slate-600">← Volver al Challenge</Link>
     <header className="my-6"><p className="text-sm text-slate-500">{challengeResult.data.name}</p><h1 className="text-3xl font-bold">Nuevo plan de cuenta</h1></header>
-    <section className="rounded-xl bg-white p-5 shadow sm:p-8"><AccountPlanForm challengeId={id} platformSlug={platform.slug} variants={variantsResult.data ?? []} hasNormalizedPhases={(phasesResult.count ?? 0) > 0} cancelHref={`/admin/challenges/${id}`} /></section>
+    <section className="rounded-xl bg-white p-5 shadow sm:p-8"><AccountPlanForm challengeId={id} variants={variantsResult.data ?? []} hasNormalizedPhases={(phasesResult.count ?? 0) > 0} cancelHref={`/admin/challenges/${id}`} /></section>
   </div></main>
 }

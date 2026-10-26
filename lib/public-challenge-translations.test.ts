@@ -50,3 +50,12 @@ test('acepta importadas protegidas y rechaza revisiones o hashes antiguos', () =
   const old = imported.map((item) => item.resource_id === 'phase-1' && item.field_name === 'name' ? { ...item, translated_revision: 1 } : item)
   assert.equal(resolveChallengeTranslations({ phases, variants, variantPhases, plans, rewards, requestedLanguage: 'en', defaultLanguage: 'es', languages, translations, states: old }).phases[0].name, 'Evaluación')
 })
+
+test('excluye draft, machine_translated y unpublished', () => {
+  for (const status of ['draft', 'machine_translated']) {
+    const blocked = allStates.map((item) => item.resource_id === 'reward-1' && item.field_name === 'name' ? { ...item, status } : item)
+    assert.equal(resolveChallengeTranslations({ phases, variants, variantPhases, plans, rewards, requestedLanguage: 'en', defaultLanguage: 'es', languages, translations, states: blocked }).rewards[0].name, 'Recompensa estándar')
+  }
+  const unpublished = allStates.map((item) => item.resource_id === 'reward-1' && item.field_name === 'name' ? { ...item, publication_status: 'unpublished' } : item)
+  assert.equal(resolveChallengeTranslations({ phases, variants, variantPhases, plans, rewards, requestedLanguage: 'en', defaultLanguage: 'es', languages, translations, states: unpublished }).rewards[0].name, 'Recompensa estándar')
+})

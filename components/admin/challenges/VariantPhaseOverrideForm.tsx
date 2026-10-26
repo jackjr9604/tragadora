@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { mutateChallengeResource } from '@/app/admin/challenges/resource-actions'
 import { useAdminPermission } from '@/components/admin/AdminPermissionsProvider'
 import {
   effectiveVariantPhaseValue,
@@ -13,8 +13,6 @@ import {
   isValidVariantOverrideDrawdownType,
   optionalInteger,
   optionalNumber,
-  revalidateChallengeData,
-  variantOverrideMutationError,
   type VariantPhaseOverrideValues,
 } from '@/lib/challenge-admin'
 import type { ChallengeVariantPhase } from '@/lib/challenge-resolver'
@@ -22,12 +20,11 @@ import type { EditableChallengePhase } from './PhaseForm'
 
 type Props = {
   variantId: string
-  platformSlug: string
   basePhase: EditableChallengePhase
   existingOverride?: ChallengeVariantPhase
 }
 
-export function VariantPhaseOverrideForm({ variantId, platformSlug, basePhase, existingOverride }: Props) {
+export function VariantPhaseOverrideForm({ variantId, basePhase, existingOverride }: Props) {
   const router = useRouter()
   const canCreate = useAdminPermission('challenges.create')
   const canUpdate = useAdminPermission('challenges.update')
@@ -83,17 +80,9 @@ export function VariantPhaseOverrideForm({ variantId, platformSlug, basePhase, e
     if (!canSave) return setError(`No tienes permiso para ${existingOverride ? 'actualizar' : 'crear'} este override.`)
 
     setSaving(true)
-    const supabase = createClient()
-    if (!existingOverride) {
-      const duplicate = await supabase.from('challenge_variant_phases').select('id').eq('variant_id', variantId).eq('phase_number', basePhase.phase_number).maybeSingle()
-      if (duplicate.error) { setError(duplicate.error.message); setSaving(false); return }
-      if (duplicate.data) { setError(`Ya existe un override para la fase ${basePhase.phase_number}. Actualiza la página antes de editarlo.`); setSaving(false); return }
-    }
-    const result = existingOverride
-      ? await supabase.from('challenge_variant_phases').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', existingOverride.id).eq('variant_id', variantId).eq('phase_number', basePhase.phase_number)
-      : await supabase.from('challenge_variant_phases').insert({ variant_id: variantId, phase_number: basePhase.phase_number, ...payload })
-    if (result.error) { setError(variantOverrideMutationError(result.error.message, basePhase.phase_number)); setSaving(false); return }
-    await finish(existingOverride ? 'update' : 'create', 'Override guardado.')
+    const result = await mutateChallengeResource({ operation: 'save_override', id: existingOverride?.id, variantId, phaseNumber: basePhase.phase_number, profitTarget: payload.profit_target, dailyDrawdown: payload.daily_drawdown, maxDrawdown: payload.max_drawdown, minTradingDays: payload.min_trading_days, minProfitableDays: payload.min_profitable_days, drawdownType: payload.drawdown_type, drawdownBasis: payload.drawdown_basis, notes: payload.notes })
+    if (!result.ok) { setError(result.message); setSaving(false); return }
+    await finish('Override guardado.')
   }
 
   async function removeOverride(confirm = true) {
@@ -102,18 +91,17 @@ export function VariantPhaseOverrideForm({ variantId, platformSlug, basePhase, e
     setSaving(true)
     setError('')
     setNotice('')
-    const result = await createClient().from('challenge_variant_phases').delete().eq('id', existingOverride.id).eq('variant_id', variantId).eq('phase_number', basePhase.phase_number)
-    if (result.error) { setError(result.error.message); setSaving(false); return }
-    await finish('delete', 'Herencia completa restaurada.')
+    const result = await mutateChallengeResource({ operation: 'delete_override', id: existingOverride.id, variantId, phaseNumber: basePhase.phase_number })
+    if (!result.ok) { setError(result.message); setSaving(false); return }
+    await finish('Herencia completa restaurada.')
   }
 
-  async function finish(action: 'create' | 'update' | 'delete', message: string) {
+  async function finish(message: string) {
     try {
-      await revalidateChallengeData(action, [platformSlug])
       setNotice(message)
       router.refresh()
-    } catch (failure) {
-      setError(failure instanceof Error ? `El cambio se guardó, pero ${failure.message}` : 'El cambio se guardó, pero no pudo revalidarse.')
+    } catch {
+      setError('El cambio se guardó, pero no pudo actualizarse la pantalla.')
     } finally {
       setSaving(false)
     }

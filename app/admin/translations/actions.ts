@@ -147,6 +147,8 @@ function bulkSuccessMessage(action: string) {
 function isCachedPublicResource(resourceType: TranslationResourceType): resourceType is PublicTranslationResourceType {
   return resourceType === 'blog_post_translation' || resourceType === 'tool_translation' || resourceType === 'community_translation' || resourceType === 'giveaway_translation'
     || resourceType === 'platform_translation' || resourceType === 'broker_detail_translation' || resourceType === 'exchange_detail_translation' || resourceType === 'offer_translation'
+    || resourceType === 'challenge_phase_translation' || resourceType === 'challenge_variant_translation' || resourceType === 'challenge_variant_phase_translation'
+    || resourceType === 'account_plan_translation' || resourceType === 'challenge_reward_translation'
 }
 
 function revalidateTranslationAdmin() {

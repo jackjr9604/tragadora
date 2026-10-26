@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { mutateChallengeResource } from '@/app/admin/challenges/resource-actions'
 import {
   isValidOptionalNonNegativeInteger,
   isValidOptionalNonNegativeNumber,
@@ -11,8 +11,6 @@ import {
   isValidPhaseNumber,
   optionalInteger,
   optionalNumber,
-  phaseMutationError,
-  revalidateChallengeData,
 } from '@/lib/challenge-admin'
 
 export type EditableChallengePhase = {
@@ -34,20 +32,16 @@ export type EditableChallengePhase = {
 
 export function PhaseForm({
   challengeId,
-  platformSlug,
   declaredPhases,
   configuredPhaseCount,
   legacyPlanCount,
-  variantIds,
   initial,
   onDone,
 }: {
   challengeId: string
-  platformSlug: string
   declaredPhases: number | null
   configuredPhaseCount: number
   legacyPlanCount: number
-  variantIds: string[]
   initial?: EditableChallengePhase
   onDone: () => void
 }) {
@@ -91,57 +85,14 @@ export function PhaseForm({
     if (!isValidPhaseDrawdownBasis(basis)) return setError('La base del drawdown no es válida.')
     if (!initial && declaredPhases === 0 && !acknowledgedZeroPhase) return setError('Confirma la inconsistencia antes de crear una fase en un Challenge declarado con 0 fases.')
 
-    const supabase = createClient()
-    if (initial && parsedPhaseNumber !== initial.phase_number && variantIds.length) {
-      const overrideResult = await supabase
-        .from('challenge_variant_phases')
-        .select('id', { count: 'exact', head: true })
-        .in('variant_id', variantIds)
-        .eq('phase_number', initial.phase_number)
-      if (overrideResult.error) return setError(overrideResult.error.message)
-      if ((overrideResult.count ?? 0) > 0) return setError('Esta fase tiene overrides de variantes asociados. No puede cambiarse su número hasta gestionar esos overrides.')
-    }
-
-    let duplicateQuery = supabase
-      .from('challenge_phases')
-      .select('id', { count: 'exact', head: true })
-      .eq('challenge_id', challengeId)
-      .eq('phase_number', parsedPhaseNumber)
-    if (initial) duplicateQuery = duplicateQuery.neq('id', initial.id)
-    const duplicateResult = await duplicateQuery
-    if (duplicateResult.error) return setError(duplicateResult.error.message)
-    if ((duplicateResult.count ?? 0) > 0) return setError(`Ya existe la fase ${parsedPhaseNumber} para este Challenge.`)
-
     setSaving(true)
-    const payload = {
-      challenge_id: challengeId,
-      phase_number: parsedPhaseNumber,
-      name: name.trim() || null,
-      profit_target: profit,
-      daily_drawdown: daily,
-      max_drawdown: maximum,
-      min_trading_days: minDays,
-      max_trading_days: maxDays,
-      min_profitable_days: profitableDays,
-      drawdown_type: type,
-      drawdown_basis: basis,
-      notes: notes.trim() || null,
-      ...(initial ? { updated_at: new Date().toISOString() } : {}),
-    }
-    const result = initial
-      ? await supabase.from('challenge_phases').update(payload).eq('id', initial.id).eq('challenge_id', challengeId)
-      : await supabase.from('challenge_phases').insert(payload)
-    if (result.error) {
-      setError(phaseMutationError(result.error.message, parsedPhaseNumber))
-      setSaving(false)
-      return
-    }
     try {
-      await revalidateChallengeData(initial ? 'update' : 'create', [platformSlug])
+      const result = await mutateChallengeResource({ operation: 'save_phase', id: initial?.id, challengeId, phaseNumber: parsedPhaseNumber, name: name.trim() || null, profitTarget: profit, dailyDrawdown: daily, maxDrawdown: maximum, minTradingDays: minDays, maxTradingDays: maxDays, minProfitableDays: profitableDays, drawdownType: type, drawdownBasis: basis, notes: notes.trim() || null, expectedUpdatedAt: initial?.updated_at })
+      if (!result.ok) return setError(result.message)
       router.refresh()
       onDone()
-    } catch (revalidationError) {
-      setError(revalidationError instanceof Error ? `La fase se guardó, pero ${revalidationError.message}` : 'La fase se guardó, pero no se pudo revalidar.')
+    } catch {
+      setError('No se pudo completar la operación.')
     } finally {
       setSaving(false)
     }

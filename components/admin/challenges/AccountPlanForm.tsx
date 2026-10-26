@@ -2,8 +2,8 @@
 
 import { FormEvent, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-import { challengeMutationError, initialPlanVariantId, optionalInteger, optionalNumber, revalidateChallengeData } from '@/lib/challenge-admin'
+import { mutateChallengeResource } from '@/app/admin/challenges/resource-actions'
+import { initialPlanVariantId, optionalInteger, optionalNumber } from '@/lib/challenge-admin'
 
 export type EditableAccountPlan = {
   id: string
@@ -22,9 +22,8 @@ export type EditableAccountPlan = {
 
 type Variant = { id: string; name: string; status: boolean }
 
-export function AccountPlanForm({ challengeId, platformSlug, variants, hasNormalizedPhases, initial, onDone, cancelHref, lockedVariantId }: {
+export function AccountPlanForm({ challengeId, variants, hasNormalizedPhases, initial, onDone, cancelHref, lockedVariantId }: {
   challengeId: string
-  platformSlug: string
   variants: Variant[]
   hasNormalizedPhases: boolean
   initial?: EditableAccountPlan
@@ -59,34 +58,14 @@ export function AccountPlanForm({ challengeId, platformSlug, variants, hasNormal
     if (selectedVariantId && !variants.some((variant) => variant.id === selectedVariantId)) return setError('La variante seleccionada no pertenece a este Challenge.')
     if (lockedVariantId && initial?.variant_id !== undefined && initial.variant_id !== lockedVariantId) return setError('El plan no pertenece a esta variante.')
     setSaving(true)
-    const payload = {
-      challenge_id: challengeId,
-      account_size: size,
-      price: parsedPrice,
-      currency: currency.trim().toUpperCase(),
-      variant_id: selectedVariantId || null,
-      ...(hasNormalizedPhases ? {} : {
-        profit_target: optionalNumber(profitTarget),
-        daily_drawdown: optionalNumber(dailyDrawdown),
-        max_drawdown: optionalNumber(maxDrawdown),
-        profit_split: optionalNumber(profitSplit),
-        min_trading_days: optionalInteger(minTradingDays),
-        max_trading_days: optionalInteger(maxTradingDays),
-        payout_frequency: payoutFrequency.trim() || null,
-      }),
-    }
-    const supabase = createClient()
-    const result = initial
-      ? await supabase.from('account_plans').update(payload).eq('id', initial.id).eq('challenge_id', challengeId)
-      : await supabase.from('account_plans').insert(payload)
-    if (result.error) { setError(challengeMutationError(result.error.message, 'plan', Boolean(selectedVariantId))); setSaving(false); return }
     try {
-      await revalidateChallengeData(initial ? 'update' : 'create', [platformSlug])
+      const result = await mutateChallengeResource({ operation: 'save_plan', id: initial?.id, challengeId, accountSize: size, price: parsedPrice, currency: currency.trim().toUpperCase(), variantId: selectedVariantId || null, profitTarget: optionalNumber(profitTarget), dailyDrawdown: optionalNumber(dailyDrawdown), maxDrawdown: optionalNumber(maxDrawdown), profitSplit: optionalNumber(profitSplit), minTradingDays: optionalInteger(minTradingDays), maxTradingDays: optionalInteger(maxTradingDays), payoutFrequency: payoutFrequency.trim() || null })
+      if (!result.ok) return setError(result.message)
       router.refresh()
       if (onDone) onDone()
       else router.push(cancelHref ?? `/admin/challenges/${challengeId}`)
-    } catch (revalidationError) {
-      setError(revalidationError instanceof Error ? `El plan se guardó, pero ${revalidationError.message}` : 'El plan se guardó, pero no se pudo revalidar.')
+    } catch {
+      setError('No se pudo completar la operación.')
     } finally { setSaving(false) }
   }
 

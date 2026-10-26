@@ -15,11 +15,17 @@ export type PublicTranslationResourceType =
   | 'broker_detail_translation'
   | 'exchange_detail_translation'
   | 'offer_translation'
+  | 'challenge_phase_translation'
+  | 'challenge_variant_translation'
+  | 'challenge_variant_phase_translation'
+  | 'account_plan_translation'
+  | 'challenge_reward_translation'
 
 export function invalidatePublicTranslations(resourceType: PublicTranslationResourceType, language?: string) {
   expireTranslationRows(resourceType, language)
   if (isPlatformResource(resourceType)) invalidatePlatformOuterCaches()
   if (resourceType === 'offer_translation') invalidateOfferOuterCaches()
+  if (isChallengeResource(resourceType)) invalidateChallengeOuterCaches()
 }
 
 function expireTranslationRows(resourceType: PublicTranslationResourceType, language?: string) {
@@ -38,9 +44,21 @@ export function invalidatePublicSource(resourceType: PublicTranslationResourceTy
 }
 
 export function invalidateAllPublicTranslationResources() {
-  for (const resourceType of ['blog_post_translation', 'tool_translation', 'community_translation', 'giveaway_translation', 'platform_translation', 'broker_detail_translation', 'exchange_detail_translation', 'offer_translation'] as const) {
+  for (const resourceType of ['blog_post_translation', 'tool_translation', 'community_translation', 'giveaway_translation', 'platform_translation', 'broker_detail_translation', 'exchange_detail_translation', 'offer_translation', 'challenge_phase_translation', 'challenge_variant_translation', 'challenge_variant_phase_translation', 'account_plan_translation', 'challenge_reward_translation'] as const) {
     invalidatePublicTranslations(resourceType)
   }
+}
+
+function isChallengeResource(resourceType: PublicTranslationResourceType) {
+  return resourceType === 'challenge_phase_translation' || resourceType === 'challenge_variant_translation'
+    || resourceType === 'challenge_variant_phase_translation' || resourceType === 'account_plan_translation'
+    || resourceType === 'challenge_reward_translation'
+}
+
+function invalidateChallengeOuterCaches() {
+  updateTag('public-home-data')
+  updateTag('public-prop-firms')
+  updateTag('public-payouts')
 }
 
 function invalidateOfferOuterCaches() {

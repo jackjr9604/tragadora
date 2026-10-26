@@ -9,6 +9,7 @@ import {
   type ChallengeTranslationRow,
 } from './public-challenge-translation-policy'
 import type { TranslationFieldState } from './public-platform-translation-policy'
+import { createPublicTranslationCache } from './public-translation-cache'
 import { getPublicTranslationStates } from './public-translation-states'
 import { getPublicTranslationLanguageContext } from './public-translation-languages'
 
@@ -19,6 +20,28 @@ const TABLES: Record<ChallengeTranslationResource, { table: string; id: string }
   account_plan_translation: { table: 'account_plan_translations', id: 'account_plan_id' },
   challenge_reward_translation: { table: 'challenge_reward_translations', id: 'reward_option_id' },
 }
+
+const CACHED_ROWS = Object.fromEntries((Object.keys(TABLES) as ChallengeTranslationResource[]).map((resourceType) => {
+  const config = TABLES[resourceType]
+  const fields = CHALLENGE_TRANSLATION_RESOURCES[resourceType].join(', ')
+  return [resourceType, createPublicTranslationCache<ChallengeTranslationRow>({
+    async loadTranslations(scope) {
+      const result = await createAdminClient().from(config.table)
+        .select(`${config.id}, language, ${fields}`)
+        .in(config.id, scope.resourceIds)
+        .eq('language', scope.effectiveLanguage)
+      if (result.error) throw result.error
+      return ((result.data ?? []) as unknown as Array<Record<string, unknown>>).map((row) => ({
+        ...row, resource_type: resourceType, resource_id: String(row[config.id]),
+      })) as ChallengeTranslationRow[]
+    },
+    async loadStates(scope) {
+      const result = await getPublicTranslationStates({ resourceTypes: [resourceType], resourceIds: [...scope.resourceIds], targetLanguages: [scope.effectiveLanguage] })
+      if (result.error) throw result.error
+      return (result.data ?? []).map((state) => ({ ...state, resource_type: state.resource_type ?? resourceType }))
+    },
+  })]
+})) as Record<ChallengeTranslationResource, ReturnType<typeof createPublicTranslationCache<ChallengeTranslationRow>>>
 
 export async function getPublicChallengeTranslations(
   collections: ChallengeTranslationCollections,
@@ -34,39 +57,24 @@ export async function getPublicChallengeTranslations(
   const allIds = Object.values(resourceIds).flat()
   if (!allIds.length) return collections
 
-  const db = createAdminClient()
   const { languages, defaultLanguage } = await getPublicTranslationLanguageContext()
   const effectiveLanguage = languages.find((item) => item.code === requestedLanguage)?.code ?? defaultLanguage
   if (effectiveLanguage === defaultLanguage) return collections
 
-  const translationQueries = (Object.keys(TABLES) as ChallengeTranslationResource[]).map(async (resourceType) => {
-    const ids = resourceIds[resourceType]
-    if (!ids.length) return [] as ChallengeTranslationRow[]
-    const config = TABLES[resourceType]
-    const fields = CHALLENGE_TRANSLATION_RESOURCES[resourceType].join(', ')
-    const result = await db.from(config.table).select(`${config.id}, language, ${fields}`).in(config.id, ids).eq('language', effectiveLanguage)
-    if (result.error) throw result.error
-    const rows = (result.data ?? []) as unknown as Array<Record<string, unknown>>
-    return rows.map((row) => ({
-      ...row,
-      resource_type: resourceType,
-      resource_id: String(row[config.id]),
-    })) as ChallengeTranslationRow[]
-  })
-
   try {
-    const [translationGroups, statesResult] = await Promise.all([
-      Promise.all(translationQueries),
-      getPublicTranslationStates({ resourceTypes: Object.keys(CHALLENGE_TRANSLATION_RESOURCES), resourceIds: allIds, targetLanguages: [effectiveLanguage] }),
-    ])
-    if (statesResult.error) return collections
+    const groups = await Promise.all((Object.keys(TABLES) as ChallengeTranslationResource[]).map((resourceType) => CACHED_ROWS[resourceType]({
+      resourceType,
+      resourceIds: resourceIds[resourceType],
+      effectiveLanguage,
+      defaultLanguage,
+    })))
     return resolveChallengeTranslations({
       ...collections,
       requestedLanguage,
       defaultLanguage,
       languages,
-      translations: translationGroups.flat(),
-      states: (statesResult.data ?? []) as TranslationFieldState[],
+      translations: groups.flatMap((group) => [...group.translations]),
+      states: groups.flatMap((group) => [...group.states]) as TranslationFieldState[],
     })
   } catch {
     return collections

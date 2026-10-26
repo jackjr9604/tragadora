@@ -2,9 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { mutateChallengeResource } from '@/app/admin/challenges/resource-actions'
 import { useAdminPermission } from '@/components/admin/AdminPermissionsProvider'
-import { orphanVariantOverrides, overridesForVariant, revalidateChallengeData, variantDependencyMessage, type VariantDependencyCounts } from '@/lib/challenge-admin'
+import { orphanVariantOverrides, overridesForVariant, variantDependencyMessage, type VariantDependencyCounts } from '@/lib/challenge-admin'
 import { VariantForm, type EditableChallengeVariant } from './VariantForm'
 import { AccountPlansManager } from './AccountPlansManager'
 import type { EditableAccountPlan } from './AccountPlanForm'
@@ -15,10 +15,9 @@ import { TranslationWorkflowLink } from '@/components/admin/translations/Transla
 
 type Relation = { variant_id: string | null }
 
-export function ChallengeVariantsManager({ challengeId, challengeName, platformSlug, variants, plans, phases, overrides, rewards, hasNormalizedPhases }: {
+export function ChallengeVariantsManager({ challengeId, challengeName, variants, plans, phases, overrides, rewards, hasNormalizedPhases }: {
   challengeId: string
   challengeName: string
-  platformSlug: string
   variants: EditableChallengeVariant[]
   plans: EditableAccountPlan[]
   phases: EditableChallengePhase[]
@@ -47,13 +46,12 @@ export function ChallengeVariantsManager({ challengeId, challengeName, platformS
     if (!canUpdate) return
     setWorkingId(variant.id)
     setError('')
-    const result = await createClient().from('challenge_variants').update({ status: !variant.status, updated_at: new Date().toISOString() }).eq('id', variant.id).eq('challenge_id', challengeId)
-    if (result.error) { setError(result.error.message); setWorkingId(null); return }
+    const result = await mutateChallengeResource({ operation: 'toggle_variant', id: variant.id, challengeId, status: !variant.status, expectedUpdatedAt: variant.updated_at })
+    if (!result.ok) { setError(result.message); setWorkingId(null); return }
     try {
-      await revalidateChallengeData('update', [platformSlug])
       router.refresh()
-    } catch (revalidationError) {
-      setError(revalidationError instanceof Error ? `El estado cambió, pero ${revalidationError.message}` : 'El estado cambió, pero no se pudo revalidar.')
+    } catch {
+      setError('El estado cambió, pero no pudo actualizarse la pantalla.')
     } finally { setWorkingId(null) }
   }
 
@@ -61,33 +59,21 @@ export function ChallengeVariantsManager({ challengeId, challengeName, platformS
     if (!canDelete) return
     setWorkingId(variant.id)
     setError('')
-    const supabase = createClient()
-    const [plansResult, overridesResult, rewardsResult] = await Promise.all([
-      supabase.from('account_plans').select('id', { count: 'exact', head: true }).eq('variant_id', variant.id),
-      supabase.from('challenge_variant_phases').select('id', { count: 'exact', head: true }).eq('variant_id', variant.id),
-      supabase.from('challenge_reward_options').select('id', { count: 'exact', head: true }).eq('variant_id', variant.id),
-    ])
-    const dependencyError = plansResult.error ?? overridesResult.error ?? rewardsResult.error
-    if (dependencyError) { setError(dependencyError.message); setWorkingId(null); return }
-    const liveCounts = { plans: plansResult.count ?? 0, overrides: overridesResult.count ?? 0, rewards: rewardsResult.count ?? 0 }
-    const blockedMessage = variantDependencyMessage(liveCounts)
-    if (blockedMessage) { setError(blockedMessage); setWorkingId(null); return }
     if (!window.confirm(`¿Eliminar definitivamente la variante “${variant.name}” del Challenge “${challengeName}”? Esta acción no se puede deshacer.`)) { setWorkingId(null); return }
-    const result = await supabase.from('challenge_variants').delete().eq('id', variant.id).eq('challenge_id', challengeId)
-    if (result.error) { setError(result.error.message); setWorkingId(null); return }
+    const result = await mutateChallengeResource({ operation: 'delete_variant', id: variant.id, challengeId })
+    if (!result.ok) { setError(result.message); setWorkingId(null); return }
     try {
-      await revalidateChallengeData('delete', [platformSlug])
       if (mode === variant.id) setMode('closed')
       router.refresh()
-    } catch (revalidationError) {
-      setError(revalidationError instanceof Error ? `La variante se eliminó, pero ${revalidationError.message}` : 'La variante se eliminó, pero no se pudo revalidar.')
+    } catch {
+      setError('La variante se eliminó, pero no pudo actualizarse la pantalla.')
     } finally { setWorkingId(null) }
   }
 
   return <div>
     <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-xl font-bold">Variantes</h2><p className="mt-1 text-sm text-slate-500">Opciones del Challenge, estado y dependencias asociadas.</p></div>{canCreate && <button onClick={() => setMode(mode === 'create' ? 'closed' : 'create')} className="admin-primary-button px-4 py-2.5 text-sm">+ Nueva variante</button>}</div>
-    {mode === 'create' && <Editor title="Crear variante"><VariantForm challengeId={challengeId} platformSlug={platformSlug} variants={variants} onDone={() => setMode('closed')} /></Editor>}
-    {editing && <Editor title={`Editar ${editing.name}`}><VariantForm challengeId={challengeId} platformSlug={platformSlug} variants={variants} initial={editing} onDone={() => setMode('closed')} /></Editor>}
+    {mode === 'create' && <Editor title="Crear variante"><VariantForm challengeId={challengeId} variants={variants} onDone={() => setMode('closed')} /></Editor>}
+    {editing && <Editor title={`Editar ${editing.name}`}><VariantForm challengeId={challengeId} variants={variants} initial={editing} onDone={() => setMode('closed')} /></Editor>}
     {error && <p className="mt-4 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</p>}
     <div className="mt-5 space-y-4">{variants.map((variant) => {
       const dependencyCounts = counts(variant.id)
@@ -98,12 +84,12 @@ export function ChallengeVariantsManager({ challengeId, challengeName, platformS
         <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4"><Fact label="Profit split" value={variant.profit_split === null ? 'Sin dato' : `${variant.profit_split}%`} /><Fact label="Modificador de precio" value={variant.price_modifier === null ? 'Sin dato' : String(variant.price_modifier)} /><Fact label="Frecuencia" value={variant.payout_frequency ?? 'Sin dato'} /><Fact label="Dependencias" value={`${dependencyCounts.plans} planes · ${dependencyCounts.overrides} overrides · ${dependencyCounts.rewards} rewards`} /></dl>
         {variant.notes && <p className="mt-4 whitespace-pre-line border-t pt-4 text-sm text-slate-600">{variant.notes}</p>}
         {variantDependencyMessage(dependencyCounts) && <p className="mt-4 text-xs text-amber-800">La eliminación está protegida mientras existan dependencias. Puedes desactivar la variante.</p>}
-        <div className="mt-5 border-t border-slate-200 pt-5"><AccountPlansManager challengeId={challengeId} platformSlug={platformSlug} plans={plans} variants={variants} hasNormalizedPhases={hasNormalizedPhases} scopeVariantId={variant.id} scopeVariantName={variant.name} compact /></div>
+        <div className="mt-5 border-t border-slate-200 pt-5"><AccountPlansManager challengeId={challengeId} plans={plans} variants={variants} hasNormalizedPhases={hasNormalizedPhases} scopeVariantId={variant.id} scopeVariantName={variant.name} compact /></div>
         <details className="mt-5 border-t border-slate-200 pt-5">
           <summary className="cursor-pointer font-bold text-slate-900">Phase Overrides <span className="ml-2 text-xs font-normal text-slate-500">{variantOverrides.length} registrados</span></summary>
           {!phases.length ? <p className="mt-4 rounded-lg bg-slate-50 p-4 text-sm text-slate-600">Este Challenge no tiene fases normalizadas. No hay Phase Overrides disponibles para esta variante.</p> : <div className="mt-4 space-y-4">{phases.map((phase) => {
             const existingOverride = variantOverrides.find((item) => item.phase_number === phase.phase_number)
-            return <section key={phase.id} className="rounded-xl border border-slate-200 p-4"><div className="flex flex-wrap items-center justify-between gap-2"><div><h4 className="font-semibold">Fase {phase.phase_number}{phase.name ? ` — ${phase.name}` : ''}</h4><p className="mt-1 text-xs text-slate-500">{existingOverride ? 'Override parcial registrado' : 'Herencia completa del Challenge base'}</p></div><div className="flex flex-wrap items-center gap-2">{canUpdate && existingOverride && <TranslationWorkflowLink resourceType="challenge_variant_phase_translation" resourceId={existingOverride.id} label="Traducciones" returnTo={`/admin/challenges/${challengeId}#variantes`}/>}<span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${existingOverride ? 'bg-amber-50 text-amber-900' : 'bg-emerald-50 text-emerald-800'}`}>{existingOverride ? 'Personalizada' : 'Heredada'}</span></div></div><VariantPhaseOverrideForm key={existingOverride?.id ?? 'inherited'} variantId={variant.id} platformSlug={platformSlug} basePhase={phase} existingOverride={existingOverride} /></section>
+            return <section key={phase.id} className="rounded-xl border border-slate-200 p-4"><div className="flex flex-wrap items-center justify-between gap-2"><div><h4 className="font-semibold">Fase {phase.phase_number}{phase.name ? ` — ${phase.name}` : ''}</h4><p className="mt-1 text-xs text-slate-500">{existingOverride ? 'Override parcial registrado' : 'Herencia completa del Challenge base'}</p></div><div className="flex flex-wrap items-center gap-2">{canUpdate && existingOverride && <TranslationWorkflowLink resourceType="challenge_variant_phase_translation" resourceId={existingOverride.id} label="Traducciones" returnTo={`/admin/challenges/${challengeId}#variantes`}/>}<span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${existingOverride ? 'bg-amber-50 text-amber-900' : 'bg-emerald-50 text-emerald-800'}`}>{existingOverride ? 'Personalizada' : 'Heredada'}</span></div></div><VariantPhaseOverrideForm key={existingOverride?.id ?? 'inherited'} variantId={variant.id} basePhase={phase} existingOverride={existingOverride} /></section>
           })}</div>}
           {orphanOverrides.length > 0 && <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"><p className="font-semibold">Overrides huérfanos detectados</p>{orphanOverrides.map((override) => <p key={override.id} className="mt-1">Override huérfano: Phase {override.phase_number} ya no existe en las fases base. No fue modificado automáticamente.</p>)}</div>}
         </details>

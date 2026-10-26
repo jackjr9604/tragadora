@@ -2,14 +2,12 @@
 
 import { FormEvent, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { mutateChallengeResource } from '@/app/admin/challenges/resource-actions'
 import {
   isValidChallengeSlug,
   hasDuplicateVariantSlug,
   normalizeChallengeSlug,
   optionalNumber,
-  revalidateChallengeData,
-  variantMutationError,
 } from '@/lib/challenge-admin'
 
 export type EditableChallengeVariant = {
@@ -26,9 +24,8 @@ export type EditableChallengeVariant = {
   updated_at: string
 }
 
-export function VariantForm({ challengeId, platformSlug, variants, initial, onDone }: {
+export function VariantForm({ challengeId, variants, initial, onDone }: {
   challengeId: string
-  platformSlug: string
   variants: EditableChallengeVariant[]
   initial?: EditableChallengeVariant
   onDone: () => void
@@ -65,32 +62,13 @@ export function VariantForm({ challengeId, platformSlug, variants, initial, onDo
     }
 
     setSaving(true)
-    const payload = {
-      challenge_id: challengeId,
-      name: normalizedName,
-      slug: normalizedSlug,
-      profit_split: split,
-      price_modifier: modifier,
-      payout_frequency: payoutFrequency.trim() || null,
-      notes: notes.trim() || null,
-      status,
-      ...(initial ? { updated_at: new Date().toISOString() } : {}),
-    }
-    const supabase = createClient()
-    const result = initial
-      ? await supabase.from('challenge_variants').update(payload).eq('id', initial.id).eq('challenge_id', challengeId)
-      : await supabase.from('challenge_variants').insert(payload)
-    if (result.error) {
-      setError(variantMutationError(result.error.message))
-      setSaving(false)
-      return
-    }
     try {
-      await revalidateChallengeData(initial ? 'update' : 'create', [platformSlug])
+      const result = await mutateChallengeResource({ operation: 'save_variant', id: initial?.id, challengeId, name: normalizedName, slug: normalizedSlug, profitSplit: split, priceModifier: modifier, payoutFrequency: payoutFrequency.trim() || null, notes: notes.trim() || null, status, expectedUpdatedAt: initial?.updated_at })
+      if (!result.ok) return setError(result.message)
       router.refresh()
       onDone()
-    } catch (revalidationError) {
-      setError(revalidationError instanceof Error ? `La variante se guardó, pero ${revalidationError.message}` : 'La variante se guardó, pero no se pudo revalidar.')
+    } catch {
+      setError('No se pudo completar la operación.')
     } finally {
       setSaving(false)
     }
