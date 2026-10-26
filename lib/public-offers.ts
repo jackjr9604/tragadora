@@ -204,10 +204,12 @@ async function queryPublicOffers(language: string, countryCode: string | null): 
   })
 }
 
+export const PUBLIC_OFFERS_CACHE_TAG = 'active-public-offers-v2'
+
 const getCachedPublicOffers = unstable_cache(
   queryPublicOffers,
-  ['active-public-offers-v2'],
-  { revalidate: 60 }
+  [PUBLIC_OFFERS_CACHE_TAG],
+  { revalidate: 60, tags: [PUBLIC_OFFERS_CACHE_TAG] }
 )
 
 export function getPublicOffers(language: string, countryCode: string | null) {

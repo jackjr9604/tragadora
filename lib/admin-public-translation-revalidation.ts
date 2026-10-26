@@ -3,6 +3,7 @@ import 'server-only'
 import { updateTag } from 'next/cache'
 import type { TranslationResourceType } from './admin-translation-inventory-policy'
 import { PUBLIC_COMMUNITIES_SOURCE_CACHE_TAG, PUBLIC_GIVEAWAYS_SOURCE_CACHE_TAG } from './public-discovery-cache'
+import { PUBLIC_OFFERS_CACHE_TAG } from './public-offers'
 import { publicTranslationLanguageTag, publicTranslationResourceTag } from './public-translation-cache-policy'
 
 export type PublicTranslationResourceType =
@@ -13,10 +14,12 @@ export type PublicTranslationResourceType =
   | 'platform_translation'
   | 'broker_detail_translation'
   | 'exchange_detail_translation'
+  | 'offer_translation'
 
 export function invalidatePublicTranslations(resourceType: PublicTranslationResourceType, language?: string) {
   expireTranslationRows(resourceType, language)
   if (isPlatformResource(resourceType)) invalidatePlatformOuterCaches()
+  if (resourceType === 'offer_translation') invalidateOfferOuterCaches()
 }
 
 function expireTranslationRows(resourceType: PublicTranslationResourceType, language?: string) {
@@ -35,9 +38,17 @@ export function invalidatePublicSource(resourceType: PublicTranslationResourceTy
 }
 
 export function invalidateAllPublicTranslationResources() {
-  for (const resourceType of ['blog_post_translation', 'tool_translation', 'community_translation', 'giveaway_translation', 'platform_translation', 'broker_detail_translation', 'exchange_detail_translation'] as const) {
+  for (const resourceType of ['blog_post_translation', 'tool_translation', 'community_translation', 'giveaway_translation', 'platform_translation', 'broker_detail_translation', 'exchange_detail_translation', 'offer_translation'] as const) {
     invalidatePublicTranslations(resourceType)
   }
+}
+
+function invalidateOfferOuterCaches() {
+  updateTag(PUBLIC_OFFERS_CACHE_TAG)
+  updateTag('public-home-data')
+  updateTag('public-prop-firms')
+  updateTag('public-brokers-v1')
+  updateTag('public-exchanges-v2')
 }
 
 export function invalidatePublicPlatformSource(kind: 'prop_firm' | 'broker' | 'exchange') {

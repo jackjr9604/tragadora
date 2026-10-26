@@ -1,9 +1,10 @@
 'use client'
 
-import { FormEvent, Suspense, useEffect, useMemo, useState } from 'react'
+import { FormEvent, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { OfferPresentationFields, type OfferPresentation } from '@/components/admin/OfferPresentationFields'
+import { saveOfferSource } from '../actions'
 
 type Platform = {
   id: string
@@ -54,6 +55,7 @@ function NewOfferForm() {
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const creationRequestId = useRef<string | null>(null)
 
   useEffect(() => {
     async function loadPlatforms() {
@@ -96,42 +98,49 @@ function NewOfferForm() {
     setLoading(true)
     setError('')
 
-    const { error } = await supabase
-      .from('offers')
-      .insert({
-        platform_id: platformId,
-        challenge_id: challengeId || null,
-        title,
-        description: description || null,
-        discount_value: Number(discountValue),
-        discount_type: discountType,
-        promo_code: promoCode || null,
-        includes_free_account: presentation.includesFreeAccount,
-        free_account_label: presentation.includesFreeAccount ? presentation.freeAccountLabel.trim() || null : null,
-        is_featured: presentation.isFeatured,
-        hot_badge: presentation.hotBadge.trim() || null,
-        short_highlight: presentation.shortHighlight.trim() || null,
-        country_code: countryCode
-          ? countryCode.toUpperCase()
-          : null,
-        language: language || null,
-        starts_at: startsAt
-          ? new Date(startsAt).toISOString()
-          : null,
-        expires_at: expiresAt
-          ? new Date(expiresAt).toISOString()
-          : null,
-        status: 'true',
-      })
-
-    if (error) {
-      setError(error.message)
+    if (discountValue.trim() === '') {
+      setError('Indica el valor del descuento antes de crear la oferta.')
       setLoading(false)
       return
     }
 
-    router.push('/admin/offers')
-    router.refresh()
+    try {
+      creationRequestId.current ??= crypto.randomUUID()
+      const result = await saveOfferSource({
+      creationRequestId: creationRequestId.current,
+      platformId,
+      challengeId: challengeId || null,
+      affiliateLinkId: null,
+      title,
+      description: description || null,
+      discountValue: Number(discountValue),
+      discountType: discountType as 'percentage' | 'fixed',
+      promoCode: promoCode || null,
+      includesFreeAccount: presentation.includesFreeAccount,
+      freeAccountLabel: presentation.freeAccountLabel || null,
+      featured: presentation.isFeatured,
+      hotBadge: presentation.hotBadge || null,
+      shortHighlight: presentation.shortHighlight || null,
+      countryCode: countryCode ? countryCode.toUpperCase() : null,
+      language: language || null,
+      startsAt: startsAt ? new Date(startsAt).toISOString() : null,
+      expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null,
+      priority: 1,
+      status: true,
+      })
+
+      if (!result.ok) {
+        setError(result.message)
+        return
+      }
+
+      router.push('/admin/offers')
+      router.refresh()
+    } catch {
+      setError('No se recibió confirmación del servidor. No cambies los datos: puedes reintentar de forma segura con la misma solicitud.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (

@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useParams, useRouter } from 'next/navigation'
 import { OfferPresentationFields, type OfferPresentation } from '@/components/admin/OfferPresentationFields'
 import { TranslationWorkflowLink } from '@/components/admin/translations/TranslationWorkflowLink'
+import { saveOfferSource } from '../actions'
 
 type Platform = {
   id: string
@@ -19,6 +20,7 @@ type Challenge = {
 type AffiliateLink = {
   id: string
   url: string
+  platform_id: string
 }
 
 export default function EditOfferPage() {
@@ -54,6 +56,7 @@ export default function EditOfferPage() {
   const [expiresAt, setExpiresAt] = useState('')
   const [priority, setPriority] = useState('1')
   const [status, setStatus] = useState(true)
+  const [updatedAt, setUpdatedAt] = useState('')
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -80,13 +83,13 @@ export default function EditOfferPage() {
 
         supabase
           .from('affiliate_links')
-          .select('id, url')
+          .select('id, url, platform_id')
           .eq('status', true)
           .order('priority'),
       ])
 
       if (offerResult.error) {
-        setError(offerResult.error.message)
+        setError('No se pudo cargar la oferta. Recarga la página o vuelve al listado.')
         setLoading(false)
         return
       }
@@ -140,6 +143,7 @@ export default function EditOfferPage() {
       )
 
       setStatus(offer.status ?? true)
+      setUpdatedAt(offer.updated_at ?? '')
 
       if (offer.platform_id) {
         const { data } = await supabase
@@ -165,54 +169,50 @@ export default function EditOfferPage() {
     setSaving(true)
     setError('')
 
-    const { error } = await supabase
-      .from('offers')
-      .update({
-        platform_id: platformId,
-        challenge_id: challengeId || null,
-        affiliate_link_id:
-          affiliateLinkId || null,
-
-        title,
-        description: description || null,
-
-        discount_value: Number(discountValue),
-        discount_type: discountType,
-
-        promo_code: promoCode || null,
-        includes_free_account: presentation.includesFreeAccount,
-        free_account_label: presentation.includesFreeAccount ? presentation.freeAccountLabel.trim() || null : null,
-        is_featured: presentation.isFeatured,
-        hot_badge: presentation.hotBadge.trim() || null,
-        short_highlight: presentation.shortHighlight.trim() || null,
-
-        country_code: countryCode
-          ? countryCode.toUpperCase()
-          : null,
-
-        language: language || null,
-
-        starts_at: startsAt
-          ? new Date(startsAt).toISOString()
-          : null,
-
-        expires_at: expiresAt
-          ? new Date(expiresAt).toISOString()
-          : null,
-
-        priority: Number(priority),
-        status,
-      })
-      .eq('id', id)
-
-    if (error) {
-      setError(error.message)
+    if (discountValue.trim() === '') {
+      setError('Esta oferta histórica no tiene un descuento normalizado. Indica un valor explícito antes de guardar; no se modificó ningún dato.')
       setSaving(false)
       return
     }
 
-    router.push('/admin/offers')
-    router.refresh()
+    try {
+      const result = await saveOfferSource({
+      id,
+      expectedUpdatedAt: updatedAt,
+      platformId,
+      challengeId: challengeId || null,
+      affiliateLinkId: affiliateLinkId || null,
+      title,
+      description: description || null,
+      discountValue: Number(discountValue),
+      discountType: discountType as 'percentage' | 'fixed',
+      promoCode: promoCode || null,
+      includesFreeAccount: presentation.includesFreeAccount,
+      freeAccountLabel: presentation.freeAccountLabel || null,
+      featured: presentation.isFeatured,
+      hotBadge: presentation.hotBadge || null,
+      shortHighlight: presentation.shortHighlight || null,
+      countryCode: countryCode ? countryCode.toUpperCase() : null,
+      language: language || null,
+      startsAt: startsAt ? new Date(startsAt).toISOString() : null,
+      expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null,
+      priority: Number(priority),
+      status,
+      })
+
+      if (result.updatedAt) setUpdatedAt(result.updatedAt)
+      if (!result.ok) {
+        setError(result.message)
+        return
+      }
+
+      router.push('/admin/offers')
+      router.refresh()
+    } catch {
+      setError('No se recibió confirmación del servidor. Recarga la oferta antes de volver a guardar.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function changePlatform(
@@ -220,6 +220,7 @@ export default function EditOfferPage() {
   ) {
     setPlatformId(value)
     setChallengeId('')
+    setAffiliateLinkId('')
 
     if (!value) {
       setChallenges([])
@@ -326,7 +327,7 @@ export default function EditOfferPage() {
                 Sin enlace específico
               </option>
 
-              {affiliateLinks.map((link) => (
+              {affiliateLinks.filter((link) => link.platform_id === platformId).map((link) => (
                 <option
                   key={link.id}
                   value={link.id}
