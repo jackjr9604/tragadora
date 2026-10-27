@@ -12,6 +12,12 @@ export type ContentCenterResourceRow = TranslationResourceRow & {
   language_progress: Record<string, { total: number; published: number }>; total_count: number
 }
 
+export type TranslationLanguageCoverageRow = {
+  resource_type: TranslationResourceType; target_language: string; total_fields: number
+  completed_fields: number; pending_fields: number; automatic_review_fields: number
+  stale_fields: number; protected_fields: number; error_fields: number
+}
+
 export async function getContentCenterData(filters: { page: number; pageSize: number; resourceType?: TranslationResourceType; language?: string; query?: string; bucket?: ContentCenterBucket }, permissions: ReadonlySet<PermissionKey>) {
   const allowed = allowedTranslationResources(permissions)
   if (!allowed.length) return { rows: [] as ContentCenterResourceRow[], total: 0, pages: 0, languages: [], summary: emptySummary(), rpcAvailable: true }
@@ -34,6 +40,21 @@ export async function getContentCenterData(filters: { page: number; pageSize: nu
   const summary = { ...emptySummary(), ...Object.fromEntries(Object.entries(rawSummary ?? {}).map(([key, value]) => [key, Number(value)])) } as ContentCenterSummary
   const total = Number(rows[0]?.total_count ?? 0)
   return { rows, total, pages: Math.ceil(total / filters.pageSize), languages: languagesResult.data ?? [], summary, rpcAvailable: true }
+}
+
+export async function getTranslationLanguageCoverage(permissions: ReadonlySet<PermissionKey>) {
+  const allowed = allowedTranslationResources(permissions)
+  if (!allowed.length) return { rows: [] as TranslationLanguageCoverageRow[], available: true }
+  const result = await createAdminClient().rpc('translation_admin_language_coverage', { p_allowed_resource_types: allowed })
+  if (result.error && ['42883', 'PGRST202'].includes(result.error.code ?? '')) return { rows: [] as TranslationLanguageCoverageRow[], available: false }
+  if (result.error) throw new Error(result.error.message)
+  const rows = ((result.data ?? []) as unknown as TranslationLanguageCoverageRow[]).map((row) => ({
+    ...row,
+    total_fields: Number(row.total_fields), completed_fields: Number(row.completed_fields), pending_fields: Number(row.pending_fields),
+    automatic_review_fields: Number(row.automatic_review_fields), stale_fields: Number(row.stale_fields),
+    protected_fields: Number(row.protected_fields), error_fields: Number(row.error_fields),
+  }))
+  return { rows, available: true }
 }
 
 export type TranslationJobRow = {

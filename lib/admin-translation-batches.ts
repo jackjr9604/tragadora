@@ -2,7 +2,7 @@ import 'server-only'
 import { createClient } from '@/lib/supabase/server'
 
 export async function getCompatibleBatchLanguages(){
-  const result=await (await createClient()).from('languages').select('code,native_name').eq('is_active',true).eq('auto_translate',true).eq('libretranslate_status','supported').eq('is_default',false).order('sort_order')
+  const result=await (await createClient()).from('languages').select('code,native_name').eq('is_active',true).eq('auto_translate',true).eq('libretranslate_status','supported').order('sort_order')
   if(result.error)throw new Error(result.error.message)
   return result.data??[]
 }

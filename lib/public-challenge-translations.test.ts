@@ -12,13 +12,15 @@ const languages = [
 const phases = [{ id: 'phase-1', challenge_id: 'challenge-1', phase_number: 1, name: 'Evaluación', notes: 'Sin límite', profit_target: 10, daily_drawdown: 5, max_drawdown: 10, min_trading_days: 4, max_trading_days: null, min_profitable_days: null, drawdown_type: 'static', drawdown_basis: 'balance' }] satisfies ChallengePhase[]
 const variants = [{ id: 'variant-1', challenge_id: 'challenge-1', name: 'Swing', slug: 'swing', profit_split: 80, price_modifier: 0, payout_frequency: 'Cada 14 días', notes: 'Texto ES', status: true }] satisfies ChallengeVariant[]
 const variantPhases = [{ id: 'override-1', variant_id: 'variant-1', phase_number: 1, profit_target: 8, daily_drawdown: null, max_drawdown: null, min_trading_days: null, min_profitable_days: null, drawdown_type: null, drawdown_basis: null, notes: 'Override ES' }] satisfies ChallengeVariantPhase[]
-const plans = [{ id: 'plan-1', challenge_id: 'challenge-1', variant_id: 'variant-1', account_size: 100000, price: 500, currency: 'USD', profit_target: 10, daily_drawdown: 5, max_drawdown: 10, profit_split: 80, min_trading_days: 4, max_trading_days: null, payout_frequency: 'Cada 14 días' }] satisfies AccountPlan[]
+const plans = [{ id: 'plan-1', challenge_id: 'challenge-1', variant_id: 'variant-1', account_size: 100000, price: 500, currency: 'USD', profit_target: 10, daily_drawdown: 5, max_drawdown: 10, profit_split: 80, min_trading_days: 4, max_trading_days: null, payout_frequency: 'Every 14 days' }] satisfies AccountPlan[]
 const rewards = [{ id: 'reward-1', challenge_id: 'challenge-1', variant_id: null, name: 'Recompensa estándar', profit_split: 80, payout_frequency: 'Cada 14 días', minimum_payout_days: 14, minimum_profitable_days: null, profitable_day_threshold_pct: null, consistency_rule_pct: null, notes: 'Notas ES', status: true, sort_order: 0, source_url: null, effective_from: null, effective_to: null }] satisfies ChallengeRewardOption[]
 const translations: ChallengeTranslationRow[] = [
   { resource_type: 'challenge_phase_translation', resource_id: 'phase-1', language: 'en', name: 'Evaluation', notes: 'Unlimited' },
   { resource_type: 'challenge_variant_translation', resource_id: 'variant-1', language: 'en', payout_frequency: 'Every 14 days', notes: 'EN text' },
   { resource_type: 'challenge_variant_phase_translation', resource_id: 'override-1', language: 'en', notes: 'Override EN' },
   { resource_type: 'account_plan_translation', resource_id: 'plan-1', language: 'en', payout_frequency: 'Every 14 days' },
+  { resource_type: 'account_plan_translation', resource_id: 'plan-1', language: 'es', payout_frequency: 'Cada 14 días' },
+  { resource_type: 'account_plan_translation', resource_id: 'plan-1', language: 'pt', payout_frequency: 'A cada 14 dias' },
   { resource_type: 'challenge_reward_translation', resource_id: 'reward-1', language: 'en', name: 'Standard reward', payout_frequency: 'Every 14 days', notes: 'EN notes' },
 ]
 const state = (resourceType: string, resourceId: string, field: string, overrides: Partial<TranslationFieldState> = {}): TranslationFieldState => ({ resource_type: resourceType, resource_id: resourceId, field_name: field, target_language: 'en', source_hash: 'current', translated_source_hash: 'current', source_revision: 2, translated_revision: 2, status: 'reviewed', is_protected: true, ...overrides })
@@ -33,6 +35,25 @@ test('localiza solo los campos editoriales y preserva todos los datos técnicos'
   assert.equal(result.plans[0].profit_target, 10)
   assert.equal(result.variants[0].name, 'Swing')
   assert.equal(result.rewards[0].profit_split, 80)
+})
+
+test('payout_frequency usa EN como fuente y solo aplica traducciones publicadas a ES/PT', () => {
+  const localizedStates = [
+    state('account_plan_translation', 'plan-1', 'payout_frequency', { target_language: 'es' }),
+    state('account_plan_translation', 'plan-1', 'payout_frequency', { target_language: 'pt' }),
+  ]
+  const es = resolveChallengeTranslations({ phases, variants, variantPhases, plans, rewards, requestedLanguage: 'es', defaultLanguage: 'es', languages, translations, states: localizedStates })
+  const pt = resolveChallengeTranslations({ phases, variants, variantPhases, plans, rewards, requestedLanguage: 'pt', defaultLanguage: 'es', languages, translations, states: localizedStates })
+  const en = resolveChallengeTranslations({ phases, variants, variantPhases, plans, rewards, requestedLanguage: 'en', defaultLanguage: 'es', languages, translations, states: allStates })
+  assert.equal(es.plans[0].payout_frequency, 'Cada 14 días')
+  assert.equal(pt.plans[0].payout_frequency, 'A cada 14 dias')
+  assert.equal(en.plans[0].payout_frequency, 'Every 14 days')
+})
+
+test('payout_frequency hace fallback al original EN si ES no es publicable', () => {
+  const blocked = [state('account_plan_translation', 'plan-1', 'payout_frequency', { target_language: 'es', status: 'machine_translated', publication_status: 'unpublished', is_protected: false })]
+  const result = resolveChallengeTranslations({ phases, variants, variantPhases, plans, rewards, requestedLanguage: 'es', defaultLanguage: 'es', languages, translations, states: blocked })
+  assert.equal(result.plans[0].payout_frequency, 'Every 14 days')
 })
 
 test('hace fallback por campo para stale, faltantes e idiomas no publicados', () => {

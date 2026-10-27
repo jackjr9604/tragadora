@@ -10,6 +10,7 @@ import {
   type TranslationFieldState,
   type TranslationLanguage,
 } from './public-platform-translation-policy'
+import { getEffectiveFieldSourceLanguage } from './translation-source-language'
 
 export const CHALLENGE_TRANSLATION_RESOURCES = {
   challenge_phase_translation: ['name', 'notes'],
@@ -49,8 +50,6 @@ export function resolveChallengeTranslations(input: ChallengeTranslationCollecti
     .filter((language) => language.is_active && language.publication_status === 'published')
     .map((language) => language.code))
   const language = published.has(input.requestedLanguage) ? input.requestedLanguage : input.defaultLanguage
-  if (language === input.defaultLanguage) return copyCollections(input)
-
   const translations = new Map(input.translations.map((row) => [
     `${row.resource_type}:${row.resource_id}:${row.language}`,
     row,
@@ -65,6 +64,7 @@ export function resolveChallengeTranslations(input: ChallengeTranslationCollecti
     if (!translation) return { ...row }
     const result = { ...row } as T & { id: string }
     for (const field of CHALLENGE_TRANSLATION_RESOURCES[resourceType]) {
+      if (language === getEffectiveFieldSourceLanguage(resourceType, field, input.defaultLanguage)) continue
       const value = translation[field]
       const state = states.get(`${resourceType}:${row.id}:${language}:${field}`)
       if (typeof value === 'string' && value.trim() && isPublishableTranslationState(state)) {
@@ -80,15 +80,5 @@ export function resolveChallengeTranslations(input: ChallengeTranslationCollecti
     variantPhases: input.variantPhases.map((row) => translated('challenge_variant_phase_translation', row)),
     plans: input.plans.map((row) => translated('account_plan_translation', row)),
     rewards: input.rewards.map((row) => translated('challenge_reward_translation', row)),
-  }
-}
-
-function copyCollections(input: ChallengeTranslationCollections): ChallengeTranslationCollections {
-  return {
-    phases: input.phases.map((row) => ({ ...row })),
-    variants: input.variants.map((row) => ({ ...row })),
-    variantPhases: input.variantPhases.map((row) => ({ ...row })),
-    plans: input.plans.map((row) => ({ ...row })),
-    rewards: input.rewards.map((row) => ({ ...row })),
   }
 }

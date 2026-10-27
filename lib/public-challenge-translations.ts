@@ -59,8 +59,6 @@ export async function getPublicChallengeTranslations(
 
   const { languages, defaultLanguage } = await getPublicTranslationLanguageContext()
   const effectiveLanguage = languages.find((item) => item.code === requestedLanguage)?.code ?? defaultLanguage
-  if (effectiveLanguage === defaultLanguage) return collections
-
   try {
     const groups = await Promise.all((Object.keys(TABLES) as ChallengeTranslationResource[]).map((resourceType) => CACHED_ROWS[resourceType]({
       resourceType,

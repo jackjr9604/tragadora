@@ -4,6 +4,7 @@ import type { PermissionKey } from '@/lib/admin-permissions'
 import { allowedTranslationResources, TRANSLATION_RESOURCES, TRANSLATION_STATUSES } from './admin-translation-inventory-policy'
 import type { InventoryFilters, TranslationResourceType, TranslationStatus } from './admin-translation-inventory-policy'
 import { summarizeResourceStates } from './admin-translation-resource-policy'
+import { isApplicableTranslationTarget } from './translation-source-language'
 
 export { normalizeInventoryFilters, TRANSLATION_RESOURCES, TRANSLATION_STATUSES } from './admin-translation-inventory-policy'
 export type { InventoryFilters, TranslationResourceType, TranslationStatus } from './admin-translation-inventory-policy'
@@ -55,11 +56,12 @@ export async function getTranslationResourceInventory(filters: InventoryFilters,
   if (resourceResult.error) throw new Error(resourceResult.error.message)
   const rows = (inventoryResult.data ?? []) as unknown as (TranslationResourceRow & { total_count: number })[]
   if(rows.length){
+    const defaultLanguage=(languageResult.data??[]).find((language)=>language.is_default)?.code??'es'
     const resourceTypes=[...new Set(rows.map((row)=>row.resource_type))],resourceIds=[...new Set(rows.map((row)=>row.resource_id))]
-    const progressResult=await db.from('translation_field_state').select('resource_type,resource_id,target_language,publication_status').in('resource_type',resourceTypes).in('resource_id',resourceIds)
+    const progressResult=await db.from('translation_field_state').select('resource_type,resource_id,field_name,target_language,publication_status').in('resource_type',resourceTypes).in('resource_id',resourceIds)
     if(progressResult.error)throw new Error(progressResult.error.message)
     const rowKeys=new Set(rows.map((row)=>`${row.resource_type}:${row.resource_id}`)),progress=new Map<string,Record<string,{total:number;published:number}>>()
-    for(const state of progressResult.data??[]){const key=`${state.resource_type}:${state.resource_id}`;if(!rowKeys.has(key))continue;const languages=progress.get(key)??{},current=languages[state.target_language]??{total:0,published:0};current.total++;if(state.publication_status==='published')current.published++;languages[state.target_language]=current;progress.set(key,languages)}
+    for(const state of progressResult.data??[]){if(!isApplicableTranslationTarget(state.resource_type,state.field_name??'',state.target_language,defaultLanguage))continue;const key=`${state.resource_type}:${state.resource_id}`;if(!rowKeys.has(key))continue;const languages=progress.get(key)??{},current=languages[state.target_language]??{total:0,published:0};current.total++;if(state.publication_status==='published')current.published++;languages[state.target_language]=current;progress.set(key,languages)}
     for(const row of rows)row.language_progress=progress.get(`${row.resource_type}:${row.resource_id}`)??{}
   }
   const total = Number(rows[0]?.total_count ?? 0)
@@ -83,7 +85,13 @@ export async function getTranslationResourceDetail(resourceKey: string | undefin
     statesResult = await db.from('translation_field_state').select(STATE_BASE_FIELDS).eq('resource_type', parsed.resourceType).eq('resource_id', parsed.resourceId).order('field_name').order('target_language')
   }
   if (statesResult.error || !statesResult.data?.length) return null
-  const states = statesResult.data as unknown as TranslationStateRow[]
+  const defaultLanguageResult = await db.from('languages').select('code').eq('is_default', true).eq('is_active', true).order('sort_order').limit(1).maybeSingle()
+  if (defaultLanguageResult.error || !defaultLanguageResult.data) return null
+  const defaultLanguage = defaultLanguageResult.data.code
+  const states = (statesResult.data as unknown as TranslationStateRow[]).filter((state) =>
+    isApplicableTranslationTarget(state.resource_type, state.field_name, state.target_language, defaultLanguage)
+  )
+  if (!states.length) return null
   const adapter = ADAPTERS[parsed.resourceType]
   const sourceLanguage = states[0].source_language
   const sourceFields = [...new Set(states.map((state) => sourceField(state, adapter)))]
