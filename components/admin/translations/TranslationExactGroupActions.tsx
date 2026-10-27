@@ -1,8 +1,10 @@
 'use client'
 
 import { useActionState, useMemo, useState } from 'react'
-import { applyExactGroupProposal, EMPTY_EXACT_GROUP_ACTION_STATE, requestExactGroupProposal } from '@/app/admin/content-center/translations/groups/actions'
+import { applyExactGroupProposal, requestExactGroupProposal, type ExactGroupActionState } from '@/app/admin/content-center/translations/groups/actions'
 import type { ExactGroupMember } from '@/lib/admin-translation-exact-groups'
+
+const EMPTY_EXACT_GROUP_ACTION_STATE:ExactGroupActionState={ok:false,message:''}
 
 export function TranslationExactGroupActions({members,proposalStateId,proposalLockVersion,representativeStateId,representativeLockVersion}:{members:ExactGroupMember[];proposalStateId?:string;proposalLockVersion?:number;representativeStateId:string;representativeLockVersion:number}){
   const[request,requestAction,requestPending]=useActionState(requestExactGroupProposal,EMPTY_EXACT_GROUP_ACTION_STATE)

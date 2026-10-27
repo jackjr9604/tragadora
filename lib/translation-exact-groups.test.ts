@@ -46,3 +46,9 @@ test('identificadores, códigos y marcas quedan fuera de la generación agrupada
   assert.match(actions,/isNonTranslatableExactField/)
   assert.match(migration,/identificador o marca/)
 })
+
+test('el módulo use server exporta únicamente acciones async en runtime',()=>{
+  assert.doesNotMatch(actions,/export const EMPTY_EXACT_GROUP_ACTION_STATE/)
+  assert.match(actions,/export async function requestExactGroupProposal/)
+  assert.match(actions,/export async function applyExactGroupProposal/)
+})

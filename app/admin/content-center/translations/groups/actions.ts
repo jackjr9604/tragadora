@@ -8,7 +8,6 @@ import { requestIndividualAiDraft } from '@/lib/admin-translation-ai'
 import { isNonTranslatableExactField } from '@/lib/admin-translation-exact-group-policy'
 
 export type ExactGroupActionState={ok:boolean;message:string;jobId?:string;applied?:number;skipped?:number;conflicts?:number}
-export const EMPTY_EXACT_GROUP_ACTION_STATE:ExactGroupActionState={ok:false,message:''}
 
 export async function requestExactGroupProposal(_previous:ExactGroupActionState,formData:FormData):Promise<ExactGroupActionState>{
   const stateId=String(formData.get('stateId')??''),expectedLockVersion=Number(formData.get('lockVersion'))
