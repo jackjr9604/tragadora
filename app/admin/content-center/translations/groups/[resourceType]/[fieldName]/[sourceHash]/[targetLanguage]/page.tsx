@@ -1,0 +1,28 @@
+import Link from 'next/link'
+import { notFound, redirect } from 'next/navigation'
+import { TranslationExactGroupActions } from '@/components/admin/translations/TranslationExactGroupActions'
+import { getCurrentAdminPermissions } from '@/lib/admin-permissions-server'
+import { getTranslationDetail } from '@/lib/admin-translation-inventory'
+import { getExactTranslationGroupMembers, resourceLabel } from '@/lib/admin-translation-exact-groups'
+import { TRANSLATION_RESOURCES, type TranslationResourceType } from '@/lib/admin-translation-inventory-policy'
+
+export default async function ExactGroupDetailPage({params,searchParams}:{params:Promise<{resourceType:string;fieldName:string;sourceHash:string;targetLanguage:string}>;searchParams:Promise<Record<string,string|string[]|undefined>>}){
+  const values=await params,resourceType=values.resourceType as TranslationResourceType
+  if(!(resourceType in TRANSLATION_RESOURCES)||!decode(values.fieldName)||!decode(values.targetLanguage)||!/^[0-9a-f]{64}$/.test(values.sourceHash))notFound()
+  const access=await getCurrentAdminPermissions();if(!access.userId)redirect('/login')
+  const raw=await searchParams,page=Math.max(1,Number(first(raw.page))||1),pageSize=[25,50,100].includes(Number(first(raw.pageSize)))?Number(first(raw.pageSize)):50
+  const identity={resourceType,fieldName:decode(values.fieldName),sourceHash:values.sourceHash,targetLanguage:decode(values.targetLanguage)}
+  const data=await getExactTranslationGroupMembers(identity,page,pageSize,access.permissions);if(!data.rows.length&&page===1)notFound()
+  const details=await Promise.all(data.rows.map((member)=>getTranslationDetail(member.state_id,access.permissions)))
+  const knownProposal=data.rows[0]?.proposal_state_id?{state_id:data.rows[0].proposal_state_id,lock_version:data.rows[0].proposal_lock_version!,draft_value:data.rows[0].proposal_draft_value}:null
+  const representative=data.rows.find((member)=>member.state_id===knownProposal?.state_id)??data.rows.find((member)=>!member.is_protected&&member.publication_status!=='published'&&member.workflow_status==='none'&&['missing','error','stale'].includes(member.status))??data.rows[0]
+  const representativeDetail=details[data.rows.findIndex((member)=>member.state_id===representative.state_id)]
+  const source=representativeDetail?.source??'Fuente no disponible',proposalText=knownProposal?display(knownProposal.draft_value):null
+  const sensitive=['account_plan_translation','challenge_phase_translation','challenge_variant_phase_translation','challenge_reward_translation'].includes(resourceType)||/(payout|profit|drawdown|restriction|rule|condition|target|fee|price)/i.test(identity.fieldName)
+  return <section className="mt-6"><Link href="/admin/content-center/translations/groups" className="text-sm font-semibold text-slate-600">← Volver a grupos</Link><header className="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex flex-wrap gap-2 text-xs font-semibold"><span className="rounded-full bg-slate-100 px-2 py-1">{resourceLabel(resourceType)}</span><span className="rounded-full bg-slate-100 px-2 py-1">{identity.fieldName}</span><span className="rounded-full bg-blue-50 px-2 py-1 text-blue-700">{representativeDetail?.state.source_language.toUpperCase()} → {identity.targetLanguage.toUpperCase()}</span>{sensitive&&<span className="rounded-full bg-amber-100 px-2 py-1 text-amber-900">Revisión humana sensible obligatoria</span>}</div><h1 className="mt-3 text-2xl font-bold">Grupo exacto de {data.total.toLocaleString('es-CO')} registros</h1><div className="mt-4 grid gap-4 lg:grid-cols-2"><TextPanel title="Texto fuente" value={source}/><TextPanel title="Propuesta común" value={proposalText??'Todavía no existe una propuesta automática vigente.'}/></div><p className="mt-3 font-mono text-[11px] text-slate-400">{identity.sourceHash}</p></header><div className="mt-5"><TranslationExactGroupActions members={data.rows} representativeStateId={representative.state_id} representativeLockVersion={representative.lock_version} proposalStateId={knownProposal?.state_id} proposalLockVersion={knownProposal?.lock_version}/></div><Pagination page={page} pages={data.pages} identity={values}/></section>
+}
+function TextPanel({title,value}:{title:string;value:string}){return<div className="rounded-xl border border-slate-200 bg-slate-50 p-4"><h2 className="text-xs font-bold uppercase tracking-wide text-slate-500">{title}</h2><p className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap text-sm text-slate-800">{value}</p></div>}
+function Pagination({page,pages,identity}:{page:number;pages:number;identity:{resourceType:string;fieldName:string;sourceHash:string;targetLanguage:string}}){if(pages<=1)return null;const base=`/admin/content-center/translations/groups/${identity.resourceType}/${identity.fieldName}/${identity.sourceHash}/${identity.targetLanguage}`;return<nav className="mt-5 flex justify-between text-sm"><Link href={page>1?`${base}?page=${page-1}`:'#'} className={`admin-secondary-button px-3 py-2 ${page<=1?'pointer-events-none opacity-40':''}`}>Anterior</Link><span>Página {page} de {pages}</span><Link href={page<pages?`${base}?page=${page+1}`:'#'} className={`admin-secondary-button px-3 py-2 ${page>=pages?'pointer-events-none opacity-40':''}`}>Siguiente</Link></nav>}
+function decode(value:string){try{return decodeURIComponent(value)}catch{return''}}
+function first(value:string|string[]|undefined){return Array.isArray(value)?value[0]:value}
+function display(value:unknown){if(typeof value==='string')return value;if(Array.isArray(value))return value.join('\n');return value==null?'':JSON.stringify(value)}

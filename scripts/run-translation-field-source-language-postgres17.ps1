@@ -11,7 +11,12 @@ $remote="/tmp/source-lang17-$PID"
 $sourceDump="/tmp/source-lang17-source-$PID.dump"
 $hostDump=Join-Path ([IO.Path]::GetTempPath()) "tradagora-source-lang17-$PID.dump"
 $created=$false
-function Invoke-Docker([string[]]$Arguments){& docker @Arguments;if($LASTEXITCODE-ne 0){throw "docker $($Arguments -join ' ') falló ($LASTEXITCODE)"}}
+function Invoke-Docker([string[]]$Arguments){
+  $dockerOutput = & docker @Arguments 2>&1
+  $dockerExitCode = $LASTEXITCODE
+  $dockerOutput | Write-Output
+  if($dockerExitCode-ne 0){throw "docker $($Arguments -join ' ') falló ($dockerExitCode)`n$($dockerOutput -join "`n")"}
+}
 function Guard([string]$Name){if($Name-notmatch '^tradagora_source_lang17_[0-9]+_[0-9]{17}$' -or $Name-eq $SourceDatabase){throw "Base temporal no autorizada: $Name"}}
 function Psql([string]$User,[string]$File){Invoke-Docker @('exec',$TargetContainer,'psql','-U',$User,'-d',$database,'-X','-v','ON_ERROR_STOP=1','-f',"$remote/$File")}
 try{
@@ -21,7 +26,8 @@ try{
   Invoke-Docker @('exec',$TargetContainer,'mkdir','-p',$remote)
   $files=@{
     'prep-platform.sql'='supabase/migrations/202610240001_admin_platform_transactional_writes.sql';'prep-offer.sql'='supabase/migrations/202610240002_admin_offer_transactional_writes.sql';'prep-coverage.sql'='supabase/migrations/202610270001_translation_editorial_coverage.sql';
-    'migration.sql'='supabase/migrations/202610270002_translation_field_source_language.sql';'fixtures.sql'='scripts/sql/translation-field-source-language-fixtures.sql';'local-acl.sql'='scripts/sql/translation-field-source-language-local-acl.sql';'precheck.sql'='scripts/sql/translation-field-source-language-precheck.sql';'test.sql'='scripts/sql/translation-field-source-language-postgres-test.sql';'concurrency.sql'='scripts/sql/translation-field-source-language-concurrency-test.sql';'postcheck.sql'='scripts/sql/translation-field-source-language-postcheck.sql'}
+    'migration.sql'='supabase/migrations/202610270002_translation_field_source_language.sql';'fixtures.sql'='scripts/sql/translation-field-source-language-fixtures.sql';'local-acl.sql'='scripts/sql/translation-field-source-language-local-acl.sql';'precheck.sql'='scripts/sql/translation-field-source-language-precheck.sql';'test.sql'='scripts/sql/translation-field-source-language-postgres-test.sql';'concurrency.sql'='scripts/sql/translation-field-source-language-concurrency-test.sql';'postcheck.sql'='scripts/sql/translation-field-source-language-postcheck.sql';
+    'groups-precheck.sql'='scripts/sql/translation-exact-groups-precheck.sql';'groups-migration.sql'='supabase/migrations/202610270003_translation_exact_group_proposals.sql';'groups-test.sql'='scripts/sql/translation-exact-groups-postgres-test.sql';'groups-concurrency.sql'='scripts/sql/translation-exact-groups-concurrency-test.sql';'groups-postcheck.sql'='scripts/sql/translation-exact-groups-postcheck.sql'}
   foreach($entry in $files.GetEnumerator()){Invoke-Docker @('cp',(Join-Path $PSScriptRoot '..' $entry.Value),"${TargetContainer}:$remote/$($entry.Key)")}
   Invoke-Docker @('exec',$SourceContainer,'pg_dump','-U','postgres','-d',$SourceDatabase,'--format=c','--no-owner','--no-privileges','--exclude-table=vault.secrets','-f',$sourceDump)
   Invoke-Docker @('cp',"${SourceContainer}:$sourceDump",$hostDump)
@@ -30,6 +36,7 @@ try{
   Invoke-Docker @('exec',$TargetContainer,'pg_restore','-U','postgres','-d',$database,'--no-owner','--no-privileges',"$remote/source.dump")
   Psql 'postgres' 'prep-platform.sql';Psql 'postgres' 'prep-offer.sql';Psql 'postgres' 'prep-coverage.sql';Psql 'postgres' 'local-acl.sql';Psql 'postgres' 'fixtures.sql';Psql 'postgres' 'precheck.sql'
   Psql 'postgres' 'migration.sql';Psql 'postgres' 'migration.sql';Psql 'postgres' 'test.sql';Psql 'supabase_admin' 'concurrency.sql';Psql 'postgres' 'postcheck.sql'
+  Psql 'postgres' 'groups-precheck.sql';Psql 'postgres' 'groups-migration.sql';Psql 'postgres' 'groups-migration.sql';Psql 'supabase_admin' 'groups-test.sql';Psql 'supabase_admin' 'groups-concurrency.sql';Psql 'postgres' 'groups-postcheck.sql'
   Write-Host "PASS PostgreSQL 17 aislado: $database ($targetImage)"
 }finally{
   if($created){Guard $database;Invoke-Docker @('exec',$TargetContainer,'psql','-U','postgres','-d',$SourceDatabase,'-X','-v','ON_ERROR_STOP=1','-c',"select pg_terminate_backend(pid) from pg_stat_activity where datname='$database' and pid<>pg_backend_pid();");Invoke-Docker @('exec',$TargetContainer,'dropdb','-U','postgres','--if-exists',$database)}
