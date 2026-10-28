@@ -1,4 +1,6 @@
 import { loadEnvConfig } from '@next/env'
+import { appendFile } from 'node:fs/promises'
+import { formatMondoRunReport, mondoCheckRecord, type MondoCheckOutcome } from './mondo-run-report'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { chromium, type Locator, type Page } from 'playwright'
 import { assertMondoHeaders, mondoRunIsFatal, SourceRowInconsistencyError, validateMondoMetric } from './mondo-validation'
@@ -105,7 +107,7 @@ async function main() {
         if (sourceNamesWithoutMapping.length) console.log(`UNMAPPED_SOURCE_ROWS · ${sourceNamesWithoutMapping.join(', ')}`)
         for (const mapping of mappings) {
           const row = rowByName.get(normalizeExternalName(mapping.external_name))
-          if (!row) { summary.notListed++; console.log(`${mapping.external_name}: NOT_LISTED_IN_PERIOD`); continue }
+          if (!row) { summary.notListed++; console.log(`${mapping.external_name}: NOT_LISTED_IN_PERIOD`); logCheck(mapping, period.key, 'NOT_LISTED'); continue }
           if (diagnoseMode) {
             const diagnostic = await diagnoseMondoRow(row, mapping.external_name, period.key)
             if (diagnostic.missing_metrics.length) {
@@ -135,11 +137,14 @@ async function main() {
             if (error instanceof MissingRequiredMetricsError) {
               summary.missingRequiredMetrics++
               printMissingRequiredMetrics(mapping.external_name, period.key, error.missingMetrics)
+              logCheck(mapping, period.key, 'MISSING_REQUIRED_METRICS')
             } else if (error instanceof SourceRowInconsistencyError) {
               summary.sourceValidationWarnings++
+              logCheck(mapping, period.key, 'SOURCE_ROW_INCONSISTENCY')
               console.warn(`${mapping.external_name}: SOURCE_ROW_INCONSISTENCY · period=${period.key} · average=${error.average} · amount/count=${error.calculatedAverage.toFixed(2)} · snapshot=SKIPPED`)
             } else {
               summary.validationFailures++
+              logCheck(mapping, period.key, 'VALIDATION_FAILED')
               console.log(`${mapping.external_name}: ROW_VALIDATION_FAILED · ${errorMessage(error)}`)
             }
             continue
@@ -152,12 +157,14 @@ async function main() {
             if (current && sameMetric(current, metric)) {
               summary.unchanged++
               console.log('  status=UNCHANGED · SKIPPED')
+              logCheck(mapping, period.key, 'UNCHANGED')
               continue
             }
-            if (dryRun) { summary.snapshotsWouldInsert++; console.log('  status=VALID · WOULD_INSERT'); continue }
+            if (dryRun) { summary.snapshotsWouldInsert++; console.log('  status=VALID · WOULD_INSERT'); logCheck(mapping, period.key, 'WOULD_INSERT'); continue }
             await insertSnapshot(supabase, mapping, period.key, metric)
             summary.writes++
             console.log('  status=INSERTED')
+            logCheck(mapping, period.key, 'INSERTED')
           }
         }
       } catch (error) {
@@ -175,6 +182,11 @@ async function main() {
   console.log(`Finished at: ${summary.finishedAt}`)
   console.log('SUMMARY')
   console.log(JSON.stringify(summary, null, 2))
+  if (!catalogMode && !diagnoseMode) {
+    const report = formatMondoRunReport(summary)
+    for (const warning of report.warnings) console.warn(`::warning::${warning}`)
+    if (process.env.GITHUB_STEP_SUMMARY) await appendFile(process.env.GITHUB_STEP_SUMMARY, report.markdown)
+  }
   if (catalogMode) printCatalog(catalog, mappings, summary.rowsParsed)
   if (diagnoseMode) {
     console.log('\nROW VALIDATION FAILURES')
@@ -182,6 +194,10 @@ async function main() {
   }
   if (!catalogMode && !diagnoseMode && mondoRunIsFatal(summary)) process.exitCode = 1
   if (summary.periodFailures || summary.blocked || (!diagnoseMode && summary.validationFailures)) process.exitCode = 1
+}
+
+function logCheck(mapping: Mapping, period: PeriodKey, outcome: MondoCheckOutcome) {
+  console.log(JSON.stringify(mondoCheckRecord(mapping.external_name, period, outcome, new Date().toISOString(), dryRun)))
 }
 
 async function assertTableHeaders(table: Locator) {
