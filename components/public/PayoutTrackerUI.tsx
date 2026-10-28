@@ -3,8 +3,6 @@ import { ChevronRight, Info } from 'lucide-react'
 import { payoutPeriodLabel, payoutPeriods, type PayoutPeriodKey } from '@/lib/payout-periods'
 import type { PayoutFirmSummary, VerificationLevel } from '@/lib/payout-tracker'
 import { firmProfileText, getPublicUi, publicFirmProfileCopy, publicLocale, publicUiLanguage } from '@/lib/public-i18n'
-import { PayoutFreshnessNotice } from './PayoutFreshnessNotice'
-import { payoutFreshnessCopy } from '@/lib/payout-freshness-copy'
 
 export function PeriodTabs({ active, basePath, language, detail = false, extraParams }: { active: PayoutPeriodKey; basePath: string; language: string; detail?: boolean; extraParams?: Record<string, string> }) {
   const t = getPublicUi(language)
@@ -41,7 +39,6 @@ export function TrackerLogo({ summary, large = false }: { summary: PayoutFirmSum
 export function SummaryTable({ summaries, language }: { summaries: PayoutFirmSummary[]; language: string }) {
   const t = getPublicUi(language)
   return <div>
-    <p role="note" className="mb-4 rounded-xl border border-amber-300/20 bg-amber-300/5 p-3 text-sm text-amber-100/90">{payoutFreshnessCopy[publicUiLanguage(language)].explanation}</p>
     <div className="tg-data-header tg-data-grid hidden grid-cols-[minmax(250px,1.45fr)_minmax(120px,.8fr)_minmax(100px,.65fr)_minmax(120px,.75fr)_minmax(120px,.75fr)_44px] gap-4 px-5 py-3 text-[11px] font-semibold uppercase tracking-[.14em] text-slate-500 lg:grid"><span>{t('directory.firm')}</span><span>{t('payout.total')}</span><span>{t('payout.count')}</span><span>{t('payout.largest')}</span><span>{t('payout.average')}</span><span className="sr-only">{t('a11y.action')}</span></div>
     <div className="mt-2 hidden space-y-2 lg:block">{summaries.map((summary) => <PayoutDesktopRow key={summary.platformId} summary={summary} language={language} />)}</div>
     <div className="space-y-3 lg:hidden">{summaries.map((summary) => <PayoutMobileCard key={summary.platformId} summary={summary} language={language} />)}</div>
@@ -52,14 +49,14 @@ export function SummaryTable({ summaries, language }: { summaries: PayoutFirmSum
 function PayoutDesktopRow({ summary, language }: { summary: PayoutFirmSummary; language: string }) {
   const t = getPublicUi(language)
   return <Link href={`/payouts/${summary.slug}?lang=${language}&period=${summary.periodKey}`} aria-label={t('a11y.viewPayouts', { name: summary.name })} className="tg-data-grid group grid min-h-20 grid-cols-[minmax(250px,1.45fr)_minmax(120px,.8fr)_minmax(100px,.65fr)_minmax(120px,.75fr)_minmax(120px,.75fr)_44px] items-center gap-4 rounded-xl border border-amber-300/20 bg-[linear-gradient(105deg,rgba(15,31,50,.92),rgba(8,19,32,.96))] px-5 py-3 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-amber-300/45 hover:shadow-[0_12px_30px_rgba(0,0,0,.22),0_0_20px_rgba(200,148,36,.06)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f0c454]">
-    <div><FirmIdentity summary={summary} language={language} /><PayoutFreshnessNotice summary={summary} language={language} compact /></div><MetricValue value={summary.displayTotalAmount} currency={summary.knownCurrency} language={language} accent /><span className="font-mono text-slate-100">{countValue(summary.knownPayoutCount, language)}</span><MetricValue value={summary.knownLargestPayout} currency={summary.knownCurrency} language={language} /><MetricValue value={summary.knownAveragePayout} currency={summary.knownCurrency} language={language} /><ChevronRight className="size-5 text-[#f0c454] transition-transform group-hover:translate-x-1" />
+    <FirmIdentity summary={summary} language={language} /><MetricValue value={summary.displayTotalAmount} currency={summary.knownCurrency} language={language} accent /><span className="font-mono text-slate-100">{countValue(summary.knownPayoutCount, language)}</span><MetricValue value={summary.knownLargestPayout} currency={summary.knownCurrency} language={language} /><MetricValue value={summary.knownAveragePayout} currency={summary.knownCurrency} language={language} /><ChevronRight className="size-5 text-[#f0c454] transition-transform group-hover:translate-x-1" />
   </Link>
 }
 
 function PayoutMobileCard({ summary, language }: { summary: PayoutFirmSummary; language: string }) {
   const t = getPublicUi(language)
   return <Link href={`/payouts/${summary.slug}?lang=${language}&period=${summary.periodKey}`} aria-label={t('a11y.viewPayouts', { name: summary.name })} className="group block rounded-2xl border border-amber-300/20 bg-[linear-gradient(145deg,rgba(15,31,50,.94),rgba(8,19,32,.97))] p-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f0c454]">
-    <div className="flex items-start gap-3"><FirmIdentity summary={summary} language={language} /><ChevronRight className="ml-auto mt-2 size-5 shrink-0 text-[#f0c454]" /></div><PayoutFreshnessNotice summary={summary} language={language} compact /><div className="mt-5 border-t border-white/8 pt-4"><p className="text-[10px] uppercase tracking-[.14em] text-slate-500">{t('payout.total')}</p><div className="mt-1 text-2xl"><MetricValue value={summary.displayTotalAmount} currency={summary.knownCurrency} language={language} accent /></div></div><div className="mt-4 grid grid-cols-2 gap-4"><MobileMetric label={t('payout.count')}>{countValue(summary.knownPayoutCount, language)}</MobileMetric><MobileMetric label={t('payout.largest')}><MetricValue value={summary.knownLargestPayout} currency={summary.knownCurrency} language={language} /></MobileMetric><MobileMetric label={t('payout.average')}><MetricValue value={summary.knownAveragePayout} currency={summary.knownCurrency} language={language} /></MobileMetric></div>
+    <div className="flex items-start gap-3"><FirmIdentity summary={summary} language={language} /><ChevronRight className="ml-auto mt-2 size-5 shrink-0 text-[#f0c454]" /></div><div className="mt-5 border-t border-white/8 pt-4"><p className="text-[10px] uppercase tracking-[.14em] text-slate-500">{t('payout.total')}</p><div className="mt-1 text-2xl"><MetricValue value={summary.displayTotalAmount} currency={summary.knownCurrency} language={language} accent /></div></div><div className="mt-4 grid grid-cols-2 gap-4"><MobileMetric label={t('payout.count')}>{countValue(summary.knownPayoutCount, language)}</MobileMetric><MobileMetric label={t('payout.largest')}><MetricValue value={summary.knownLargestPayout} currency={summary.knownCurrency} language={language} /></MobileMetric><MobileMetric label={t('payout.average')}><MetricValue value={summary.knownAveragePayout} currency={summary.knownCurrency} language={language} /></MobileMetric></div>
   </Link>
 }
 
