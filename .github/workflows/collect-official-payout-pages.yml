@@ -9,6 +9,9 @@ concurrency:
   group: official-payout-page-collector
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   collect:
     runs-on: ubuntu-latest
@@ -25,5 +28,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
+      - name: Test official collectors
+        run: npm run test:official
       - name: Collect configured official pages
         run: npm run collect:official -- --headless

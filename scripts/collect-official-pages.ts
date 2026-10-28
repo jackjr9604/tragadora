@@ -1,3 +1,5 @@
+import { appendFile } from 'node:fs/promises'
+import { sourceDisposition, settleSourceCleanup, collectorRunFailed } from './official-source-policy.ts'
 import { loadEnvConfig } from '@next/env'
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
@@ -27,12 +29,20 @@ async function main() {
   const browser = await chromium.launch({ headless })
   const context = await browser.newContext({ locale: 'en-US' })
   await configureSafeContext(context)
-  const summary = { sources: selected.length, periods: 0, succeeded: 0, failed: 0, warnings: 0, unchanged: 0, writes: 0 }
+  const summary = { sources: selected.length, periods: 0, succeeded: 0, failed: 0, warnings: 0, unchanged: 0, writes: 0, quarantined: 0, disabled: 0, eligible: 0 }
   console.log(`\nOfficial payout page collector${dryRun ? ' · DRY RUN' : ''}`)
 
   try {
     for (const source of selected) {
       console.log(`\n${platform(source).name} · ${source.name}`)
+      const disposition = sourceDisposition(source, platform(source).slug)
+      if (disposition === 'disabled') { summary.disabled++; continue }
+      if (disposition === 'quarantined') {
+        summary.quarantined++; summary.warnings++
+        console.warn('::warning::Lucid Trading - Arbitrum: QUARANTINED · collector ausente; requiere configuración oficial validada. No se han actualizado sus pagos.')
+        continue
+      }
+      summary.eligible++
       let sourceError: string | null = null
       let page: Awaited<ReturnType<typeof context.newPage>> | null = null
       try {
@@ -85,15 +95,26 @@ async function main() {
         sourceError = message(error)
         console.error(`SOURCE_FAILED · ${sourceError}`)
       } finally {
-        if (page) await page.close()
-        if (!dryRun && supabase && source.id !== 'dry-run') {
-          await updateSourceStatus(supabase, source.id, sourceError)
+        const cleanupErrors = await settleSourceCleanup(
+          async () => { if (page) await page.close() },
+          async () => {
+            if (!dryRun && supabase && source.id !== 'dry-run') {
+              await updateSourceStatus(supabase, source.id, sourceError)
+            }
+          },
+        )
+        for (const error of cleanupErrors) {
+          summary.failed++
+          console.error(`SOURCE_CLEANUP_FAILED · ${source.id} · ${error}`)
         }
       }
     }
   } finally { await browser.close() }
   console.log('\nSUMMARY', summary)
-  if (summary.failed) process.exitCode = 1
+  if (process.env.GITHUB_STEP_SUMMARY) {
+    await appendFile(process.env.GITHUB_STEP_SUMMARY, `## Official payout pages\n\n\`\`\`json\n${JSON.stringify(summary, null, 2)}\n\`\`\`\n\nQuarantined sources are not updated. UNCHANGED means checked successfully; the snapshot capture date is preserved.\n`)
+  }
+  if (collectorRunFailed(summary)) process.exitCode = 1
 }
 
 async function updateSourceStatus(supabase: SupabaseClient, sourceId: string, sourceError: string | null) {
