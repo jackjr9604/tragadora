@@ -63,7 +63,7 @@ export type FirmPayoutStat = {
 
 export type PublicCountry = { code: string; name: string }
 
-export type HomeRankingEntry = { platform: HomePlatform; amount: number; payoutCount: number }
+export type HomeRankingEntry = { platform: HomePlatform; amount: number; payoutCount: number; capturedAt?: string | null }
 export type HomeRankings = { thirtyDays: HomeRankingEntry[]; allTime: HomeRankingEntry[] }
 
 type PayoutRow = {
@@ -109,7 +109,7 @@ async function getHomeDataUncached(language = 'es', countryCode?: string | null)
       supabase.from('home_featured_platforms').select('platform_id, sort_order, badge, description, cta_label, active, starts_at, ends_at').eq('active', true).order('sort_order'),
       supabase.from('affiliate_links').select('platform_id').eq('status', true),
       supabase.from('platform_payout_metrics')
-        .select('platform_id, period_key, amount, payout_count, largest_payout, average_payout')
+        .select('platform_id, period_key, amount, payout_count, largest_payout, average_payout, collected_at')
         .eq('source_name', 'MondoTraders')
         .eq('source_type', 'third_party_public')
         .eq('verification_level', 'blockchain_external')
@@ -416,12 +416,12 @@ function buildHomeRankings(rows: Array<Record<string, unknown>>, platforms: Map<
     const payoutCount = row.payout_count === null ? null : Number(row.payout_count)
     const complete = amount !== null && payoutCount !== null && row.largest_payout !== null && row.average_payout !== null
     return platform && complete && Number.isFinite(amount) && Number.isFinite(payoutCount)
-      ? [{ platform, amount, payoutCount, period: String(row.period_key) }]
+      ? [{ platform, amount, payoutCount, capturedAt: typeof row.collected_at === 'string' ? row.collected_at : null, period: String(row.period_key) }]
       : []
   })
   const period = (key: '30d' | 'all') => valid
     .filter((row) => row.period === key)
-    .map(({ platform, amount, payoutCount }) => ({ platform, amount, payoutCount }))
+    .map(({ platform, amount, payoutCount, capturedAt }) => ({ platform, amount, payoutCount, capturedAt }))
   return { thirtyDays: period('30d'), allTime: period('all') }
 }
 

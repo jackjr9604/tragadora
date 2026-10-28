@@ -5,6 +5,7 @@ import { payoutPeriodSince, type PayoutPeriodKey } from '@/lib/payout-periods'
 import type { HomePayout, HomePlatform } from '@/lib/home-data'
 import { getPublicChallengeTranslations } from '@/lib/public-challenge-translations'
 import type { ChallengeRewardOption } from '@/lib/challenge-resolver'
+import { matchingOfficialCheck, type OfficialCheckSource } from '@/lib/payout-freshness'
 
 export type VerificationLevel = 'verified' | 'tracked_external' | 'blockchain_external' | 'firm_reported' | 'unverified'
 
@@ -14,6 +15,7 @@ export type PayoutFirmSummary = {
   knownLargestPayout: number | null; knownAveragePayout: number | null; knownMedianTimeMinutes: number | null; knownCurrency: string | null
   displayTotalSourceType: string | null; displayTotalSourceName: string | null; displayTotalSourceUrl: string | null
   displayTotalVerificationLevel: VerificationLevel | null; displayTotalUpdatedAt: string | null
+  displayTotalLastCheckedAt?: string | null
   verifiedAmount: number; verifiedPayoutCount: number; verifiedAveragePayout: number | null; verifiedLargestPayout: number | null
   verifiedFirstPayoutAt: string | null; verifiedLastPayoutAt: string | null; verificationCoveragePercentage: number | null
   unverifiedCoverageAmount: number | null; verifiedExceedsKnown: boolean
@@ -51,12 +53,22 @@ async function getPayoutTrackerSummariesUncached(period: PayoutPeriodKey) {
   const platformMap = new Map((platformResult.data ?? []).map((platform) => [platform.id, platform]))
   const markets = new Map<string, string[]>()
   for (const row of marketResult.data ?? []) markets.set(row.platform_id, [...(markets.get(row.platform_id) ?? []), row.market])
-  return rows.map((row) => toSummary(row, platformMap.get(row.platform_id), markets.get(row.platform_id) ?? []))
+  return withSourceChecks(rows.map((row) => toSummary(row, platformMap.get(row.platform_id), markets.get(row.platform_id) ?? [])), supabase)
+}
+
+async function withSourceChecks(summaries: PayoutFirmSummary[], supabase: ReturnType<typeof createAdminClient>) {
+  const ids = [...new Set(summaries.filter((summary) => summary.displayTotalSourceType === 'official_firm').map((summary) => summary.platformId))]
+  const result = ids.length ? await supabase.from('payout_sources')
+    .select('platform_id, source_type, source_url, config, last_success_at')
+    .in('platform_id', ids).eq('source_type', 'public_page') : { data: [], error: null }
+  // A missing check record must not become a fabricated timestamp or hide the figures.
+  const sources = result.error ? [] : (result.data ?? []) as OfficialCheckSource[]
+  return summaries.map((summary) => ({ ...summary, displayTotalLastCheckedAt: matchingOfficialCheck(summary, sources) }))
 }
 
 export const getPayoutTrackerSummaries = unstable_cache(
   getPayoutTrackerSummariesUncached,
-  ['public-payout-summaries-v1'],
+  ['public-payout-summaries-v2'],
   { revalidate: 60, tags: ['public-payouts'] }
 )
 
@@ -106,7 +118,7 @@ async function getPayoutFirmDetailUncached(slug: string, period: PayoutPeriodKey
     policies: localizedRewards.filter((option) => (!option.effective_from || new Date(option.effective_from).getTime() <= now) && (!option.effective_to || new Date(option.effective_to).getTime() > now)).map((option) => ({ challenge: challengeNames.get(option.challenge_id) ?? 'Challenge', option: option.name, frequency: option.payout_frequency, minimumDays: numeric(option.minimum_payout_days) })),
   }
   return {
-    summary: toSummary(summaryResult.data, platform, (marketsResult.data ?? []).map((item) => item.market)),
+    summary: (await withSourceChecks([toSummary(summaryResult.data, platform, (marketsResult.data ?? []).map((item) => item.market))], supabase))[0],
     websiteUrl: platform.website_url,
     payouts: payoutsResult.data ?? [], context,
     trend: (trendResult.data ?? []).map((item) => ({ day: item.payout_day, count: Number(item.payout_count), amount: Number(item.payout_amount) })),
@@ -115,7 +127,7 @@ async function getPayoutFirmDetailUncached(slug: string, period: PayoutPeriodKey
 
 export const getPayoutFirmDetail = unstable_cache(
   getPayoutFirmDetailUncached,
-  ['public-payout-detail-v1'],
+  ['public-payout-detail-v2'],
   { revalidate: 60, tags: ['public-payouts'] }
 )
 
