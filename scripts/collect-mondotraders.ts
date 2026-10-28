@@ -4,6 +4,7 @@ import { formatMondoRunReport, mondoCheckRecord, type MondoCheckOutcome } from '
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { chromium, type Locator, type Page } from 'playwright'
 import { assertMondoHeaders, mondoRunIsFatal, SourceRowInconsistencyError, validateMondoMetric } from './mondo-validation'
+import { parseMondoInteger as parseThousands, sameMondoMetric as sameMetric, type MondoMetric as Metric, type CurrentMondoSnapshot as CurrentSnapshot } from './mondo-metric'
 
 loadEnvConfig(process.cwd())
 
@@ -11,9 +12,7 @@ type PeriodKey = '24h' | '7d' | '30d' | 'all'
 type MarketKey = 'forex' | 'futures' | 'crypto'
 type Period = { key: PeriodKey; label: string }
 type Mapping = { platform_id: string | null; external_name: string; external_url: string }
-type Metric = { amount: number; payoutCount: number; largestPayout: number; averagePayout: number; medianTimeMinutes: number | null; currency: string }
 type ParsedMetric = { amount: number | null; payoutCount: number | null; largestPayout: number | null; averagePayout: number | null; medianTimeMinutes: number | null }
-type CurrentSnapshot = { platform_id: string; period_key: PeriodKey; amount: number | null; payout_count: number | null; largest_payout: number | null; average_payout: number | null; median_time_minutes: number | null }
 type CatalogFirm = { external_name: string; external_slug: string | null; external_url: string | null; normalized_name: string; markets_seen: MarketKey[]; periods_seen: PeriodKey[] }
 type RowDiagnostic = {
   firm: string
@@ -38,11 +37,6 @@ const periods: Period[] = [
 ]
 const markets: Array<{ key: MarketKey; label: 'Forex' | 'Futures' | 'Crypto' }> = [
   { key: 'forex', label: 'Forex' }, { key: 'futures', label: 'Futures' }, { key: 'crypto', label: 'Crypto' },
-]
-const fallbackMappings: Mapping[] = [
-  { platform_id: null, external_name: 'Lucid Trading', external_url: 'https://mondotraders.com/en/firma/Lucid%20Trading' },
-  { platform_id: null, external_name: 'Tradeify', external_url: 'https://mondotraders.com/en/firma/Tradeify' },
-  { platform_id: null, external_name: 'FundingPips', external_url: 'https://mondotraders.com/en/firma/FundingPips' },
 ]
 
 async function main() {
@@ -394,13 +388,6 @@ function printMissingRequiredMetrics(firm: string, period: PeriodKey, missingMet
   console.log('  status=MISSING_REQUIRED_METRICS')
 }
 
-function parseThousands(value: string): number | null {
-  const normalized = value.trim()
-  if (normalized === '' || normalized === '—' || normalized === '-' || normalized.toUpperCase() === 'N/A') return null
-  const parsed = Number(normalized.replace(/[^0-9-]/g, ''))
-  if (!Number.isFinite(parsed)) throw new Error(`valor no numérico: ${value}`)
-  return parsed
-}
 function parseDuration(value: string) { const normalized = value.toLowerCase(); if (normalized === 'n/a') return null; if (normalized.includes('less than a minute')) return 0.5; const amount = Number(normalized.match(/[0-9]+(?:\.[0-9]+)?/)?.[0] ?? NaN); if (normalized.includes('day')) return amount * 1_440; if (normalized.includes('hour')) return amount * 60; if (normalized.includes('minute')) return amount; throw new Error(`Avg. Time no interpretable: ${value}`) }
 function assertNotBlocked(text: string) { const marker = ['Attention Required!', 'Cloudflare', 'Verify you are human'].find((item) => text.includes(item)); if (marker) throw new Error(`PAGE_BLOCKED: ${marker}`) }
 
@@ -417,35 +404,32 @@ async function loadCurrentSnapshots(supabase: SupabaseClient | null, mappings: M
   if (!supabase || platformIds.length === 0) return snapshots
   const { data, error } = await supabase
     .from('platform_payout_metrics')
-    .select('platform_id, period_key, amount, payout_count, largest_payout, average_payout, median_time_minutes')
+    .select('platform_id, period_key, amount, payout_count, largest_payout, average_payout, median_time_minutes, currency')
     .in('platform_id', platformIds)
     .eq('metric_type', 'payout_summary')
     .eq('source_type', 'third_party_public')
     .eq('source_name', SOURCE_NAME)
     .eq('is_current', true)
   if (error) throw new Error(`No se pudieron cargar snapshots actuales: ${error.message}`)
-  for (const row of (data ?? []) as CurrentSnapshot[]) snapshots.set(snapshotKey(row.platform_id, row.period_key), row)
+  for (const row of (data ?? []) as CurrentSnapshot[]) {
+    const key = snapshotKey(row.platform_id, row.period_key)
+    if (snapshots.has(key)) throw new Error(`DUPLICATE_CURRENT_SNAPSHOT: ${key}`)
+    snapshots.set(key, row)
+  }
   return snapshots
 }
 
-function snapshotKey(platformId: string, periodKey: PeriodKey) {
+function snapshotKey(platformId: string, periodKey: string) {
   return `${platformId}:${periodKey}`
 }
 
-function sameMetric(current: CurrentSnapshot, metric: Metric) {
-  return Number(current.amount) === metric.amount
-    && Number(current.payout_count) === metric.payoutCount
-    && Number(current.largest_payout) === metric.largestPayout
-    && Number(current.average_payout) === metric.averagePayout
-    && nullableNumber(current.median_time_minutes) === metric.medianTimeMinutes
-}
-
-function nullableNumber(value: number | null) {
-  return value === null ? null : Number(value)
-}
-
 function createSupabaseClient(): SupabaseClient | null { const url = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE_KEY; if (!url || !key) { if (dryRun) return null; throw new Error('SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY son obligatorias') } return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } }) }
-async function loadMappings(supabase: SupabaseClient | null): Promise<Mapping[]> { if (!supabase) return fallbackMappings; const { data, error } = await supabase.from('external_platform_mappings').select('platform_id, external_name, external_url').eq('provider', 'mondotraders').eq('active', true).order('external_name'); if (!error && data?.length) return data; if (dryRun) return fallbackMappings; throw new Error(error?.message ?? 'No hay mappings MondoTraders activos') }
+async function loadMappings(supabase: SupabaseClient | null): Promise<Mapping[]> {
+  if (!supabase) throw new Error('La conciliación completa requiere los mappings de Supabase; no se permite una muestra de respaldo')
+  const { data, error } = await supabase.from('external_platform_mappings').select('platform_id, external_name, external_url').eq('provider', 'mondotraders').eq('active', true).order('external_name')
+  if (error || !data?.length) throw new Error(error?.message ?? 'No hay mappings MondoTraders activos')
+  return data
+}
 function printMetric(name: string, metric: Metric) { console.log(name); console.log(`  amount=${metric.amount}`); console.log(`  count=${metric.payoutCount}`); console.log(`  largest=${metric.largestPayout}`); console.log(`  average=${metric.averagePayout}`); console.log(`  payoutTime=${metric.medianTimeMinutes ?? 'N/A'} min`) }
 function errorMessage(error: unknown) { return error instanceof Error ? error.message : String(error) }
 

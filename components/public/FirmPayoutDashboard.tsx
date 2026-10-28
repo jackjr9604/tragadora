@@ -10,15 +10,16 @@ export function FirmPayoutDashboard({ detail, period, basePath, language, embedd
   const locale = publicLocale(language)
   const currentTrend = trendForPeriod(trend, period)
   const comparison = comparePeriods(trend, period)
-  const total = summary.displayTotalAmount ?? (summary.verifiedPayoutCount ? summary.verifiedAmount : null)
-  const count = summary.knownPayoutCount ?? (summary.verifiedPayoutCount || null)
-  const largest = summary.knownLargestPayout ?? summary.verifiedLargestPayout
-  const average = summary.knownAveragePayout ?? summary.verifiedAveragePayout
+  const total = summary.displayTotalAmount
+  const count = summary.knownPayoutCount
+  const largest = summary.knownLargestPayout
+  const average = summary.knownAveragePayout
+  const currency = summary.knownCurrency ?? 'USD'
   const hasPayoutContext = context.payoutMethods.length > 0 || context.policies.length > 0
   const showConsolidationNote = currentTrend.length === 0 && payouts.length === 0 && !hasPayoutContext
   return <div className={`w-full ${embedded ? 'mt-6 space-y-5' : 'space-y-5'}`}>
     <div className="flex flex-col gap-3 border-b border-white/8 pb-4 lg:flex-row lg:items-center lg:justify-between"><p className="text-sm text-slate-400">{copy.activityFor} <strong className="text-slate-200">{payoutPeriodLabel(period, language)}</strong></p><PeriodTabs active={period} basePath={basePath} language={language} detail extraParams={embedded ? { view: 'payouts' } : undefined} /></div>
-    <div className="grid grid-cols-2 gap-3 xl:grid-cols-4"><Metric label={copy.totalPaid} value={total === null ? copy.noExternalTotal : money(total, 'USD', language)} accent={total !== null} primary /><Metric label={copy.payoutCount} value={count === null ? '—' : count.toLocaleString(locale)} /><Metric label={copy.largestPayout} value={largest === null ? '—' : money(largest, 'USD', language)} /><Metric label={copy.average} value={average === null ? '—' : money(average, 'USD', language)} /></div>
+    <div className="grid grid-cols-2 gap-3 xl:grid-cols-4"><Metric label={copy.totalPaid} value={total === null ? copy.noExternalTotal : money(total, currency, language)} accent={total !== null} primary /><Metric label={copy.payoutCount} value={count === null ? '—' : count.toLocaleString(locale)} /><Metric label={copy.largestPayout} value={largest === null ? '—' : money(largest, currency, language)} /><Metric label={copy.average} value={average === null ? '—' : money(average, currency, language)} /></div>
     {(currentTrend.length > 0 || comparison) && <div className={`grid gap-5 ${currentTrend.length > 0 && comparison ? 'xl:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]' : ''}`}>
       {currentTrend.length > 0 && <section className="min-w-0 rounded-2xl border border-white/10 bg-gradient-to-br from-[#132137] to-[#0f192a] p-5 sm:p-7"><h2 className="mb-6 flex items-center gap-2 text-xl font-bold"><BarChart3 className="size-5 text-cyan-300" />{copy.payoutHistory}</h2><TrendChart points={currentTrend} language={language} /></section>}
       {comparison && <Comparison comparison={comparison} period={period} language={language} />}
@@ -35,4 +36,4 @@ function Metric({ label, value, accent = false, primary = false }: { label: stri
 function SmallStat({ label, value }: { label: string; value: string }) { return <div className="flex items-end justify-between gap-3 border-b border-white/8 pb-3"><dt className="text-sm text-slate-500">{label}</dt><dd className="font-mono text-lg font-semibold">{value}</dd></div> }
 function trendForPeriod(points: AwaitedPayoutDetail['trend'], period: PayoutPeriodKey) { const days = periodDays(period); if (!days) return points; const since = Date.now() - days * 86_400_000; return points.filter((point) => new Date(point.day).getTime() >= since) }
 function comparePeriods(points: AwaitedPayoutDetail['trend'], period: PayoutPeriodKey) { const days = periodDays(period); if (!days) return null; const now = Date.now(), currentStart = now - days * 86_400_000, previousStart = now - days * 2 * 86_400_000; const current = points.filter((p) => new Date(p.day).getTime() >= currentStart).reduce((sum, p) => sum + p.amount, 0); const previous = points.filter((p) => { const time = new Date(p.day).getTime(); return time >= previousStart && time < currentStart }).reduce((sum, p) => sum + p.amount, 0); return current > 0 && previous > 0 ? { current, previous, change: ((current - previous) / previous) * 100 } : null }
-function periodDays(period: PayoutPeriodKey) { return period === '7d' ? 7 : period === '30d' ? 30 : period === '365d' ? 365 : null }
+function periodDays(period: PayoutPeriodKey) { return period === '24h' ? 1 : period === '7d' ? 7 : period === '30d' ? 30 : period === '365d' ? 365 : null }
