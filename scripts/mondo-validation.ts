@@ -25,6 +25,9 @@ export function assertMondoHeaders(headers: readonly string[]) {
 }
 
 export function validateMondoMetric(metric: NumericMondoMetric) {
+  if (!Object.values(metric).every(Number.isFinite) || !Number.isSafeInteger(metric.payoutCount)) {
+    throw new Error('métricas no finitas o número de pagos no entero')
+  }
   if (metric.amount <= 0 || metric.payoutCount <= 0 || metric.largestPayout < 0 || metric.averagePayout <= 0) {
     throw new Error('métricas fuera de rango')
   }

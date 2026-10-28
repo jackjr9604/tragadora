@@ -37,7 +37,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Test MondoTraders validation and reporting
-        run: npx tsx --test scripts/mondo-validation.test.ts scripts/mondo-run-report.test.ts
+        run: npx tsx --test scripts/mondo-validation.test.ts scripts/mondo-run-report.test.ts scripts/mondo-metric.test.ts lib/payout-summary-selection.test.ts lib/payout-rendering.test.tsx
 
       - name: Collect MondoTraders snapshots
         run: npm run collect:mondo

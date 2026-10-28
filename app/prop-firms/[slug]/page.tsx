@@ -47,7 +47,7 @@ export default async function PropFirmDetailPage({ params, searchParams }: PageP
   const requestedView = Array.isArray(query.view) ? query.view[0] : query.view
   const activeView = requestedView === 'offers' || requestedView === 'payouts' ? requestedView : 'overview'
   const requestedPeriod = Array.isArray(query.period) ? query.period[0] : query.period
-  const payoutPeriodKey = requestedPeriod === '24h' ? '7d' : payoutPeriod(requestedPeriod, 'all')
+  const payoutPeriodKey = payoutPeriod(requestedPeriod, 'all')
   const supabase = await createClient()
   const needsOverview = activeView === 'overview'
 
