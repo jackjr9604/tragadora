@@ -3,6 +3,7 @@ import { PeriodTabs, TrendChart, formatDate, money } from './PayoutTrackerUI'
 import { payoutPeriodLabel, type PayoutPeriodKey } from '@/lib/payout-periods'
 import type { AwaitedPayoutDetail } from '@/lib/payout-tracker'
 import { firmProfileText, publicFirmProfileCopy, publicLocale, publicUiLanguage } from '@/lib/public-i18n'
+import { PayoutFreshnessNotice } from './PayoutFreshnessNotice'
 
 export function FirmPayoutDashboard({ detail, period, basePath, language, embedded = false }: { detail: AwaitedPayoutDetail; period: PayoutPeriodKey; basePath: string; language: string; embedded?: boolean }) {
   const { summary, payouts, trend, context } = detail
@@ -17,6 +18,7 @@ export function FirmPayoutDashboard({ detail, period, basePath, language, embedd
   const hasPayoutContext = context.payoutMethods.length > 0 || context.policies.length > 0
   const showConsolidationNote = currentTrend.length === 0 && payouts.length === 0 && !hasPayoutContext
   return <div className={`w-full ${embedded ? 'mt-6 space-y-5' : 'space-y-5'}`}>
+    <PayoutFreshnessNotice summary={summary} language={language} />
     <div className="flex flex-col gap-3 border-b border-white/8 pb-4 lg:flex-row lg:items-center lg:justify-between"><p className="text-sm text-slate-400">{copy.activityFor} <strong className="text-slate-200">{payoutPeriodLabel(period, language)}</strong></p><PeriodTabs active={period} basePath={basePath} language={language} detail extraParams={embedded ? { view: 'payouts' } : undefined} /></div>
     <div className="grid grid-cols-2 gap-3 xl:grid-cols-4"><Metric label={copy.totalPaid} value={total === null ? copy.noExternalTotal : money(total, 'USD', language)} accent={total !== null} primary /><Metric label={copy.payoutCount} value={count === null ? '—' : count.toLocaleString(locale)} /><Metric label={copy.largestPayout} value={largest === null ? '—' : money(largest, 'USD', language)} /><Metric label={copy.average} value={average === null ? '—' : money(average, 'USD', language)} /></div>
     {(currentTrend.length > 0 || comparison) && <div className={`grid gap-5 ${currentTrend.length > 0 && comparison ? 'xl:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]' : ''}`}>
