@@ -10,14 +10,21 @@ function validDate(value: string | null | undefined, now: number) {
 }
 
 export function payoutFreshness(input: PayoutFreshnessInput, now = Date.now()) {
-  const updatedAt = validDate(input.displayTotalUpdatedAt, now)
-  const checkedAt = validDate(input.displayTotalLastCheckedAt, now)
+  // 202609280001: verified totals use max(payout_date); selected metrics use
+  // coalesce(collected_at, updated_at), including API/manual metric snapshots.
+  const dateKind = input.displayTotalSourceType === 'tragadora_blockchain' ? 'last_payout'
+    : ['official_firm', 'official_api', 'third_party_api', 'third_party_public', 'manual'].includes(input.displayTotalSourceType ?? '') ? 'snapshot' : 'unknown'
+  const referenceAt = validDate(input.displayTotalUpdatedAt, now)
+  const updatedAt = dateKind === 'snapshot' ? referenceAt : null
+  const lastPayoutAt = dateKind === 'last_payout' ? referenceAt : null
+  // Aggregate payment dates provide no evidence of a collector check.
+  const checkedAt = dateKind === 'snapshot' ? validDate(input.displayTotalLastCheckedAt, now) : null
   const thresholdHours = input.displayTotalSourceType === 'official_firm' ? 36 : 48
   return {
-    updatedAt, checkedAt,
+    dateKind, referenceAt, updatedAt, lastPayoutAt, checkedAt,
     // A successful comparison must never change the age of the captured figures.
     stale: updatedAt !== null && now - Date.parse(updatedAt) > thresholdHours * 3_600_000,
-    unknown: updatedAt === null,
+    unknown: referenceAt === null,
   }
 }
 
