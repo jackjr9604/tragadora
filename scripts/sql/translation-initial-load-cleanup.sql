@@ -1,0 +1,15 @@
+begin;
+drop function if exists public.translation_initial_load_quarantine_publish_failures(uuid);
+drop function if exists public.translation_initial_load_close_pending(uuid,jsonb);
+drop function if exists public.translation_initial_load_publish(uuid,integer);
+drop function if exists public.translation_initial_load_finish(uuid);
+drop function if exists public.translation_initial_load_status(uuid);
+drop function if exists public.translation_initial_load_fanout(uuid,integer,integer);
+drop function if exists public.translation_initial_load_record_qa(uuid,text,text,text,text,text,text[]);
+drop function if exists public.translation_initial_load_qa_candidates(uuid,integer);
+drop function if exists public.translation_initial_load_refresh(uuid);
+drop function if exists public.translation_initial_load_enqueue(uuid,integer);
+drop function if exists public.translation_initial_load_start(uuid,uuid,integer,bigint);
+drop table if exists public.translation_initial_load_groups;
+drop table if exists public.translation_initial_load_runs;
+commit;
